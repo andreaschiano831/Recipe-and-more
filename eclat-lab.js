@@ -124,9 +124,9 @@
     v.innerHTML = '<div class="xl-shell"><div class="xl-head"><div style="min-width:0">' +
       '<button class="xl-back" id="xlBack">' + ICO.back + 'Collezione</button>' +
       '<h1 class="xl-title" id="xlTitle"></h1><div class="xl-meta" id="xlMeta"></div></div>' +
-      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="xl-seg" id="xlSeg"><button data-m="lab">Laboratorio</button><button data-m="formula">Bilanciamento</button><button data-m="cook" title="Modalità cucina a schermo intero">Cucina</button></div>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="xl-seg" id="xlSeg"><button data-m="lab">Laboratorio</button><button data-m="formula">Bilanciamento</button><button data-m="molds">Stampi</button><button data-m="cook" title="Modalità cucina a schermo intero">Cucina</button></div>' +
       '<span class="xl-chip" id="xlScaleChip"></span></div></div>' +
-      '<div id="xlLab"></div><div id="xlFormula" hidden></div></div>';
+      '<div id="xlLab"></div><div id="xlFormula" hidden></div><div id="xlMolds" hidden></div></div>';
     document.body.appendChild(v);
     $('xlBack').onclick = function () { closeView(); tbGoRecipes(); };
     [].forEach.call(v.querySelectorAll('#xlSeg button'), function (b) { b.onclick = function () { if (b.dataset.m === 'cook') { try { openCucina(XL.rec, XL.dose); } catch (e) {} } else XL.open(XL.rec, b.dataset.m); }; });
@@ -141,8 +141,8 @@
     XL.viewOpen = true; v.classList.add('on'); v.scrollTop = 0; document.body.style.overflow = 'hidden';
     var tp = $('xlTopProd'); if (tp) tp.hidden = false;
     renderHead();
-    $('xlLab').hidden = XL.mode !== 'lab'; $('xlFormula').hidden = XL.mode !== 'formula';
-    if (XL.mode === 'lab') renderLab(); else renderFormula();
+    $('xlLab').hidden = XL.mode !== 'lab'; $('xlFormula').hidden = XL.mode !== 'formula'; $('xlMolds').hidden = XL.mode !== 'molds';
+    if (XL.mode === 'lab') renderLab(); else if (XL.mode === 'molds') { if (XL.renderMolds) XL.renderMolds(); } else renderFormula();
     setNav(XL.mode);
     [].forEach.call(document.querySelectorAll('#xlSeg button'), function (b) { b.classList.toggle('on', b.dataset.m === XL.mode); });
     XL.pane = null; XLT.render();
@@ -169,6 +169,7 @@
     [].forEach.call(document.querySelectorAll('.xl-tabs button'), function (b) { b.classList.toggle('on', +b.dataset.d === d); });
     if (XL.mode === 'formula') renderFormula(true);
     else if (XL.mode === 'lab') benchQty();
+    else if (XL.mode === 'molds' && XL.renderMolds) XL.renderMolds(true);
     if (!silent) XL.toast('Dose ' + fmtX(d) + ' applicata');
   };
   function roll(el, from, to, fmt, ms) {
@@ -266,7 +267,8 @@
         '<div class="lb-h"><span class="lb-eyebrow">Mise en place</span><span class="lb-count mono" id="lbMiseN"></span></div>' +
         '<div class="lb-dose"><div class="lb-dose-v"><span>Dose</span><strong class="mono" id="lbDoseV">' + fmtX(XL.dose) + '</strong><small class="mono" id="lbTot">' + fmtG(D.tot * XL.dose) + ' g</small></div>' +
         '<div class="lb-presets">' + presets + '</div>' +
-        '<div class="lb-inline"><input id="xlTarget" inputmode="decimal" placeholder="Peso finale in g"><button type="button" id="xlTargetGo">Porta a peso</button></div></div>' +
+        '<div class="lb-inline"><input id="xlTarget" inputmode="decimal" placeholder="Peso finale in g"><button type="button" id="xlTargetGo">Porta a peso</button></div>' +
+        '<button type="button" class="lb-molds" id="lbMolds"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M3 11h18"/></svg><span>Scala su stampi, placche, gastronorm…</span><i>→</i></button></div>' +
         '<div class="lb-bar"><i id="lbMiseFill"></i></div>' +
         (ings.length ? '<div class="lb-ings">' + mise + '</div><button type="button" class="lb-link" id="lbMiseReset">Azzera le spunte</button>' : '<p class="lb-empty">Questa ricetta non ha ancora ingredienti.</p>') +
       '</div></section>' +
@@ -306,6 +308,7 @@
     [].forEach.call(host.querySelectorAll('.lb-presets button'), function (b) { b.onclick = function () { XL.setDose(+b.dataset.d); }; });
     $('xlTargetGo').onclick = function () { var v = parseFloat(String($('xlTarget').value).replace(',', '.')); if (!(v > 0) || !D.tot) { $('xlTarget').focus(); return; } XL.setDose(v / D.tot); $('xlTarget').value = ''; };
     $('xlTarget').onkeydown = function (e) { if (e.key === 'Enter') $('xlTargetGo').click(); };
+    $('lbMolds').onclick = function () { XL.open(r, 'molds'); };
     /* mise en place */
     [].forEach.call(host.querySelectorAll('.lb-ing-row input'), function (c) {
       c.onchange = function () {

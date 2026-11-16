@@ -569,3 +569,66 @@ body.t-eclat .ck,body.t-eclat .st,body.t-eclat .lib-view{animation:xlFadeScale .
 .xl .bs-item.combo{border-color:rgba(85,98,63,.45);background:linear-gradient(180deg,rgba(85,98,63,.06),#fff)}
 .xl .bs-row{grid-template-columns:minmax(0,1fr) auto auto 52px}
 @media (max-width:899px){.xl .xl-formula{grid-template-columns:minmax(0,1fr)!important}.xl .xl-formula>*{min-width:0}}
+/* ═══ Stampi e placche ═══ */
+.xl .lb-molds{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;padding:9px 11px;border-radius:10px;border:1px dashed rgba(85,98,63,.45);background:#fff;color:var(--e-mid);font:500 12.5px "DM Sans",sans-serif;cursor:pointer;text-align:left}
+.xl .lb-molds svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;flex-shrink:0}
+.xl .lb-molds span{flex:1}.xl .lb-molds i{font-style:normal}
+.xl .lb-molds:hover{background:rgba(85,98,63,.06)}
+.xl .ms{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px;align-items:start;margin-top:14px}
+.xl .ms-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.xl .ms-res{position:sticky;top:8px}
+.xl .ms-rows{display:flex;flex-direction:column;gap:10px}
+.xl .ms-row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;padding:12px;border-radius:14px;border:1px solid var(--cb);background:var(--ctrl,#F7F5EF)}
+.xl .ms-row.ms-new{animation:lbIn .4s cubic-bezier(.2,.8,.2,1)}
+.xl .ms-sk{width:52px;height:52px}
+.xl .ms-row-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.xl .ms-row-h b{font-size:14px;font-weight:600;color:var(--ink)}
+.xl .ms-row-v{margin-left:auto;font-size:12px;color:var(--gold3);white-space:nowrap}
+.xl .ms-ic{width:28px;height:28px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--smoke2);font-size:16px;cursor:pointer;line-height:1}
+.xl .ms-ic:hover{background:#fff;border-color:var(--cb);color:var(--ink)}
+.xl .ms-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.xl .ms-chips button{height:28px;padding:0 9px;border-radius:8px;border:1px solid var(--cb);background:#fff;font:600 11.5px "DM Sans",sans-serif;color:var(--ink2);cursor:pointer;transition:background .15s,color .15s}
+.xl .ms-chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.xl .ms-fs{display:flex;flex-wrap:wrap;gap:8px}
+.xl .ms-f{display:flex;flex-direction:column;gap:4px;flex:1;min-width:92px}
+.xl .ms-f[hidden]{display:none}
+.xl .ms-f.wide{width:100%;margin-bottom:10px}
+.xl .ms-f>span:first-child{font-size:11px;color:var(--smoke2)}
+.xl .ms-in{display:flex;align-items:center;height:38px;border-radius:10px;border:1px solid var(--cb);background:#fff;overflow:hidden;transition:border-color .15s}
+.xl .ms-in:focus-within{border-color:var(--e-mid);box-shadow:0 0 0 3px rgba(85,98,63,.12)}
+.xl .ms-in input{flex:1;min-width:0;height:100%;border:0;background:transparent;padding:0 10px;font:600 14px "JetBrains Mono",ui-monospace,monospace;color:var(--ink);outline:none}
+.xl .ms-in em{font-style:normal;font-size:11.5px;color:var(--smoke2);padding-right:10px}
+.xl .ms-f select{height:38px;border-radius:10px;border:1px solid var(--cb);background:#fff;padding:0 10px;font:500 13px "DM Sans",sans-serif;color:var(--ink)}
+.xl .ms-add,.xl .ms-mine{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--e-border)}
+.xl .ms-add>span,.xl .ms-mine>span{font-size:11px;color:var(--smoke2);margin-right:2px;width:100%}
+.xl .ms-add button,.xl .ms-mine button{height:32px;padding:0 11px;border-radius:99px;border:1px solid var(--cb);background:#fff;font:500 12px "DM Sans",sans-serif;color:var(--ink2);cursor:pointer}
+.xl .ms-add button:hover,.xl .ms-mine button:hover{border-color:var(--e-mid);color:var(--e-mid)}
+.xl .ms-mine button{display:inline-flex;align-items:center;gap:6px;background:rgba(154,123,79,.08)}
+.xl .ms-mine i{font-style:normal;color:var(--smoke3);font-size:14px;padding:0 2px}.xl .ms-mine i:hover{color:#8E2B3A}
+.xl .ms-tip{font-size:11.5px;color:var(--smoke2);line-height:1.5;margin:10px 0 0}
+.xl .ms-hero{background:linear-gradient(180deg,#fff,var(--ctrl,#F7F5EF))}
+.xl .ms-big{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 0 12px}
+.xl .ms-big strong{font-size:clamp(34px,4vw,44px);font-weight:600;color:var(--ink);letter-spacing:-.02em;line-height:1}
+.xl .ms-big span{font-size:13px;color:var(--smoke2)}.xl .ms-big b{font-size:18px;color:var(--e-mid)}
+.xl .ms-break{display:flex;flex-direction:column;border-top:1px solid var(--e-border)}
+.xl .ms-break>div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--e-border);font-size:12.5px;color:var(--ink2)}
+.xl .ms-break b{font-weight:600;white-space:nowrap}.xl .ms-w{color:var(--smoke2)!important}
+.xl .ms-inv{font-size:12.5px;line-height:1.55;color:var(--ink2);background:rgba(154,123,79,.08);border-radius:10px;padding:10px 12px;margin:12px 0 0}
+.xl .ms-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.xl .ms-ings{display:flex;flex-direction:column}
+.xl .ms-ing{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--e-border);font-size:14px}
+.xl .ms-ing b{font-weight:600;white-space:nowrap}
+.xl .ms-tot{display:flex;justify-content:space-between;padding:10px 0 0;font-size:13px;color:var(--smoke)}
+.xl .ms-sw{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;color:var(--smoke);cursor:pointer;user-select:none}
+.xl .ms-sw input{position:absolute;opacity:0;pointer-events:none}
+.xl .ms-sw span{width:30px;height:18px;border-radius:99px;background:rgba(26,26,22,.18);position:relative;transition:background .2s}
+.xl .ms-sw span::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
+.xl .ms-sw input:checked+span{background:var(--e-mid)}.xl .ms-sw input:checked+span::after{transform:translateX(12px)}
+@media (max-width:899px){.xl .ms{grid-template-columns:minmax(0,1fr)}.xl .ms-res{position:static;order:-1}.xl .ms-row{grid-template-columns:40px minmax(0,1fr);gap:10px;padding:10px}.xl .ms-sk{width:40px;height:40px}}
+@media (max-width:520px){
+  .xl-seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .xl-seg button{padding:8px 11px;font-size:11.5px}
+  .xl .ms-row-h{flex-wrap:wrap;row-gap:2px}
+  .xl .ms-row-h b{flex:1}
+  .xl .ms-row-v{order:3;width:100%;margin-left:0}
+}
