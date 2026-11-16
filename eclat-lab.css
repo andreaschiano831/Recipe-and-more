@@ -529,3 +529,43 @@ body.t-eclat .ck,body.t-eclat .st,body.t-eclat .lib-view{animation:xlFadeScale .
 .lb-dock{flex-direction:column-reverse}
 .lb-tm span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 @media (min-width:900px){.lb-dock.in-lab{display:none}}
+/* ═══ Bilanciamento: suggerimenti ═══ */
+.xl .bs .xl-card-top{align-items:center}
+.xl .bs-sel{height:32px;border-radius:9px;border:1px solid var(--cb);background:var(--ctrl,#F7F5EF);padding:0 8px;font:500 12px "DM Sans",sans-serif;color:var(--ink);max-width:60%}
+.xl .bs-rows{display:flex;flex-direction:column;margin:4px 0 12px}
+.xl .bs-row{display:grid;grid-template-columns:1fr auto auto 56px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--e-border);font-size:13px}
+.xl .bs-row small{color:var(--smoke3);font-size:11px}
+.xl .bs-row em{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:3px 0;border-radius:6px;background:rgba(85,98,63,.12);color:var(--e-mid)}
+.xl .bs-row.low em,.xl .bs-row.high em{background:rgba(142,43,58,.1);color:#8E2B3A}
+.xl .bs-hint{font-size:11.5px;color:var(--smoke2);line-height:1.5;margin:0 0 10px}
+.xl .bs-ok{font-size:13px;color:var(--e-mid);background:rgba(85,98,63,.08);border-radius:10px;padding:10px 12px;margin:0}
+.xl .bs-empty{font-size:12.5px;color:var(--smoke2);line-height:1.5;margin:4px 0 0}
+.xl .bs-items{display:flex;flex-direction:column;gap:6px}
+.xl .bs-item{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:12px;border:1px solid var(--cb);background:#fff;cursor:pointer;position:relative;transition:border-color .2s,background .2s}
+.xl .bs-item:hover{border-color:rgba(85,98,63,.4)}
+.xl .bs-item input{position:absolute;opacity:0;pointer-events:none}
+.xl .bs-box{width:18px;height:18px;margin-top:2px;border-radius:5px;border:1.5px solid rgba(26,26,22,.28);display:grid;place-items:center;transition:background .2s,border-color .2s}
+.xl .bs-box::after{content:"";width:9px;height:5px;border:solid #fff;border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px) scale(0);transition:transform .22s cubic-bezier(.3,1.6,.5,1)}
+.xl .bs-item:has(input:checked){border-color:var(--e-mid);background:rgba(85,98,63,.05)}
+.xl .bs-item input:checked+.bs-box{background:var(--e-mid);border-color:var(--e-mid)}
+.xl .bs-item input:checked+.bs-box::after{transform:rotate(-45deg) translate(1px,-1px) scale(1)}
+.xl .bs-item input:focus-visible+.bs-box{outline:2px solid var(--gold3);outline-offset:2px}
+.xl .bs-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.xl .bs-t small{font-size:11px;color:var(--smoke2)}
+.xl .bs-t b{font-size:14px;font-weight:600;color:var(--ink)}
+.xl .bs-t .mono{font-size:11px;color:var(--gold3)}
+.xl .bs-ai{margin-top:8px}.xl .bs-ai-t{font-size:12.5px;line-height:1.55;color:var(--ink2);white-space:pre-wrap}
+.xl .bs-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.xl .bs-acts .lb-btn:disabled{opacity:.45;cursor:default}
+.xl .bs-notes{margin-top:14px;padding:12px;border-radius:12px;border:1px dashed var(--cb)}
+.xl .bs-notes p,.xl .lb-notes p{white-space:pre-wrap;font-size:12.5px;line-height:1.55;color:var(--ink2);margin:6px 0 0}
+.xl .lb-notes{margin-top:12px;padding:12px;border-radius:12px;border:1px dashed var(--cb)}
+.xl .lb-sug{display:block;width:100%;text-align:left;margin:4px 0 2px;padding:9px 11px;border-radius:10px;border:1px solid rgba(142,43,58,.25);background:rgba(142,43,58,.05);color:#8E2B3A;font:500 12.5px "DM Sans",sans-serif;cursor:pointer}
+.xl .lb-sug b{font-weight:700}
+.xl .bs{min-width:0;overflow:hidden}
+.xl .bs-t .mono{white-space:normal;overflow-wrap:anywhere}
+.xl .bs-warn{font-size:11px;color:#8E2B3A;margin-top:2px}
+.xl .bs-good{font-size:11px;color:var(--e-mid);margin-top:2px}
+.xl .bs-item.combo{border-color:rgba(85,98,63,.45);background:linear-gradient(180deg,rgba(85,98,63,.06),#fff)}
+.xl .bs-row{grid-template-columns:minmax(0,1fr) auto auto 52px}
+@media (max-width:899px){.xl .xl-formula{grid-template-columns:minmax(0,1fr)!important}.xl .xl-formula>*{min-width:0}}

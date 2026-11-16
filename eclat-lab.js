@@ -275,7 +275,8 @@
         '<div class="lb-h"><span class="lb-eyebrow">Procedimento</span><span class="lb-count mono" id="lbStepN">' + (n ? doneN + ' / ' + n : '') + '</span></div>' +
         (n ? '<div class="lb-bar"><i id="lbStepFill" style="width:' + pctDone + '%"></i></div><div class="lb-steps" id="lbSteps">' + steps + '</div>' +
           '<div class="lb-proc-f"><button type="button" class="lb-link" id="lbStepsReset">Ricomincia</button><span class="lb-hint">Tasti: → passaggio fatto · ← torna indietro</span></div>' +
-          (D.info.length ? '<div class="lb-info">' + D.info.map(esc).join('<br>') + '</div>' : '')
+          (D.info.length ? '<div class="lb-info">' + D.info.map(esc).join('<br>') + '</div>' : '') +
+          (r.nt ? '<div class="lb-notes"><span class="lb-eyebrow">Note</span><p>' + esc(r.nt) + '</p></div>' : '')
           : '<div class="lb-empty"><p>Nessun procedimento scritto per questa ricetta.</p>' + (WL.canEdit && WL.canEdit() ? '<button type="button" class="lb-btn dark" id="lbAddProc">Aggiungi il procedimento<i>✎</i></button>' : '') + '</div>') +
         '<div class="lb-done" id="lbDone" hidden><strong>Produzione completata</strong><span>Tutti i passaggi sono fatti.</span></div>' +
       '</div></section>' +
@@ -287,6 +288,7 @@
           '<div class="lb-inline"><input id="lbTMin" inputmode="decimal" placeholder="min"><input id="lbTLab" placeholder="Nome (es. forno)"><button type="button" id="lbTAdd">Avvia</button></div></div></div>' +
         '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Composizione</span><button type="button" class="lb-link" id="xlToFormula">Bilanciamento →</button></div>' +
           (A.tot ? '<div class="lb-stack">' + bar + '</div><div class="lb-leg">' + legend + '</div>' + checks +
+            (function () { var S = suggestions(r); return S.items.length ? '<button type="button" class="lb-sug" id="lbSug"><b>' + S.items.length + '</b> suggeriment' + (S.items.length === 1 ? 'o' : 'i') + ' di bilanciamento →</button>' : ''; })() +
             '<p class="lb-note">' + (P.t ? esc(P.t) + ' · ' : '') + Math.round(A.known / A.tot * 100) + '% degli ingredienti riconosciuto</p>' : '<p class="lb-empty">Composizione non disponibile.</p>') +
         '</div>' +
         '<div class="lb-card lb-ai" id="xlVoice"><div class="lb-h"><span class="lb-eyebrow">Sous-chef AI</span><span class="lb-pill ' + (aiOk ? 'ok' : '') + '">' + (aiOk ? 'Attivo' : 'Senza chiave') + '</span></div>' +
@@ -362,6 +364,7 @@
     XLT.render();
     /* composizione e sous-chef */
     $('xlToFormula').onclick = function () { XL.open(r, 'formula'); };
+    var sg = $('lbSug'); if (sg) sg.onclick = function () { XL.open(r, 'formula'); setTimeout(function () { var b = $('xlSug'); if (b) b.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' }); }, 120); };
     $('xlSend').onclick = function () { ask(); };
     $('xlAsk').onkeydown = function (e) { if (e.key === 'Enter') ask(); };
     [].forEach.call(host.querySelectorAll('.lb-q button'), function (b) { b.onclick = function () { $('xlAsk').value = b.dataset.q; ask(); }; });
@@ -545,6 +548,179 @@
     });
   }
 
+  /* ══════════ BILANCIAMENTO: SUGGERIMENTI (la ricetta non viene modificata) ══════════
+     Per ogni parametro fuori fascia calcola in grammi quanto aggiungere di un
+     correttore (o quanto togliere dell'ingrediente che pesa di più), con il
+     profilo che si otterrebbe. I suggerimenti scelti vanno nelle note. */
+  var BAL = {
+    gelato: { t: 'Gelato', r: { s: [16, 22], f: [6, 10], sol: [36, 42] }, dil: 'Latte intero' },
+    sorbetto: { t: 'Sorbetto', r: { s: [25, 32], f: [0, 2], sol: [30, 36] }, dil: 'Acqua' },
+    semifreddo: { t: 'Semifreddo', r: { s: [18, 28], f: [10, 22], sol: [38, 48] }, dil: 'Latte intero' },
+    frolla: { t: 'Pasta frolla', q: { sugar: [40, 60], butter: [50, 75], eggs: [15, 25] } }
+  };
+  var PNAME = { s: 'Zuccheri', f: 'Grassi', sol: 'Solidi totali' };
+  var ADDERS = { s: ['Saccarosio', 'Destrosio'], f: ['Panna 35%', 'Burro'], sol: ['Latte in polvere scremato', 'Destrosio'] };
+  var REDUCERS = { s: 'Latte scremato', f: 'Latte scremato', sol: 'Acqua' };
+  function profKey(r) { return 'xl_prof:' + String(r._id || r.n); }
+  function profOverride(r) { try { return localStorage.getItem(profKey(r)); } catch (e) { return null; } }
+  function balProfile(r) {
+    var o = null; try { o = localStorage.getItem(profKey(r)); } catch (e) {}
+    if (o) return o === 'none' ? null : o;
+    var P = rcProfile(r.c, r.s, r.n), t = (String(r.c || '') + ' ' + String(r.n || '')).toLowerCase();
+    if (BAL[P.k]) return P.k;
+    if (/frolla|sabl[eé]|shortbread|pasta frolla/.test(t)) return 'frolla';
+    return null;
+  }
+  function comp(name) { var c = null; try { c = rcComp(name); } catch (e) {} return c ? { w: c[0] / 100, s: c[1] / 100, f: c[2] / 100, p: c[3] / 100, o: c[4] / 100, sol: 1 - c[0] / 100 } : null; }
+  function prof(A) { return { T: A.tot, s: A.s, f: A.f, sol: A.tot - A.w }; }
+  function pctOf(P, k) { return P.T ? P[k] / P.T * 100 : 0; }
+  function afterAdd(P, c, x) { return { T: P.T + x, s: P.s + x * c.s, f: P.f + x * c.f, sol: P.sol + x * c.sol }; }
+  function afterRemove(P, c, y) { return { T: P.T - y, s: P.s - y * c.s, f: P.f - y * c.f, sol: P.sol - y * c.sol }; }
+  function g0(x) { return Math.round(x) >= 10 ? Math.round(x) : Math.round(x * 10) / 10; }
+  function gtxt(x) { return String(g0(x)).replace('.', ',') + ' g'; }
+  function solve(M, b) { /* Gauss con pivot: M x = b */
+    var n = b.length, A = M.map(function (r, i) { return r.concat([b[i]]); });
+    for (var c = 0; c < n; c++) {
+      var p = c; for (var r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+      if (Math.abs(A[p][c]) < 1e-9) return null; var t = A[c]; A[c] = A[p]; A[p] = t;
+      for (var r2 = 0; r2 < n; r2++) if (r2 !== c) { var f = A[r2][c] / A[c][c]; for (var k = c; k <= n; k++) A[r2][k] -= f * A[c][k]; }
+    }
+    return A.map(function (r, i) { return r[n] / r[i]; });
+  }
+  function outOf(Q, B) { var bad = []; ['s', 'f', 'sol'].forEach(function (k) { var v = pctOf(Q, k), rg = B.r[k]; if (v < rg[0] - 0.05 || v > rg[1] + 0.05) bad.push(PNAME[k].toLowerCase() + (v < rg[0] ? ' bassi' : ' alti')); }); return bad; }
+  function afterTxt(Q) { return 'zuccheri ' + f1(pctOf(Q, 's')) + '% · grassi ' + f1(pctOf(Q, 'f')) + '% · solidi ' + f1(pctOf(Q, 'sol')) + '%'; }
+  function suggestions(r) {
+    var key = balProfile(r), B = key && BAL[key], A = rcAnalyze(r.i || []), out = { key: key, B: B, rows: [], items: [], A: A };
+    if (!B || !A.tot) return out;
+    if (B.r) {
+      var P = prof(A);
+      ['s', 'f', 'sol'].forEach(function (k) {
+        var v = pctOf(P, k), rg = B.r[k], st = v < rg[0] ? 'low' : v > rg[1] ? 'high' : 'ok';
+        out.rows.push({ k: k, v: v, rg: rg, st: st });
+        if (st === 'ok') return;
+        out.off = (out.off || []).concat([{ k: k, st: st, rg: rg }]);
+        var t = (st === 'low' ? rg[0] + (rg[1] - rg[0]) * 0.25 : rg[1] - (rg[1] - rg[0]) * 0.25) / 100;
+        var head = PNAME[k] + ' ' + f1(v) + '% (' + B.t.toLowerCase() + ' ' + rg[0] + '–' + rg[1] + '%)';
+        if (st === 'low') {
+          ADDERS[k].forEach(function (nm) {
+            var c = comp(nm); if (!c || c[k] <= t) return;
+            var x = (t * P.T - P[k]) / (c[k] - t); if (!(x > 0) || x > P.T * 0.6) return;
+            var Q = afterAdd(P, c, x);
+            out.items.push({ k: k, head: head, act: 'Aggiungi ' + gtxt(x) + ' di ' + nm.toLowerCase(), after: afterTxt(Q), Q: Q });
+          });
+        } else {
+          /* togliere una parte dell'ingrediente che contribuisce di più */
+          var best = null;
+          (r.i || []).forEach(function (g) {
+            var gr = grams(g), c = comp(g[0]); if (!(gr > 0) || !c) return;
+            var share = gr * c[k]; if (!best || share > best.share) best = { g: g, gr: gr, c: c, share: share };
+          });
+          if (best && best.c[k] > t) {
+            var y = (P[k] - t * P.T) / (best.c[k] - t);
+            if (y > 0 && y < best.gr * 0.9) { var Q1 = afterRemove(P, best.c, y); out.items.push({ k: k, head: head, act: 'Riduci ' + best.g[0].toLowerCase() + ' di ' + gtxt(y) + ' (da ' + gtxt(best.gr) + ' a ' + gtxt(best.gr - y) + ')', after: afterTxt(Q1), Q: Q1 }); }
+          }
+          var dn = k === 'sol' ? 'Acqua' : (B.dil || REDUCERS[k]), cd = comp(dn);
+          if (cd && cd[k] < t) {
+            var x2 = (P[k] - t * P.T) / (t - cd[k]);
+            if (x2 > 0 && x2 < P.T * 0.6) { var Q2 = afterAdd(P, cd, x2); out.items.push({ k: k, head: head, act: 'Diluisci con ' + gtxt(x2) + ' di ' + dn.toLowerCase(), after: afterTxt(Q2), Q: Q2 }); }
+          }
+        }
+      });
+    }
+    if (B.r && out.off && out.off.length) {
+      /* correzione combinata: tre correttori risolti insieme, così i parametri già in fascia non escono */
+      var P0 = prof(A), ks = ['s', 'f', 'sol'], pick = { s: 'Saccarosio', f: 'Panna 35%', sol: 'Latte in polvere scremato' };
+      var cs = ks.map(function (k) { return comp(pick[k]); });
+      if (cs.every(Boolean)) {
+        var tg = ks.map(function (k) {
+          var rg = B.r[k], v = pctOf(P0, k), w = rg[1] - rg[0];
+          if (v < rg[0]) return (rg[0] + w * 0.35) / 100;
+          if (v > rg[1]) return (rg[1] - w * 0.35) / 100;
+          return Math.max(rg[0] + w * 0.15, Math.min(v, rg[1] - w * 0.15)) / 100;
+        });
+        var M = ks.map(function (k, i) { return cs.map(function (c) { return c[k] - tg[i]; }); }), bb = ks.map(function (k, i) { return tg[i] * P0.T - P0[k]; });
+        var xs = solve(M, bb);
+        if (xs && xs.every(function (x) { return x > -0.5 && x < P0.T * 0.6; })) {
+          var Qc = P0, parts = [];
+          xs.forEach(function (x, i) { if (x >= 0.5) { Qc = afterAdd(Qc, cs[i], x); parts.push(gtxt(x) + ' di ' + pick[ks[i]].toLowerCase()); } });
+          if (parts.length >= 2 || (parts.length === 1 && out.off.length >= 2)) out.items.unshift({ k: 'mix', combo: true, head: 'Correzione combinata: tutti i parametri in fascia', act: 'Aggiungi ' + parts.join(' + '), after: afterTxt(Qc), Q: Qc });
+        }
+      }
+    }
+    if (B.r) out.items.forEach(function (it) { if (it.Q) { it.warn = outOf(it.Q, B); } });
+    if (B.r) out.items.sort(function (a, b) { return (a.combo ? -1 : 0) - (b.combo ? -1 : 0) || a.warn.length - b.warn.length; });
+    if (B.q) {
+      var F = A.flour;
+      if (!F) { out.rows.push({ k: 'flour', v: 0, rg: null, st: 'na', label: 'Farina non riconosciuta' }); return out; }
+      [['sugar', 'Zucchero', 'zucchero'], ['butter', 'Burro', 'burro'], ['eggs', 'Uova', 'uova']].forEach(function (x) {
+        var cur = A[x[0]], v = cur / F * 100, rg = B.q[x[0]], st = v < rg[0] ? 'low' : v > rg[1] ? 'high' : 'ok';
+        out.rows.push({ k: x[0], v: v, rg: rg, st: st, label: x[1] + '/farina' });
+        if (st === 'ok') return;
+        var t = st === 'low' ? rg[0] + 2 : rg[1] - 2, d = t / 100 * F - cur;
+        out.items.push({ k: x[0], head: x[1] + '/farina ' + f1(v) + '% (frolla ' + rg[0] + '–' + rg[1] + '%)', act: (d > 0 ? 'Aggiungi ' : 'Togli ') + gtxt(Math.abs(d)) + ' di ' + x[2], after: x[1].toLowerCase() + '/farina ' + f1(t) + '%' });
+      });
+    }
+    return out;
+  }
+  XL.suggest = suggestions;
+  function today() { var d = new Date(); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); }
+  XL.addNotes = function (r, lines) {
+    if (!lines.length) return false;
+    if (window.WL && WL.canEdit && !WL.canEdit()) { XL.toast('Solo admin e pastry chef possono scrivere nelle note'); return false; }
+    var nd = JSON.parse(JSON.stringify(r)); delete nd._id;
+    nd.nt = (r.nt ? String(r.nt).replace(/\s+$/, '') + '\n' : '') + lines.join('\n');
+    try { updateRec(r, nd); } catch (e) { XL.toast('Non riesco a salvare le note'); return false; }
+    var f = fresh(r); if (f) { f.nt = nd.nt; XL.rec = f; }
+    r.nt = nd.nt;
+    return true;
+  };
+  function renderSuggest(r) {
+    var box = $('xlSug'); if (!box) return;
+    var S = suggestions(r), key = S.key, ed = !(window.WL && WL.canEdit) || WL.canEdit();
+    var ov = profOverride(r), auto = ov ? null : balProfile(r);
+    var opts = '<option value="">Automatico' + (auto ? ' (' + BAL[auto].t + ')' : '') + '</option>' +
+      Object.keys(BAL).map(function (k) { return '<option value="' + k + '"' + (ov === k ? ' selected' : '') + '>' + BAL[k].t + '</option>'; }).join('') +
+      '<option value="none"' + (ov === 'none' ? ' selected' : '') + '>Nessun riferimento</option>';
+    var rows = S.rows.map(function (x) {
+      if (x.st === 'na') return '<div class="bs-row"><span>' + esc(x.label) + '</span></div>';
+      return '<div class="bs-row ' + x.st + '"><span>' + esc(x.label || PNAME[x.k]) + '</span><b class="mono">' + f1(x.v) + '%</b><small class="mono">' + x.rg[0] + '–' + x.rg[1] + '%</small><em>' + (x.st === 'ok' ? 'OK' : x.st === 'low' ? 'Basso' : 'Alto') + '</em></div>';
+    }).join('');
+    var items = S.items.map(function (it, i) {
+      var warn = it.warn && it.warn.length ? '<span class="bs-warn">Attenzione: dopo restano ' + esc(it.warn.join(', ')) + '</span>' : (it.Q ? '<span class="bs-good">Tutto in fascia</span>' : '');
+      return '<label class="bs-item' + (it.combo ? ' combo' : '') + '"><input type="checkbox" data-i="' + i + '"><span class="bs-box"></span><span class="bs-t"><small>' + esc(it.head) + '</small><b>' + esc(it.act) + '</b><span class="mono">dopo: ' + esc(it.after) + '</span>' + warn + '</span></label>';
+    }).join('');
+    var ai = XL._sugAi && XL._sugAi.r === r.n ? XL._sugAi : null;
+    box.innerHTML = '<div class="xl-card-top"><span class="xl-label">Suggerimenti</span><select class="bs-sel" id="bsProf" aria-label="Tipo di preparazione">' + opts + '</select></div>' +
+      (!S.B ? '<p class="bs-empty">Scegli il tipo di preparazione per confrontare la ricetta con le fasce di riferimento.</p>'
+        : (rows ? '<div class="bs-rows">' + rows + '</div>' : '') +
+          (items ? '<p class="bs-hint">La ricetta non viene modificata. Spunta i suggerimenti utili e salvali nelle note. Valori calcolati sulla dose base.</p><div class="bs-items">' + items + '</div>'
+            : '<p class="bs-ok">Tutti i parametri sono nella fascia di riferimento.</p>')) +
+      (ai ? '<div class="bs-ai"><label class="bs-item"><input type="checkbox" data-ai="1"><span class="bs-box"></span><span class="bs-t"><small>Consigli dell’AI</small><span class="bs-ai-t">' + esc(ai.text) + '</span></span></label></div>' : '') +
+      '<div class="bs-acts">' + (ed ? '<button type="button" class="lb-btn dark" id="bsAdd" disabled>Aggiungi alle note</button>' : '<button type="button" class="lb-btn" id="bsCopy" disabled>Copia</button>') +
+      '<button type="button" class="lb-btn" id="bsAi">' + (XL._sugBusy ? 'L’AI sta pensando…' : 'Altri consigli dall’AI') + '</button></div>' +
+      (r.nt ? '<div class="bs-notes"><span class="xl-label">Note della ricetta</span><p>' + esc(r.nt) + '</p></div>' : '');
+    var sel = $('bsProf'); sel.onchange = function () { try { if (sel.value) localStorage.setItem(profKey(r), sel.value); else localStorage.removeItem(profKey(r)); } catch (e) {} renderSuggest(r); };
+    var chosen = function () {
+      var L = [], d = today();
+      [].forEach.call(box.querySelectorAll('input[data-i]:checked'), function (c) { var it = S.items[+c.dataset.i]; L.push('[Bilanciamento ' + d + '] ' + it.head + ': ' + it.act + ' → ' + it.after + (it.warn && it.warn.length ? ' (restano ' + it.warn.join(', ') + ')' : '') + '.'); });
+      var a = box.querySelector('input[data-ai]:checked'); if (a && ai) L.push('[Consigli AI ' + d + '] ' + ai.text.replace(/\s*\n\s*/g, ' · '));
+      return L;
+    };
+    var btn = $('bsAdd') || $('bsCopy');
+    [].forEach.call(box.querySelectorAll('input[type=checkbox]'), function (c) { c.onchange = function () { var n = chosen().length; btn.disabled = !n; btn.textContent = ($('bsAdd') ? 'Aggiungi alle note' : 'Copia') + (n ? ' (' + n + ')' : ''); }; });
+    if ($('bsAdd')) $('bsAdd').onclick = function () { var L = chosen(); if (XL.addNotes(r, L)) { XL.toast(L.length === 1 ? 'Suggerimento aggiunto alle note' : L.length + ' suggerimenti aggiunti alle note'); renderSuggest(XL.rec); } };
+    if ($('bsCopy')) $('bsCopy').onclick = function () { var t = chosen().join('\n'); try { navigator.clipboard.writeText(t); XL.toast('Copiato'); } catch (e) { prompt('Copia', t); } };
+    $('bsAi').onclick = function () {
+      if (XL._sugBusy) return; XL._sugBusy = true; renderSuggest(r);
+      var D = data(r);
+      aiAdvice(rcSummaryText(r.n, r.c, r.i, D.A, D.P)).then(function (d) {
+        XL._sugBusy = false;
+        XL._sugAi = { r: r.n, text: String(d.advice || ('⚠ ' + (d.error || 'Nessuna risposta'))).replace(/\*\*/g, '').trim() };
+        if (XL.rec && XL.rec.n === r.n && $('xlSug')) renderSuggest(XL.rec);
+      });
+    };
+  }
+
   /* ── Bilanciamento: distinta base con mise en place ── */
   function role(name) {
     var c = null; try { c = rcComp(name); } catch (e) {}
@@ -581,7 +757,7 @@
       (ings.length ? '<div class="xl-tscroll"><table class="xl-table"><thead><tr><th>✓</th><th>Ingrediente</th><th>Quantità</th><th>% peso</th><th>Componente principale</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<p class="xl-muted" style="padding:24px 4px;font-size:13px">Questa ricetta non ha ancora ingredienti.</p>') +
       (r.p ? '<details style="margin-top:14px"><summary class="xl-label" style="cursor:pointer">Procedimento</summary><p style="white-space:pre-wrap;font-size:13px;line-height:1.6;margin-top:8px;color:var(--ink2)">' + esc(r.p) + '</p></details>' : '') +
-      '</div><div class="xl-col"><div class="xl-card"><div class="xl-card-top"><span class="xl-label">Parametri di composizione</span><span class="xl-small">' + esc(P.t || 'Stima') + '</span></div>' +
+      '</div><div class="xl-col"><div class="xl-card bs" id="xlSug"></div><div class="xl-card"><div class="xl-card-top"><span class="xl-label">Parametri di composizione</span><span class="xl-small">' + esc(P.t || 'Stima') + '</span></div>' +
       par.map(function (x) { return '<div class="xl-chem"><span>' + x[0] + '</span><strong class="mono">' + (A.tot ? f1(pct(x[1], A.tot)) + '%' : '—') + '</strong></div>'; }).join('') +
       (A.unknown.length ? '<p class="xl-muted" style="font-size:11px;margin-top:8px">Senza composizione nota: ' + esc(A.unknown.join(', ')) + '</p>' : '') + '</div>' +
       '<div class="xl-card xl-rc-host" id="xlRcHost"></div>' +
@@ -603,7 +779,7 @@
       });
     } catch (e) {}
     [].forEach.call(host.querySelectorAll('.xl-table td .q'), function (c, i) { var g = ings[i]; c._v = g && g[1] != null ? g[1] * XL.dose : null; });
-    mise(); stagger(host);
+    mise(); stagger(host); renderSuggest(r);
     function mise() {
       var p = misePct(r), n = 0; for (var k in w) if (w[k]) n++;
       $('xlMiseFill').style.width = p + '%'; $('xlMiseN').textContent = n + ' / ' + ings.length + ' pesati';

@@ -2401,6 +2401,7 @@ body.ck-open .tabbar{display:none!important}
     <label class="fsc">Nome ricetta</label><input type="text" id="mName" class="fs" placeholder="Es. Ganache al cioccolato" autocomplete="off" autocorrect="off" autocapitalize="words">
     <label class="fsc">Categoria</label><select id="mCat" class="fs"><option>Creme</option><option>Paste</option><option>Torte</option><option>Lievitati</option><option>Pasticcini</option><option>Marmellate</option><option>Ganache</option><option>Mousse</option><option>Gelatine</option><option>Gelati</option><option>Sorbetti</option><option>Semifreddi</option><option>Granite</option><option>Basi</option><option>Glasse</option><option>Biscotti</option><option>Altro</option></select>
     <label class="fsc">Procedimento (facoltativo)</label><textarea id="mProc" class="fs" placeholder="Descrivi il procedimento&#8230;"></textarea>
+    <label class="fsc">Note (facoltative)</label><textarea id="mNote" class="fs" placeholder="Note di produzione, varianti, suggerimenti di bilanciamento&#8230;" style="min-height:70px"></textarea>
     <label class="fsc">Ingredienti</label><datalist id="ing-datalist"></datalist><div class="ing-list" id="ingList"></div>
     <button class="add-ing-btn fs" id="addIngBtn" type="button">+ Ingrediente</button>
     <div class="modal-btns"><button class="btn-cancel fs" id="mCancel" type="button">Annulla</button><button class="btn-save fd" id="mSave" type="button">Salva ricetta</button></div>
@@ -3151,7 +3152,7 @@ function addIng(n,q,u){
 }
 function togglePiattoWrap(){var ms=qs('mSec');var pw=qs('mPiattoWrap');if(pw&&ms)pw.style.display='block';}
 function resetModal(){
-  var mn=qs('mName');if(mn)mn.value='';var mp=qs('mPiatto');if(mp)mp.value='';var mpr=qs('mProc');if(mpr)mpr.value='';
+  var mn=qs('mName');if(mn)mn.value='';var mp=qs('mPiatto');if(mp)mp.value='';var mpr=qs('mProc');if(mpr)mpr.value='';var mno=qs('mNote');if(mno)mno.value='';
   var il=qs('ingList');if(il){il.innerHTML='';addIng();}
   var ms=qs('mSec');if(ms&&curSec&&curSec!=='tutti')ms.value=curSec;togglePiattoWrap();
 }
@@ -3162,6 +3163,7 @@ function openEdit(rec){
   var mn=qs('mName');if(mn)mn.value=rec.n;var mc=qs('mCat');if(mc)mc.value=rec.c;
   var ms=qs('mSec');if(ms&&rec.s)ms.value=rec.s;var mp=qs('mPiatto');if(mp)mp.value=rec.piatto||'';
   var mpr=qs('mProc');if(mpr)mpr.value=rec.p||'';
+  var mno=qs('mNote');if(mno)mno.value=rec.nt||'';
   var il=qs('ingList');if(il)il.innerHTML='';(rec.i||[]).forEach(function(ing){addIng(ing[0],ing[1]!==null?ing[1]:'',ing[2]);});
   togglePiattoWrap();var mt=qs('mTitle');if(mt)mt.textContent='Modifica Ricetta';var ms2=qs('mSave');if(ms2)ms2.textContent='Aggiorna';
   // If built-in (no _id), show note that it will be promoted to shared DB
@@ -3179,6 +3181,7 @@ function doSave(){
   rows.forEach(function(row){var ins=row.querySelectorAll('input');var iN=(ins[0].value||'').trim(),iQ=ins[1].value?parseFloat(ins[1].value):null,iU=(ins[2].value||'').trim()||'g';if(iN)ings.push([iN,iQ,iU]);});
   if(!ings.length){alert('Aggiungi almeno un ingrediente');return;}
   var nr={n:name,c:catV,s:secV,i:ings};if(piattoV)nr.piatto=piattoV;if(procV)nr.p=procV;
+  var ntV=(qs('mNote')&&qs('mNote').value||'').trim();if(ntV)nr.nt=ntV;
   if(_editRec){
     if(_editRec._c&&_editRec._id){
       // Custom recipe: update in Supabase
@@ -4272,7 +4275,7 @@ function clearAiPhotos(){
   var abtn=qs('aiAnalyseBtn');if(abtn){abtn.style.display='block';abtn.disabled=false;}
 }
 var _rpRec=null,_rpDose=1;
-function openRecipePanel(r){_rpRec=r;_rpDose=1;var g=function(id){return document.getElementById(id);};g('rpName').textContent=r.n||'';g('rpCat').textContent=r.c||'';g('rpPiatto').textContent=r.piatto?r.piatto.toUpperCase():'';var meta=g('rpMeta');if(meta)meta.textContent=(r.i?r.i.length:0)+' ingredienti · '+(WL.secLabel(r.s)||r.s||'');g('rpDose').textContent='1';g('rpXlbl').textContent='1';rpRenderIng();var pw=g('rpProcWrap'),pe=g('rpProc');if(r.p&&r.p.trim()){pe.textContent=r.p;pw.style.display='block';}else pw.style.display='none';var p=g('recipePanelBg');if(p.parentNode!==document.body)document.body.appendChild(p);p.style.display='block';p.scrollTop=0;document.body.style.overflow='hidden';}
+function openRecipePanel(r){(function(){var w=document.getElementById('rpNoteWrap'),e=document.getElementById('rpNote');if(w&&e){e.textContent=r&&r.nt||'';w.style.display=r&&r.nt?'block':'none';}})();_rpRec=r;_rpDose=1;var g=function(id){return document.getElementById(id);};g('rpName').textContent=r.n||'';g('rpCat').textContent=r.c||'';g('rpPiatto').textContent=r.piatto?r.piatto.toUpperCase():'';var meta=g('rpMeta');if(meta)meta.textContent=(r.i?r.i.length:0)+' ingredienti · '+(WL.secLabel(r.s)||r.s||'');g('rpDose').textContent='1';g('rpXlbl').textContent='1';rpRenderIng();var pw=g('rpProcWrap'),pe=g('rpProc');if(r.p&&r.p.trim()){pe.textContent=r.p;pw.style.display='block';}else pw.style.display='none';var p=g('recipePanelBg');if(p.parentNode!==document.body)document.body.appendChild(p);p.style.display='block';p.scrollTop=0;document.body.style.overflow='hidden';}
 function closeRecipePanel(){document.getElementById('recipePanelBg').style.display='none';document.body.style.overflow='';_rpRec=null;if(_mgReturn){var f=_mgReturn;_mgReturn=null;setTimeout(f,60);}}
 /* ════ PERCENTUALI INGREDIENTI ════
    % sul peso totale (solo ingredienti a peso/volume) oppure % sulla farina (farina = 100). */
@@ -8128,6 +8131,10 @@ function aiTranslate(text,lang,onProg){
     <div id="rpProcWrap" style="display:none;margin:1rem 1.2rem 0;padding:1rem;background:var(--glow);border-left:2px solid var(--gold2);border-radius:0 10px 10px 0">
       <div style="font-size:.46rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold2);font-family:'Cormorant SC',serif;margin-bottom:.5rem">Procedimento</div>
       <div id="rpProc" style="font-size:.84rem;color:var(--ink2);line-height:1.7;font-family:'Cormorant Garamond',serif;white-space:pre-wrap"></div>
+    </div>
+    <div id="rpNoteWrap" style="display:none;margin:1rem 1.2rem 0;padding:1rem;border:1px dashed var(--cb);border-radius:10px">
+      <div style="font-size:.46rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold2);font-family:'Cormorant SC',serif;margin-bottom:.5rem">Note</div>
+      <div id="rpNote" style="font-size:.8rem;color:var(--ink2);line-height:1.6;white-space:pre-wrap"></div>
     </div>
   </div>
 </div>
