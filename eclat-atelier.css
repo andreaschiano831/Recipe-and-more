@@ -44,45 +44,57 @@ body.t-eclat .wl-google{border-radius:12px!important;height:52px;background:#1A1
 body.t-eclat .wl-google:hover{background:#2F3B2A!important}
 body.t-eclat .wl-acc{border-radius:12px;background:var(--ctrl);border-color:var(--cb)}
 
-/* ═════════════ HOME ═════════════ */
-body.t-eclat .land-top{border-radius:20px;background:#FFFFFF;border:1px solid var(--ex-line);box-shadow:var(--shm);-webkit-backdrop-filter:none;backdrop-filter:none;padding:22px 30px 28px!important}
-body.t-eclat .land-logo{border-radius:50%!important;width:76px!important;height:76px!important;box-shadow:0 0 0 1px rgba(154,123,79,.35),0 12px 26px -16px rgba(26,26,22,.4)!important}
-body.t-eclat .land-ey{color:var(--gold3)!important;letter-spacing:.26em!important;font-size:.64rem!important}
-body.t-eclat .land-h{font-size:clamp(2.4rem,4.8vw,3.6rem)!important}
-body.t-eclat .land-h em{color:var(--ink)!important;-webkit-text-fill-color:currentColor!important;background:none!important;animation:none!important}
-body.t-eclat .land-rule{display:flex!important;justify-content:flex-start!important;margin:14px 0 0!important}
-body.t-eclat .land-rule span{display:none}
-body.t-eclat .land-rule::before{content:"";display:block;width:56px;height:1px;background:var(--gold3)}
-body.t-eclat .ex-stats{margin-top:18px;gap:0}
-body.t-eclat .ex-stat{background:none;border:0;box-shadow:none;border-radius:0;padding:2px 22px 2px 0;margin-right:22px;border-right:1px solid var(--cb);font-size:.74rem;letter-spacing:.04em;text-transform:uppercase;color:var(--smoke2)}
-body.t-eclat .ex-stat:last-child{border-right:0}
-body.t-eclat .ex-stat b{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:600;letter-spacing:0;margin-right:4px}
+/* ═════════════ HOME: layout originale, centrato e ordinato ═════════════ */
+body.t-eclat #landing{padding:max(14px,env(safe-area-inset-top)) clamp(12px,3vw,40px) calc(110px + env(safe-area-inset-bottom));box-sizing:border-box}
+body.t-eclat .land-top{display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center!important;
+  width:100%;max-width:1180px;margin:0 auto 22px;padding:26px 24px 30px!important;box-sizing:border-box;
+  background:#FFFFFF;border:1px solid var(--ex-line);border-radius:20px;box-shadow:var(--sh)}
+body.t-eclat .land-top::before,body.t-eclat .land-top::after{content:none!important}
+body.t-eclat .land-top .t-bar{align-self:stretch;justify-content:center;margin:0 0 18px!important}
+body.t-eclat .land-logo{width:clamp(92px,18vw,120px)!important;height:clamp(92px,18vw,120px)!important;margin:0 auto 16px!important;border-radius:50%!important;
+  border:1px solid rgba(154,123,79,.45)!important;background:#FFFFFF!important;box-shadow:0 14px 30px -18px rgba(26,26,22,.4)!important}
+body.t-eclat .land-ey{text-align:center!important;color:var(--gold3)!important;letter-spacing:.3em!important;font:600 .62rem 'DM Sans',sans-serif!important;text-transform:uppercase!important;margin:0 0 8px!important}
+body.t-eclat .land-ey::before,body.t-eclat .land-ey::after{content:none!important}
+body.t-eclat .land-h{text-align:center!important;margin:0!important;font-size:clamp(2rem,4.4vw,3.1rem)!important;line-height:1.05!important;letter-spacing:.02em!important}
+body.t-eclat .land-h em{font-style:normal!important;font-weight:500!important;color:var(--ink)!important;-webkit-text-fill-color:currentColor!important;background:none!important;animation:none!important}
+body.t-eclat .land-rule{display:flex!important;justify-content:center!important;margin:14px auto 0!important}
+body.t-eclat .land-rule span{color:var(--gold3)!important;letter-spacing:.5em;font-size:.55rem}
 
-/* sezioni: card sobrie, toni profondi e smorzati, filetto oro */
-body.t-eclat .land-panels{gap:12px!important}
-body.t-eclat .land-panels .panel{border-radius:16px!important;min-height:190px!important;border:1px solid rgba(255,255,255,.06)!important;box-shadow:0 18px 38px -26px rgba(26,26,22,.6)!important}
+/* sezioni: griglia regolare (colonne calcolate sul numero di sezioni) */
+body.t-eclat .land-panels{display:grid!important;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:14px!important;
+  width:100%;max-width:1180px;margin:0 auto;height:auto!important;min-height:0!important;flex:none!important;padding:0!important;background:none!important}
+@media(max-width:820px){body.t-eclat .land-panels{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px!important}}
+@media(max-width:380px){body.t-eclat .land-panels{grid-template-columns:1fr}}
+body.t-eclat .land-panels .panel{position:relative;flex:none!important;width:auto!important;height:auto!important;min-height:170px!important;border-radius:16px!important;overflow:hidden;cursor:pointer;
+  border:1px solid rgba(255,255,255,.06)!important;box-shadow:0 16px 34px -24px rgba(26,26,22,.6)!important;transition:transform .25s ease,box-shadow .25s ease!important;isolation:isolate;animation:none!important}
+@media(max-width:820px){body.t-eclat .land-panels .panel{min-height:132px!important}}
+body.t-eclat .land-panels .panel-bg{inset:0!important;transform:none!important;filter:none!important;opacity:1!important}
 body.t-eclat .land-panels .panel[data-pal="colazioni"] .panel-bg{background:linear-gradient(160deg,#6E5434 0%,#43321D 100%)!important}
 body.t-eclat .land-panels .panel[data-pal="fine-dining"] .panel-bg{background:linear-gradient(160deg,#3D4A34 0%,#232B1E 100%)!important}
 body.t-eclat .land-panels .panel[data-pal="gelateria"] .panel-bg{background:linear-gradient(160deg,#3E5552 0%,#22312F 100%)!important}
 body.t-eclat .land-panels .panel[data-pal="torte"] .panel-bg{background:linear-gradient(160deg,#5C2A33 0%,#36161D 100%)!important}
 body.t-eclat .land-panels .panel[data-pal="tutti"] .panel-bg{background:linear-gradient(160deg,#2E2D28 0%,#191915 100%)!important}
 body.t-eclat .land-panels .panel[data-pal="biblioteca"] .panel-bg{background:linear-gradient(160deg,#3A3F4A 0%,#1F232B 100%)!important}
-body.t-eclat .land-panels .panel::before{content:""!important;inset:auto 20px 20px 20px!important;width:auto!important;height:1px!important;border-radius:0!important;
-  background:linear-gradient(90deg,rgba(201,170,120,.7),rgba(201,170,120,0))!important;box-shadow:none!important;transform:none!important}
-body.t-eclat .land-panels .panel::after{background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 40%)!important}
-body.t-eclat .land-panels .panel-num{background:none!important;padding:0!important;color:rgba(232,214,180,.7)!important;letter-spacing:.2em!important;-webkit-backdrop-filter:none;backdrop-filter:none}
-body.t-eclat .land-panels .panel-icon{opacity:.55!important}
-body.t-eclat .land-panels .panel-title{margin-top:44px!important;margin-bottom:4px!important;text-shadow:none!important;font-weight:500!important;font-size:clamp(1.6rem,2.1vw,1.95rem)!important}
-body.t-eclat .land-panels .panel-sub{text-transform:uppercase!important;letter-spacing:.16em!important;font-size:.6rem!important;color:rgba(232,214,180,.75)!important;padding-bottom:18px}
-body.t-eclat .land-panels .panel-arr{background:transparent!important;border:1px solid rgba(232,214,180,.45);color:#E8D6B4!important;width:34px;height:34px;box-shadow:none;font-size:1.1rem!important}
-@media(hover:hover){body.t-eclat .land-panels .panel:hover{transform:translateY(-2px)!important}
+body.t-eclat .land-panels .panel::before{content:""!important;display:block!important;position:absolute!important;z-index:1;inset:auto 18px 16px 18px!important;width:auto!important;height:1px!important;
+  border-radius:0!important;background:linear-gradient(90deg,rgba(201,170,120,.6),rgba(201,170,120,0))!important;box-shadow:none!important;transform:none!important;border:0!important}
+body.t-eclat .land-panels .panel::after{content:none!important}
+body.t-eclat .land-panels .panel-noise{opacity:.04!important}
+body.t-eclat .land-panels .panel-body{position:relative!important;z-index:2;inset:auto!important;transform:none!important;height:100%;box-sizing:border-box;
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-end!important;text-align:left!important;padding:18px 18px 28px!important;gap:0!important;opacity:1!important}
+body.t-eclat .land-panels .panel-num{position:absolute;top:16px;left:18px;margin:0!important;font:500 .56rem 'DM Sans',sans-serif!important;letter-spacing:.24em!important;color:rgba(232,214,180,.55)!important;opacity:1!important;background:none!important;padding:0!important}
+body.t-eclat .land-panels .panel-num::before,body.t-eclat .land-panels .panel-num::after{content:none!important;display:none!important}
+body.t-eclat .land-panels .panel-icon{position:absolute;top:14px;right:16px;width:26px!important;height:26px!important;opacity:.5!important;margin:0!important;transform:none!important}
+body.t-eclat .land-panels .panel-title{margin:0 0 4px!important;font:500 clamp(1.35rem,2vw,1.8rem)/1.05 'Cormorant Garamond',serif!important;color:#fff!important;text-shadow:none!important;
+  writing-mode:horizontal-tb!important;transform:none!important;white-space:normal!important;opacity:1!important;letter-spacing:.01em}
+body.t-eclat .land-panels .panel-title em{font-style:italic;color:#fff!important}
+body.t-eclat .land-panels .panel-sub{font:500 .56rem 'DM Sans',sans-serif!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:rgba(232,214,180,.72)!important;margin:0!important;opacity:1!important;transform:none!important;max-height:none!important}
+body.t-eclat .land-panels .panel-sub::before,body.t-eclat .land-panels .panel-sub::after{content:none!important}
+body.t-eclat .land-panels .panel-arr{position:absolute!important;z-index:2;right:16px!important;bottom:30px!important;top:auto!important;left:auto!important;width:30px;height:30px;border-radius:50%;
+  display:grid!important;place-items:center;background:transparent!important;border:1px solid rgba(232,214,180,.4);color:#E8D6B4!important;font-size:1rem!important;line-height:1!important;opacity:1!important;transform:none!important;box-shadow:none;transition:background .2s,color .2s!important}
+@media(hover:hover){body.t-eclat .land-panels .panel:hover{transform:translateY(-2px)!important;box-shadow:0 22px 40px -24px rgba(26,26,22,.7)!important}
   body.t-eclat .land-panels .panel:hover .panel-arr{background:#E8D6B4!important;color:#1A1A16!important}}
-
-/* «Riprendi» */
-body.t-eclat .xl-resume-h{color:var(--gold3);letter-spacing:.22em}
-body.t-eclat .xl-rc{border-radius:14px;background:#FFFFFF;border:1px solid var(--ex-line);box-shadow:var(--sh)}
-body.t-eclat .xl-rc i{border-radius:10px;background:linear-gradient(160deg,#55623F,#2F3B2A)}
-body.t-eclat .xl-rc b{font-weight:600}
+body.t-eclat .land-panels .panel:active{transform:scale(.99)!important}
+@media(max-width:820px){body.t-eclat .land-panels .panel-sub{display:none}body.t-eclat .land-panels .panel-arr{bottom:18px!important;width:26px;height:26px}body.t-eclat .land-panels .panel-body{padding-bottom:22px!important}}
 
 /* ═════════════ BARRA IN ALTO ═════════════ */
 body.t-eclat .xl-top{border-radius:16px;background:rgba(255,255,255,.88);border:1px solid var(--ex-line);box-shadow:0 10px 30px -20px rgba(26,26,22,.35)}
@@ -162,8 +174,6 @@ body.t-eclat .lib-btn,body.t-eclat .pd-btn2,body.t-eclat .wl-btn{border-radius:1
 body.t-eclat .lib-btn-dark,body.t-eclat .pd-btn1{border-radius:10px!important;background:#1A1A16!important}
 body.t-eclat .wl-btn.gold{background:#1A1A16!important}
 body.t-eclat .multi-bar{border-radius:14px!important;background:rgba(26,26,22,.95)!important}
-body.t-eclat .modal,body.t-eclat .ai-modal,body.t-eclat .cfm-box,body.t-eclat .adm-box,body.t-eclat .move-box,
-body.t-eclat .pd-sheet,body.t-eclat .th-sheet,body.t-eclat .wl-sh{background:#FFFFFF!important;border:1px solid var(--ex-line)!important;-webkit-backdrop-filter:none;backdrop-filter:none}
 body.t-eclat .ex-toast{border-radius:12px!important;background:#1A1A16!important}
 body.t-eclat .ex-toast svg{background:#55623F!important}
 

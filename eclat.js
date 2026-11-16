@@ -113,8 +113,7 @@
   }
 
   function afterBoot() {
-    decorateLanding();
-    updateStats();
+    /* home con il layout originale: niente riorganizzazione, niente contatori */
     var hero = document.querySelector('.ex-hero3d .ex-stage-slot');
     var land = $('landing');
     var tryHero = function () {

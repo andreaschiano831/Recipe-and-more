@@ -457,7 +457,7 @@
     });
   }
   var homeT = null;
-  function homeSoon() { clearTimeout(homeT); homeT = setTimeout(function () { refreshHome(); if (XL.viewOpen && XL.rec) { var f = fresh(XL.rec); if (f !== XL.rec) { XL.rec = f; renderHead(); } } }, 250); }
+  function homeSoon() { clearTimeout(homeT); homeT = setTimeout(function () { if (XL.viewOpen && XL.rec) { var f = fresh(XL.rec); if (f !== XL.rec) { XL.rec = f; renderHead(); } } }, 250); }
 
   /* ══════════ AGGANCI ALL'APP ESISTENTE ══════════ */
   function hooks() {
@@ -497,7 +497,7 @@
     if (typeof window.openLibrary === 'function') { var _ol = window.openLibrary; window.openLibrary = function () { closeView(); return _ol.apply(this, arguments); }; }
     if (window.WL && typeof WL.renderPanels === 'function') {
       var _rp = WL.renderPanels;
-      WL.renderPanels = function () { var r = _rp.apply(this, arguments); [].forEach.call(document.querySelectorAll('#landPanels .panel'), function (p, i) { p.style.setProperty('--i', i); }); return r; };
+      WL.renderPanels = function () { var r = _rp.apply(this, arguments); var box = document.getElementById('landPanels'); if (box) { var n = box.children.length; box.style.setProperty('--cols', n <= 4 ? n : (n % 3 === 0 ? 3 : n % 4 === 0 ? 4 : n === 5 ? 5 : 3)); } return r; };
     }
     if (window.WL && typeof WL.applyBrand === 'function') {
       var _ab = WL.applyBrand;
@@ -551,7 +551,7 @@
   }
 
   function afterBoot() {
-    buildTop(); refreshTop(); refreshHome();
+    /* barra in alto e «Riprendi» non attivi: restano la barra in basso e i pulsanti originali */
     try { WL.renderPanels(); } catch (e) {}
     motionAfterBoot();
   }
