@@ -202,6 +202,135 @@
     });
   };
 
+  /* ══════════════ RITAGLIO GUIDATO DEL LOGO ══════════════
+     Sposta col dito o col mouse, ingrandisci (cursore, rotellina o due dita),
+     ruota di 90°, scegli lo sfondo; anteprima rotonda come in home e nell'accesso. */
+  WL.fileToDataURL = function (file) {
+    return new Promise(function (res, rej) {
+      if (!file || !/^image\//.test(file.type)) return rej(new Error('Scegli un’immagine (PNG, JPG, WEBP, SVG)'));
+      if (file.size > 25 * 1024 * 1024) return rej(new Error('Immagine troppo grande (massimo 25 MB)'));
+      var fr = new FileReader();
+      fr.onerror = function () { rej(new Error('Impossibile leggere il file')); };
+      fr.onload = function () { res(fr.result); };
+      fr.readAsDataURL(file);
+    });
+  };
+  WL.cropLogo = function (src) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onerror = function () { alert('Immagine non valida'); resolve(null); };
+      img.onload = function () { open(); };
+      img.src = src;
+      function open() {
+        var V = 300, OUT = 512;
+        var iw = img.naturalWidth || 512, ih = img.naturalHeight || 512;
+        var st = { rot: 0, zoom: 1, x: 0, y: 0, bg: 'white' };
+        var ov = document.createElement('div'); ov.className = 'wl-bg wl-crop-bg';
+        ov.innerHTML =
+          '<div class="wl-sh wl-crop" role="dialog" aria-label="Ritaglia il logo">' +
+          '<div class="wl-hd"><b class="fd">Ritaglia il logo</b><button type="button" class="wl-x" aria-label="Chiudi">&times;</button></div>' +
+          '<p class="wl-n">Trascina per spostare, usa il cursore, la rotellina o due dita per ingrandire. Il cerchio mostra come apparirà in home e nell’accesso.</p>' +
+          '<div class="wl-crop-stage"><canvas width="' + V * 2 + '" height="' + V * 2 + '"></canvas><div class="wl-crop-mask"></div></div>' +
+          '<div class="wl-crop-zoom"><span>−</span><input type="range" min="0" max="100" value="0" aria-label="Ingrandimento"><span>+</span></div>' +
+          '<div class="wl-crop-tools">' +
+          '<button type="button" class="wl-btn" data-a="rot">↻ Ruota</button>' +
+          '<button type="button" class="wl-btn" data-a="fit">Adatta</button>' +
+          '<button type="button" class="wl-btn" data-a="fill">Riempi</button>' +
+          '<button type="button" class="wl-btn" data-a="center">Centra</button></div>' +
+          '<div class="wl-crop-tools"><span class="wl-n">Sfondo</span>' +
+          '<button type="button" class="wl-chipb on" data-bg="white">Bianco</button><button type="button" class="wl-chipb" data-bg="cream">Crema</button>' +
+          '<button type="button" class="wl-chipb" data-bg="black">Nero</button><button type="button" class="wl-chipb" data-bg="none">Trasparente</button></div>' +
+          '<div class="wl-crop-tools"><span class="wl-n">Anteprima</span>' +
+          '<button type="button" class="wl-chipb on" data-sh="circle">Cerchio</button><button type="button" class="wl-chipb" data-sh="square">Quadrato</button></div>' +
+          '<div class="wl-row" style="margin-top:12px"><button type="button" class="wl-btn" data-a="cancel">Annulla</button><button type="button" class="wl-btn gold" data-a="ok" style="flex:1">Usa questo ritaglio</button></div></div>';
+        document.body.appendChild(ov);
+        requestAnimationFrame(function () { ov.classList.add('on'); });
+        var cv = ov.querySelector('canvas'), ctx = cv.getContext('2d'), range = ov.querySelector('input[type=range]');
+        var BG = { white: '#ffffff', cream: '#F5EFE0', black: '#141414', none: null };
+        function dims() { var r = st.rot % 180 !== 0; return { w: r ? ih : iw, h: r ? iw : ih }; }
+        function minZ() { var d = dims(); return Math.min(V / d.w, V / d.h); }
+        function coverZ() { var d = dims(); return Math.max(V / d.w, V / d.h); }
+        function maxZ() { return coverZ() * 6; }
+        function toRange() { var a = Math.log(minZ()), b = Math.log(maxZ()); range.value = b > a ? Math.round((Math.log(st.zoom) - a) / (b - a) * 100) : 0; }
+        function clampPan() {
+          var d = dims(), w = d.w * st.zoom, h = d.h * st.zoom;
+          var mx = Math.max(0, (w - V) / 2), my = Math.max(0, (h - V) / 2);
+          st.x = Math.max(-mx, Math.min(mx, st.x)); st.y = Math.max(-my, Math.min(my, st.y));
+        }
+        function paint(c, size) {
+          var k = size / V;
+          c.save(); c.clearRect(0, 0, size, size);
+          if (BG[st.bg]) { c.fillStyle = BG[st.bg]; c.fillRect(0, 0, size, size); }
+          c.translate(size / 2 + st.x * k, size / 2 + st.y * k); c.rotate(st.rot * Math.PI / 180);
+          var w = iw * st.zoom * k, h = ih * st.zoom * k;
+          c.imageSmoothingQuality = 'high'; c.drawImage(img, -w / 2, -h / 2, w, h); c.restore();
+        }
+        function draw() { clampPan(); paint(ctx, V * 2); }
+        function setZoom(z, cx, cy) {
+          var old = st.zoom; z = Math.max(minZ(), Math.min(maxZ(), z));
+          if (cx != null) { st.x = cx - (cx - st.x) * z / old; st.y = cy - (cy - st.y) * z / old; }
+          st.zoom = z; toRange(); draw();
+        }
+        st.zoom = coverZ(); toRange(); draw();
+        range.oninput = function () { var a = Math.log(minZ()), b = Math.log(maxZ()); setZoom(Math.exp(a + (b - a) * range.value / 100)); };
+        var pts = {}, last = null, pinch = null;
+        function rel(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * V - V / 2, y: (e.clientY - r.top) / r.height * V - V / 2 }; }
+        cv.addEventListener('pointerdown', function (e) { try { cv.setPointerCapture(e.pointerId); } catch (x) {} pts[e.pointerId] = rel(e); last = rel(e); pinch = null; });
+        cv.addEventListener('pointermove', function (e) {
+          if (!pts[e.pointerId]) return;
+          pts[e.pointerId] = rel(e);
+          var ids = Object.keys(pts);
+          if (ids.length >= 2) {
+            var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y), m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+            if (pinch && pinch.d > 0) { setZoom(st.zoom * d / pinch.d, m.x, m.y); st.x += m.x - pinch.m.x; st.y += m.y - pinch.m.y; draw(); }
+            pinch = { d: d, m: m }; last = null; return;
+          }
+          var p = rel(e); if (last) { st.x += p.x - last.x; st.y += p.y - last.y; draw(); } last = p;
+        });
+        function up(e) { delete pts[e.pointerId]; pinch = null; last = null; }
+        cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+        cv.addEventListener('wheel', function (e) { e.preventDefault(); var p = rel(e); setZoom(st.zoom * Math.exp(-e.deltaY * 0.0015), p.x, p.y); }, { passive: false });
+        cv.tabIndex = 0;
+        cv.addEventListener('keydown', function (e) { var s = 8; if (e.key === 'ArrowLeft') st.x -= s; else if (e.key === 'ArrowRight') st.x += s; else if (e.key === 'ArrowUp') st.y -= s; else if (e.key === 'ArrowDown') st.y += s; else if (e.key === '+') { setZoom(st.zoom * 1.1); return; } else if (e.key === '-') { setZoom(st.zoom / 1.1); return; } else return; e.preventDefault(); draw(); });
+        function done(val) { ov.classList.remove('on'); setTimeout(function () { ov.remove(); }, 200); resolve(val); }
+        ov.querySelector('.wl-x').onclick = function () { done(null); };
+        ov.onclick = function (e) { if (e.target === ov) done(null); };
+        Array.prototype.forEach.call(ov.querySelectorAll('[data-a]'), function (b) {
+          b.onclick = function () {
+            var a = b.dataset.a;
+            if (a === 'rot') { st.rot = (st.rot + 90) % 360; st.x = st.y = 0; st.zoom = Math.max(minZ(), Math.min(maxZ(), st.zoom)); toRange(); draw(); }
+            else if (a === 'fit') { st.x = st.y = 0; setZoom(minZ()); }
+            else if (a === 'fill') { st.x = st.y = 0; setZoom(coverZ()); }
+            else if (a === 'center') { st.x = st.y = 0; draw(); }
+            else if (a === 'cancel') done(null);
+            else if (a === 'ok') {
+              var out = document.createElement('canvas'); out.width = out.height = OUT;
+              paint(out.getContext('2d'), OUT);
+              var d;
+              if (st.bg === 'none') d = out.toDataURL('image/png');
+              else { d = out.toDataURL('image/webp', 0.92); if (d.indexOf('data:image/webp') !== 0) d = out.toDataURL('image/jpeg', 0.9); }
+              if (d.length > 450000) d = out.toDataURL('image/jpeg', 0.82);
+              done(d);
+            }
+          };
+        });
+        Array.prototype.forEach.call(ov.querySelectorAll('[data-bg]'), function (b) {
+          b.onclick = function () {
+            st.bg = b.dataset.bg;
+            Array.prototype.forEach.call(ov.querySelectorAll('[data-bg]'), function (x) { x.classList.toggle('on', x === b); });
+            ov.querySelector('.wl-crop-stage').classList.toggle('transp', st.bg === 'none'); draw();
+          };
+        });
+        Array.prototype.forEach.call(ov.querySelectorAll('[data-sh]'), function (b) {
+          b.onclick = function () {
+            Array.prototype.forEach.call(ov.querySelectorAll('[data-sh]'), function (x) { x.classList.toggle('on', x === b); });
+            ov.querySelector('.wl-crop-mask').classList.toggle('sq', b.dataset.sh === 'square');
+          };
+        });
+      }
+    });
+  };
+
   /* ══════════════ SINCRONIZZAZIONE IMPOSTAZIONI ══════════════ */
   var pushTimer = null;
   WL._dirty = function () {
@@ -378,7 +507,7 @@
       '<section class="wl-card"><div class="wl-acc-me"><img class="wl-logo" alt=""><span><b>' + esc(WL.email() || 'Account') + '</b><small>Accesso con Google · dati separati per questo account</small></span></div>' +
       '<div class="wl-row"><button type="button" class="wl-btn" id="wlSwitch">Cambia account</button><button type="button" class="wl-btn danger" id="wlOut">Esci</button></div></section>' +
       '<section class="wl-card"><b class="wl-t">Logo e nome</b><p class="wl-n">Compaiono nella home, nel menu, nei documenti di stampa e nella pagina d’accesso.</p>' +
-      '<div class="wl-logo-ed"><img class="wl-logo" alt=""><div class="wl-col"><label class="wl-btn gold">Carica logo<input type="file" accept="image/*" id="wlLogoFile" hidden></label><button type="button" class="wl-btn" id="wlLogoDel">Rimuovi</button></div></div>' +
+      '<div class="wl-logo-ed"><img class="wl-logo" alt=""><div class="wl-col"><label class="wl-btn gold">Carica logo<input type="file" accept="image/*" id="wlLogoFile" hidden></label><button type="button" class="wl-btn" id="wlLogoCrop">Ritaglia</button><button type="button" class="wl-btn" id="wlLogoDel">Rimuovi</button></div></div>' +
       '<label class="wl-l">Nome</label><input class="wl-in" id="wlName" maxlength="60" value="' + esc(lsJSON('mdl_brand', {}).name || '') + '" placeholder="Es. Pasticceria Rossi">' +
       '<label class="wl-l">Sottotitolo</label><input class="wl-in" id="wlSub" maxlength="60" value="' + esc(lsJSON('mdl_brand', {}).sub || '') + '" placeholder="Ricettario Professionale">' +
       '<label class="wl-l">Indirizzo personale della pagina d’accesso</label><div class="wl-row"><input class="wl-in" id="wlSlug" maxlength="40" value="' + esc(b.slug) + '" placeholder="es. pasticceria-rossi"><button type="button" class="wl-btn" id="wlCopy">Copia link</button></div>' +
@@ -396,10 +525,18 @@
     $('wlSwitch').onclick = WL.switchAccount;
     $('wlOut').onclick = function () { if (confirm('Uscire da questo account? I dati restano salvati.')) WL.signOut(); };
     var pendingLogo = null;
+    var showLogo = function (d) { Array.prototype.forEach.call(bg.querySelectorAll('.wl-logo'), function (im) { im.src = d; }); };
+    var cropFrom = function (src) {
+      WL.cropLogo(src).then(function (d) { if (!d) return; pendingLogo = d; showLogo(d); $('wlBrandMsg').textContent = 'Anteprima: premi \u00abSalva logo e nome\u00bb per confermare.'; });
+    };
     $('wlLogoFile').onchange = function (e) {
-      var f = e.target.files && e.target.files[0]; if (!f) return;
-      WL.readLogo(f).then(function (d) { pendingLogo = d; Array.prototype.forEach.call(bg.querySelectorAll('.wl-logo'), function (im) { im.src = d; }); $('wlBrandMsg').textContent = 'Anteprima: premi «Salva» per confermare.'; })
-        .catch(function (er) { alert(er.message); });
+      var f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+      WL.fileToDataURL(f).then(cropFrom).catch(function (er) { alert(er.message); });
+    };
+    $('wlLogoCrop').onclick = function () {
+      var cur = pendingLogo || WL.brand().logo;
+      if (!cur) { $('wlLogoFile').click(); return; }
+      cropFrom(cur);
     };
     $('wlLogoDel').onclick = function () { pendingLogo = ''; Array.prototype.forEach.call(bg.querySelectorAll('.wl-logo'), function (im) { im.src = DEFAULT_LOGO; }); };
     var slugIn = $('wlSlug');
