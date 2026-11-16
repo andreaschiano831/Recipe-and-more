@@ -1,0 +1,52 @@
+/* ═══ SISTEMA DI MOVIMENTO ═══ */
+:root{--mo-fast:160ms;--mo-base:260ms;--mo-slow:420ms;--mo-ease:cubic-bezier(.2,.8,.2,1);--mo-spring:cubic-bezier(.3,1.4,.5,1)}
+
+/* transizioni tra schermate */
+::view-transition-old(root),::view-transition-new(root){animation-duration:var(--mo-slow);animation-timing-function:var(--mo-ease)}
+html[data-vt=fwd]::view-transition-old(root){animation-name:moOutL}
+html[data-vt=fwd]::view-transition-new(root){animation-name:moInR}
+html[data-vt=back]::view-transition-old(root){animation-name:moOutR}
+html[data-vt=back]::view-transition-new(root){animation-name:moInL}
+html[data-vt=fade]::view-transition-old(root){animation:var(--mo-base) var(--mo-ease) both moFadeOut}
+html[data-vt=fade]::view-transition-new(root){animation:var(--mo-base) var(--mo-ease) both moFadeIn}
+::view-transition-group(wl-hero){animation-duration:460ms;animation-timing-function:cubic-bezier(.25,.9,.25,1)}
+::view-transition-old(wl-hero),::view-transition-new(wl-hero){height:100%;object-fit:cover;animation-duration:460ms}
+@keyframes moOutL{to{opacity:0;transform:translateX(-4%)}}
+@keyframes moInR{from{opacity:0;transform:translateX(5%)}}
+@keyframes moOutR{to{opacity:0;transform:translateX(4%)}}
+@keyframes moInL{from{opacity:0;transform:translateX(-5%)}}
+@keyframes moFadeOut{to{opacity:0}}
+@keyframes moFadeIn{from{opacity:0}}
+
+/* pastiglia della barra in basso */
+.tabbar.mo-has-pill{position:fixed}
+.tabbar .mo-pill{position:absolute;left:0;top:0;border-radius:18px;background:color-mix(in srgb,var(--bg,#F3F0E8) 13%,transparent);pointer-events:none;z-index:0;transition:transform var(--mo-slow) var(--mo-spring),width var(--mo-base) var(--mo-ease),opacity var(--mo-fast)}
+.tabbar.mo-has-pill button{position:relative;z-index:1}
+.tabbar.mo-has-pill button.on:not(.tb-new){background:none!important}
+
+/* notifiche: la stessa ripetuta pulsa invece di accumularsi */
+.ex-toast.mo-again{animation:moAgain .32s var(--mo-spring)}
+@keyframes moAgain{40%{transform:scale(1.04)}}
+
+/* pressione uniforme */
+html[data-motion=full] :is(.lb-btn,.kc-b,.wl-btn,.xl-seg button,.lb-presets button,.ms-chips button,.ms-add button,.panel,.card):active{scale:.975;transition:scale var(--mo-fast) var(--mo-ease)}
+
+/* scelta nelle impostazioni */
+.mo-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--ctrl,rgba(0,0,0,.04));margin-top:8px}
+.mo-seg button{height:36px;border:0;border-radius:9px;background:transparent;font:600 12.5px "DM Sans",sans-serif;color:var(--smoke2,#777);cursor:pointer;transition:background var(--mo-base) var(--mo-ease),color var(--mo-base)}
+.mo-seg button.on{background:var(--ink,#1A1A16);color:var(--bg,#fff)}
+
+/* ridotte: niente scivolamenti né rimbalzi, solo dissolvenze brevi */
+html[data-motion=reduced] *,html[data-motion=reduced] *::before,html[data-motion=reduced] *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
+html[data-motion=reduced] :is(.ex-toast,.lb-dock-p,.kc.on){animation:moFadeIn .2s ease both!important}
+/* spente */
+html[data-motion=off] *,html[data-motion=off] *::before,html[data-motion=off] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+/* la Collezione si apre dal pannello toccato e ci si richiude tornando */
+html[data-vt=zoom]::view-transition-old(root){animation:var(--mo-slow) var(--mo-ease) both moDim}
+html[data-vt=zoom]::view-transition-new(root){animation:480ms cubic-bezier(.25,.9,.2,1) both moOpen}
+html[data-vt=unzoom]::view-transition-old(root){z-index:2;animation:420ms cubic-bezier(.4,0,.2,1) both moClose}
+html[data-vt=unzoom]::view-transition-new(root){z-index:1;animation:var(--mo-slow) var(--mo-ease) both moUndim}
+@keyframes moOpen{from{clip-path:var(--mo-clip);opacity:.6}40%{opacity:1}to{clip-path:inset(0 0 0 0 round 0)}}
+@keyframes moClose{from{clip-path:inset(0 0 0 0 round 0)}70%{opacity:1}to{clip-path:var(--mo-clip);opacity:0}}
+@keyframes moDim{to{opacity:.35;transform:scale(.985)}}
+@keyframes moUndim{from{opacity:.35;transform:scale(.985)}}
