@@ -2479,7 +2479,7 @@ function goToLanding(){
 if(!Array.prototype.findIndex){Array.prototype.findIndex=function(fn){for(var i=0;i<this.length;i++){if(fn(this[i],i,this))return i;}return -1;};}
 if(!Array.prototype.find){Array.prototype.find=function(fn){for(var i=0;i<this.length;i++){if(fn(this[i],i,this))return this[i];}return undefined;};}
 if(!Object.assign){Object.assign=function(t){for(var i=1;i<arguments.length;i++){var s=arguments[i];if(s){for(var k in s){if(Object.prototype.hasOwnProperty.call(s,k))t[k]=s[k];}}}return t;};}
-var SB_URL=(window.WL_CONFIG||{}).supabaseUrl||'';
+var SB_URL=(window.WL&&WL.url)||'';
 var SB_KEY=(window.WL_CONFIG||{}).supabaseAnonKey||'';
 var ADMIN_PIN='wl-'+Math.random().toString(36).slice(2)+Date.now(); /* PIN disattivato: l'account Google è il proprietario dei suoi dati */
 var R = []; /* app bianca: nessuna ricetta precaricata, ogni account parte vuoto */

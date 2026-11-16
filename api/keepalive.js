@@ -1,7 +1,7 @@
 // Tiene sveglio il database Supabase (il piano gratuito va in pausa dopo 7 giorni senza attività).
 // Vercel lo chiama ogni giorno da solo (vedi "crons" in vercel.json); si può aprire anche a mano: /api/keepalive
 // Esegue la funzione public.keepalive(): una lettura minima, non legge né cambia dati degli account.
-const SB_URL = process.env.SUPABASE_URL || '';
+const SB_URL = String(process.env.SUPABASE_URL || '').trim().replace(/\/(rest|auth|storage)\/v1.*$/i, '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_ANON_KEY || '';
 
 module.exports = async function handler(req, res) {

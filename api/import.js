@@ -188,7 +188,7 @@ const GROQ_URL = process.env.GROQ_API_URL || 'https://api.groq.com/openai/v1/cha
 if (process.env.GROQ_VISION_MODEL) AI_VISION.unshift(process.env.GROQ_VISION_MODEL);
 if (process.env.GROQ_TEXT_MODEL) AI_TEXT.unshift(process.env.GROQ_TEXT_MODEL);
 
-const SB_URL = process.env.SUPABASE_URL || '';
+const SB_URL = String(process.env.SUPABASE_URL || '').trim().replace(/\/(rest|auth|storage)\/v1.*$/i, '').replace(/\/+$/, '');
 const SB_ANON = process.env.SUPABASE_ANON_KEY || '';
 // verifica che la richiesta venga da un account collegato (login Google su Supabase)
 async function authUser(req) {

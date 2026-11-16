@@ -12,6 +12,7 @@
 (function () {
   'use strict';
   var C = window.WL_CONFIG || {};
+  if (C.supabaseUrl) C.supabaseUrl = String(C.supabaseUrl).trim().replace(/\/(rest|auth|storage)\/v1.*$/i, '').replace(/\/+$/, '');
   var AUTH_KEY = 'wl_auth';
   var GLOBAL_KEY = /^(wl_|sb-)/;            // chiavi comuni a tutto il dispositivo
   var SYNC_KEYS = ['mdl_docs', 'mdl_piatti_custom', 'mdl_th', 'mdl_hidden', 'mdl_pct', 'mdl_pct_base', 'mdl_sort', 'mdl_tr_lang', 'mdl_sections', 'mdl_brand'];
