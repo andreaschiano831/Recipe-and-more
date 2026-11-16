@@ -2,9 +2,10 @@
 --  RICETTARIO (versione bianca, multi-account) — database completo
 --  Supabase → SQL Editor → New query → incolla tutto → Run.
 --  Si può rieseguire senza perdere dati.
---  Ogni account (login Google) vede e modifica SOLO i propri dati:
---  ricette, impostazioni (logo, nome, sezioni, documenti, piatti…),
---  biblioteca (libri, segnalibri, note) e file nello storage.
+--  Ogni account (login Google) ha i propri dati: ricette, impostazioni
+--  (logo, nome, sezioni, documenti, piatti…), biblioteca e file.
+--  Può invitare la sua brigata: admin e pastry chef modificano,
+--  demi chef, commis e staff consultano soltanto.
 -- ═══════════════════════════════════════════════════════════════════
 
 create extension if not exists pgcrypto;
@@ -71,24 +72,151 @@ create table if not exists public.library_marks (
 );
 create index if not exists library_marks_book_idx on public.library_marks(book_id);
 
--- ─── SICUREZZA: ognuno vede solo i propri dati ───────────────────────
+-- ─── BRIGATA: membri invitati da un account ──────────────────────────
+-- Ruoli: admin e pastry_chef possono modificare; demi_chef, commis e
+-- staff possono solo consultare. Il proprietario dell'account è sempre admin.
+create table if not exists public.brigata (
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    uuid not null references auth.users(id) on delete cascade,
+  email       text not null,
+  member_id   uuid references auth.users(id) on delete cascade,
+  role        text not null default 'commis' check (role in ('admin','pastry_chef','demi_chef','commis','staff')),
+  status      text not null default 'invited' check (status in ('invited','pending','active')),
+  name        text,
+  created_at  timestamptz not null default now(),
+  unique (owner_id, email)
+);
+create index if not exists brigata_member_idx on public.brigata(member_id);
+
+-- ruolo di chi è collegato nel ricettario di p_owner ('owner', un ruolo, o null)
+create or replace function public.wl_role(p_owner uuid)
+returns text language sql stable security definer set search_path = public as $$
+  select case when p_owner = auth.uid() then 'owner'
+    else (select b.role from public.brigata b where b.owner_id = p_owner and b.member_id = auth.uid() and b.status = 'active' limit 1) end;
+$$;
+create or replace function public.wl_can_read(p_owner uuid)
+returns boolean language sql stable as $$ select public.wl_role(p_owner) is not null; $$;
+create or replace function public.wl_can_edit(p_owner uuid)
+returns boolean language sql stable as $$ select coalesce(public.wl_role(p_owner) in ('owner','admin','pastry_chef'), false); $$;
+create or replace function public.wl_is_admin(p_owner uuid)
+returns boolean language sql stable as $$ select coalesce(public.wl_role(p_owner) in ('owner','admin'), false); $$;
+create or replace function public.wl_path_owner(p text)
+returns uuid language plpgsql immutable as $$
+begin return p::uuid; exception when others then return null; end $$;
+
+-- library_progress: ogni membro ha la sua posizione di lettura nello stesso libro
+do $$
+begin
+  if exists (select 1 from information_schema.key_column_usage k join information_schema.table_constraints c
+             on c.constraint_name = k.constraint_name and c.table_schema = k.table_schema
+             where c.table_schema = 'public' and c.table_name = 'library_progress' and c.constraint_type = 'PRIMARY KEY'
+             group by c.constraint_name having count(*) = 1) then
+    alter table public.library_progress drop constraint library_progress_pkey;
+    alter table public.library_progress add primary key (book_id, user_id);
+  end if;
+end $$;
+
+-- ─── SICUREZZA ───────────────────────────────────────────────────────
 alter table public.ricette          enable row level security;
 alter table public.user_settings    enable row level security;
 alter table public.library_books    enable row level security;
 alter table public.library_progress enable row level security;
 alter table public.library_marks    enable row level security;
+alter table public.brigata          enable row level security;
 
+-- dati personali (posizione di lettura, segnalibri, note): solo i propri
 do $$
 declare t text;
 begin
-  foreach t in array array['ricette','user_settings','library_books','library_progress','library_marks'] loop
+  foreach t in array array['user_settings','library_progress','library_marks'] loop
     execute format('drop policy if exists own_rows on public.%I', t);
     execute format('create policy own_rows on public.%I for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())', t);
   end loop;
 end $$;
+-- i membri leggono logo, nome, sezioni e documenti del ricettario a cui appartengono
+drop policy if exists team_read on public.user_settings;
+create policy team_read on public.user_settings for select to authenticated using (public.wl_can_read(user_id));
 
-revoke all on public.ricette, public.user_settings, public.library_books, public.library_progress, public.library_marks from anon;
-grant select, insert, update, delete on public.ricette, public.user_settings, public.library_books, public.library_progress, public.library_marks to authenticated;
+-- ricette e libri: lettura per tutta la brigata, modifica solo admin e pastry chef
+do $$
+declare t text;
+begin
+  foreach t in array array['ricette','library_books'] loop
+    execute format('drop policy if exists own_rows on public.%I', t);
+    execute format('drop policy if exists team_select on public.%I', t);
+    execute format('drop policy if exists team_insert on public.%I', t);
+    execute format('drop policy if exists team_update on public.%I', t);
+    execute format('drop policy if exists team_delete on public.%I', t);
+    execute format('create policy team_insert on public.%I for insert to authenticated with check (public.wl_can_edit(user_id))', t);
+    execute format('create policy team_update on public.%I for update to authenticated using (public.wl_can_edit(user_id)) with check (public.wl_can_edit(user_id))', t);
+    execute format('create policy team_delete on public.%I for delete to authenticated using (public.wl_can_edit(user_id))', t);
+  end loop;
+end $$;
+-- la chiave AI salvata (riga _cfg) non è visibile a chi può solo leggere
+create policy team_select on public.ricette for select to authenticated
+  using (public.wl_can_edit(user_id) or (public.wl_can_read(user_id) and data->>'_cfg' is null));
+create policy team_select on public.library_books for select to authenticated using (public.wl_can_read(user_id));
+
+-- brigata: la gestiscono il proprietario e gli admin; ognuno vede il proprio invito
+drop policy if exists brigata_select on public.brigata;
+drop policy if exists brigata_write  on public.brigata;
+create policy brigata_select on public.brigata for select to authenticated using (public.wl_is_admin(owner_id) or member_id = auth.uid());
+create policy brigata_write  on public.brigata for all to authenticated using (public.wl_is_admin(owner_id)) with check (public.wl_is_admin(owner_id));
+
+revoke all on public.ricette, public.user_settings, public.library_books, public.library_progress, public.library_marks, public.brigata from anon;
+grant select, insert, update, delete on public.ricette, public.user_settings, public.library_books, public.library_progress, public.library_marks, public.brigata to authenticated;
+
+-- al login: attiva gli inviti fatti alla mia email e restituisce i ricettari di cui faccio parte
+create or replace function public.brigata_mine()
+returns table(owner_id uuid, role text, brand_name text, brand_sub text, logo text)
+language plpgsql security definer set search_path = public as $$
+declare em text := lower(coalesce(auth.jwt()->>'email', ''));
+begin
+  if auth.uid() is null then return; end if;
+  update public.brigata b set member_id = auth.uid(), status = 'active',
+         name = coalesce(b.name, auth.jwt()->'user_metadata'->>'full_name')
+   where lower(b.email) = em and b.status = 'invited';
+  return query select b.owner_id, b.role, s.brand_name, s.brand_sub, s.logo
+    from public.brigata b left join public.user_settings s on s.user_id = b.owner_id
+   where b.member_id = auth.uid() and b.status = 'active' order by b.created_at;
+end $$;
+revoke all on function public.brigata_mine() from public;
+grant execute on function public.brigata_mine() to authenticated;
+
+-- link d'invito ?join=…: se non ero invitato diventa una richiesta da approvare
+create or replace function public.brigata_join(p_owner uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare em text := lower(coalesce(auth.jwt()->>'email', '')); st text;
+begin
+  if auth.uid() is null or p_owner is null then return 'error'; end if;
+  if p_owner = auth.uid() then return 'owner'; end if;
+  if not exists (select 1 from auth.users where id = p_owner) then return 'error'; end if;
+  perform public.brigata_mine();
+  select status into st from public.brigata where owner_id = p_owner and lower(email) = em;
+  if st is null then
+    insert into public.brigata(owner_id, email, member_id, role, status, name)
+    values (p_owner, em, auth.uid(), 'staff', 'pending', auth.jwt()->'user_metadata'->>'full_name');
+    return 'pending';
+  end if;
+  return st;
+end $$;
+revoke all on function public.brigata_join(uuid) from public;
+grant execute on function public.brigata_join(uuid) to authenticated;
+
+-- impostazioni condivise del ricettario salvate da un membro (pastry chef: sezioni,
+-- documenti, piatti; admin anche logo e nome)
+create or replace function public.brigata_save_settings(p_owner uuid, p_data jsonb, p_brand jsonb)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if not public.wl_can_edit(p_owner) then raise exception 'Solo admin e pastry chef possono modificare'; end if;
+  update public.user_settings set data = data || coalesce(p_data, '{}'::jsonb), updated_at = now() where user_id = p_owner;
+  if p_brand is not null and public.wl_is_admin(p_owner) then
+    update public.user_settings set brand_name = p_brand->>'name', brand_sub = p_brand->>'sub', logo = p_brand->>'logo' where user_id = p_owner;
+  end if;
+  return true;
+end $$;
+revoke all on function public.brigata_save_settings(uuid, jsonb, jsonb) from public;
+grant execute on function public.brigata_save_settings(uuid, jsonb, jsonb) to authenticated;
 
 -- ─── PAGINA D'ACCESSO PERSONALIZZATA (prima del login) ───────────────
 -- Legge SOLO nome e logo di un account dal suo indirizzo personale
@@ -119,10 +247,10 @@ drop policy if exists library_read   on storage.objects;
 drop policy if exists library_insert on storage.objects;
 drop policy if exists library_update on storage.objects;
 drop policy if exists library_delete on storage.objects;
-create policy library_read   on storage.objects for select to authenticated using (bucket_id = 'library' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy library_insert on storage.objects for insert to authenticated with check (bucket_id = 'library' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy library_update on storage.objects for update to authenticated using (bucket_id = 'library' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy library_delete on storage.objects for delete to authenticated using (bucket_id = 'library' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy library_read   on storage.objects for select to authenticated using (bucket_id = 'library' and public.wl_can_read(public.wl_path_owner((storage.foldername(name))[1])));
+create policy library_insert on storage.objects for insert to authenticated with check (bucket_id = 'library' and public.wl_can_edit(public.wl_path_owner((storage.foldername(name))[1])));
+create policy library_update on storage.objects for update to authenticated using (bucket_id = 'library' and public.wl_can_edit(public.wl_path_owner((storage.foldername(name))[1])));
+create policy library_delete on storage.objects for delete to authenticated using (bucket_id = 'library' and public.wl_can_edit(public.wl_path_owner((storage.foldername(name))[1])));
 
 notify pgrst, 'reload schema';
 -- ═══ Fine: se vedi questa riga hai copiato tutto ═══

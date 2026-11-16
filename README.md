@@ -40,6 +40,17 @@ Tutto il resto è identico all'originale: studio d'inserimento con l'AI (foto, t
 
 Facoltativo: in GitHub → *Settings → Secrets and variables → Actions → Variables* aggiungi `APP_URL` (l'indirizzo dell'app) per il keepalive di riserva.
 
+## Brigata (membri e ruoli)
+Dal menu ≡ → **Account e personalizzazione → Brigata** il titolare (o un admin) aggiunge i membri con la loro email Google e un ruolo:
+
+| Ruolo | Ricette e biblioteca | Sezioni, documenti, piatti | Logo, nome, brigata |
+|---|---|---|---|
+| Titolare / Admin | modifica | modifica | modifica |
+| Pastry Chef | modifica | modifica | — |
+| Demi Chef, Commis, Staff | sola lettura | — | — |
+
+Poi si invia il link dell’app («Invia il link dell’app»). Chi accede con l’email invitata entra subito nel ricettario della brigata; chi apre il link senza invito compare come **richiesta** da approvare. Chi fa parte di più ricettari sceglie quello attivo nella stessa scheda. I permessi sono applicati dal database (RLS), non solo dall’interfaccia; la chiave AI salvata non è visibile a chi ha solo la lettura. Segnalibri, note e posizione di lettura restano personali.
+
 ## File
 - `index.html`: l'app (stessa struttura dell'originale)
 - `white.js`: lo strato account (login, separazione dei dati, logo, sezioni, sincronizzazione delle impostazioni)

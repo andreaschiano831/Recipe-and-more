@@ -42,7 +42,15 @@
   var UID = stored && stored.user && stored.user.id || null;
   var TOKEN = stored && stored.access_token || '';
   var USER = stored && stored.user || null;
-  var PREFIX = 'u:' + (UID || 'anon') + ':';
+  /* ── ricettario attivo: il proprio oppure quello di una brigata ── */
+  var WS_KEY = 'wl_ws:' + (UID || 'anon');
+  var WSI = null; try { WSI = JSON.parse(window.localStorage.getItem(WS_KEY) || 'null'); } catch (e) {}
+  var WS = (UID && WSI && WSI.ws) || UID;
+  var ROLE = WS && WS !== UID ? (WSI.role || 'staff') : 'owner';
+  var TEAMS = (WSI && WSI.teams) || [];
+  var PREFIX = 'u:' + (UID || 'anon') + ':' + (WS && WS !== UID ? 'w:' + WS + ':' : '');
+  var ROLES = { owner: 'Titolare', admin: 'Admin', pastry_chef: 'Pastry Chef', demi_chef: 'Demi Chef', commis: 'Commis', staff: 'Staff' };
+  var PERSONAL_KEYS = ['mdl_th', 'mdl_hidden', 'mdl_pct', 'mdl_pct_base', 'mdl_sort', 'mdl_tr_lang'];
 
   /* ── memoria del dispositivo separata per account ── */
   var SP = Storage.prototype, oGet = SP.getItem, oSet = SP.setItem, oDel = SP.removeItem;
@@ -67,7 +75,15 @@
   var WL = window.WL = {
     sb: null,
     uid: UID,
+    ws: WS,
     prefix: PREFIX,
+    roles: ROLES,
+    role: function () { return ROLE; },
+    roleLabel: function (r) { return ROLES[r || ROLE] || r || ''; },
+    inTeam: function () { return !!(WS && WS !== UID); },
+    canEdit: function () { return ROLE === 'owner' || ROLE === 'admin' || ROLE === 'pastry_chef'; },
+    isAdmin: function () { return ROLE === 'owner' || ROLE === 'admin'; },
+    teams: function () { return TEAMS; },
     signedIn: function () { return !!UID; },
     user: function () { return USER; },
     email: function () { return USER && USER.email || ''; },
@@ -351,9 +367,20 @@
     SYNC_KEYS.forEach(function (k) { if (k === 'mdl_brand') return; var v = lsGet(k); if (v != null) data[k] = v; });
     return data;
   }
+  function saveWs(o) { try { oSet.call(window.localStorage, WS_KEY, JSON.stringify(o)); } catch (e) {} }
+  function pushTeam() {
+    if (!WL.canEdit()) { try { oDel.call(window.localStorage, PREFIX + 'wl_dirty'); } catch (e) {} return Promise.resolve(true); }
+    var d = collect(); PERSONAL_KEYS.forEach(function (k) { delete d[k]; });
+    var raw = lsJSON('mdl_brand', {}) || {};
+    var brand = WL.isAdmin() ? { name: raw.name || null, sub: raw.sub || null, logo: raw.logo || null } : null;
+    return rest('rpc/brigata_save_settings', { method: 'POST', body: { p_owner: WS, p_data: d, p_brand: brand } })
+      .then(function () { try { oDel.call(window.localStorage, PREFIX + 'wl_dirty'); } catch (e) {} return true; })
+      .catch(function () { return false; });
+  }
   WL.push = function () {
     if (!UID || !TOKEN) return Promise.resolve(false);
     clearTimeout(pushTimer);
+    if (WL.inTeam()) return pushTeam();
     var b = WL.brand(), raw = lsJSON('mdl_brand', {}) || {};
     var row = { user_id: UID, data: collect(), brand_name: raw.name || null, brand_sub: raw.sub || null, logo: raw.logo || null, slug: raw.slug || null, updated_at: new Date().toISOString() };
     return rest('user_settings?on_conflict=user_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: row })
@@ -372,14 +399,14 @@
   WL.pull = function () {
     if (!UID || !TOKEN) return Promise.resolve();
     var dirty = false; try { dirty = oGet.call(window.localStorage, PREFIX + 'wl_dirty') === '1'; } catch (e) {}
-    return rest('user_settings?select=*&user_id=eq.' + UID).then(function (rows) {
+    return rest('user_settings?select=*&user_id=eq.' + WS).then(function (rows) {
       var r = rows && rows[0];
-      if (!r) return WL.push();                 // primo accesso: crea la riga
-      if (dirty) return WL.push();              // modifiche fatte offline: vincono quelle locali
+      if (!r) return WL.inTeam() ? null : WL.push();   // primo accesso: crea la riga
+      if (dirty && WL.canEdit()) return WL.push();     // modifiche fatte offline: vincono quelle locali
       suppressDirty = true;
       try {
         var d = r.data || {};
-        SYNC_KEYS.forEach(function (k) { if (k === 'mdl_brand') return; if (d[k] != null) lsSet(k, d[k]); });
+        SYNC_KEYS.forEach(function (k) { if (k === 'mdl_brand') return; if (WL.inTeam() && PERSONAL_KEYS.indexOf(k) > -1) return; if (d[k] != null) lsSet(k, d[k]); });
         lsSet('mdl_brand', JSON.stringify({ name: r.brand_name || '', sub: r.brand_sub || '', logo: r.logo || '', slug: r.slug || '' }));
       } finally { suppressDirty = false; }
     }).catch(function () {});
@@ -393,6 +420,46 @@
     return u.toString();
   }
   function redirectTo() { return cleanUrl(); }
+  /* ══════════════ BRIGATA ══════════════ */
+  // attiva gli inviti, legge i ricettari di cui si fa parte e controlla il ruolo
+  WL.teamsSync = function (joinOwner) {
+    var step = Promise.resolve(null);
+    if (joinOwner && /^[0-9a-f-]{36}$/i.test(joinOwner)) {
+      step = rest('rpc/brigata_join', { method: 'POST', body: { p_owner: joinOwner } }).catch(function () { return null; });
+      var u = new URL(location.href); u.searchParams.delete('join'); history.replaceState(null, '', u.toString());
+    }
+    return step.then(function (joinRes) {
+      return rest('rpc/brigata_mine', { method: 'POST', body: {} }).then(function (rows) {
+        TEAMS = (rows || []).map(function (r) { return { ws: r.owner_id, role: r.role, name: r.brand_name || '', sub: r.brand_sub || '', logo: r.logo ? String(r.logo).slice(0, 60000) : '' }; });
+        var cur = null; TEAMS.forEach(function (t) { if (t.ws === WS) cur = t; });
+        var want = WS;
+        var prev = (WSI && WSI.teams) || [];
+        var fresh = TEAMS.filter(function (t) { return !prev.some(function (p) { return p.ws === t.ws; }); })[0];
+        if (joinRes === 'active' && joinOwner) want = joinOwner;                     // appena entrato con il link d'invito
+        else if (fresh) want = fresh.ws;                                             // nuovo invito: si apre quel ricettario
+        if (want !== UID && !TEAMS.some(function (t) { return t.ws === want; })) want = UID;   // tolto dalla brigata
+        var role = want === UID ? 'owner' : TEAMS.filter(function (t) { return t.ws === want; })[0].role;
+        saveWs({ ws: want, role: role === 'owner' ? null : role, teams: TEAMS });
+        if (joinRes === 'pending') WL._notice = 'Richiesta inviata: potrai vedere il ricettario quando l’admin ti avrà approvato.';
+        if (want !== WS) { location.replace(cleanUrl()); return new Promise(function () {}); }
+        ROLE = role;
+      });
+    }).catch(function () {});
+  };
+  WL.useWorkspace = function (ws) {
+    var t = TEAMS.filter(function (x) { return x.ws === ws; })[0];
+    var go = function () { saveWs({ ws: ws, role: t ? t.role : null, teams: TEAMS }); location.replace(cleanUrl()); };
+    WL.push().then(go, go);
+  };
+  WL.readOnlyNote = function () {
+    var t = TEAMS.filter(function (x) { return x.ws === WS; })[0];
+    alert('Sei ' + WL.roleLabel() + (t && t.name ? ' nella brigata di «' + t.name + '»' : '') + ': puoi consultare ricette e biblioteca, ma solo admin e pastry chef possono modificarle.');
+  };
+  WL.inviteLink = function () {
+    var b = WL.brand(), q = (b.slug && !WL.inTeam() ? 'a=' + encodeURIComponent(b.slug) + '&' : '') + 'join=' + WS;
+    return location.origin + location.pathname + '?' + q;
+  };
+
   WL.signIn = function (selectAccount) {
     if (!WL.sb) return;
     var err = $('wlLoginErr'); if (err) err.textContent = '';
@@ -478,13 +545,18 @@
         if (ev === 'SIGNED_OUT') location.replace(cleanUrl());
       });
       var t = new Promise(function (res) { setTimeout(res, 6000); });
-      Promise.race([WL.pull(), t]).then(enter, enter);
+      Promise.race([WL.teamsSync(qp.get('join')).then(WL.pull), t]).then(enter, enter);
     }).catch(function () { if (UID) enter(); else showLogin('Errore di connessione'); });
   };
 
   function enter() {
     if (WL._booted) return;
-    try { window.sessionStorage.setItem('mdl_ul', '1'); window.sessionStorage.setItem('adm', '1'); window.localStorage.setItem('mdl_adm', new Date().toDateString()); } catch (e) {}
+    try {
+      window.sessionStorage.setItem('mdl_ul', '1');
+      if (WL.canEdit()) { window.sessionStorage.setItem('adm', '1'); window.localStorage.setItem('mdl_adm', new Date().toDateString()); }
+      else { window.sessionStorage.removeItem('adm'); window.localStorage.removeItem('mdl_adm'); }
+    } catch (e) {}
+    if (!WSI && UID) saveWs({ ws: WS, role: WL.inTeam() ? ROLE : null, teams: TEAMS });
     WL.applySections();
     WL.applyBrand();
     WL._booted = true;
@@ -493,10 +565,57 @@
     var p = $('pwd'); if (p) p.style.display = 'none';
     WL._rememberAccount();
     window.addEventListener('online', function () { WL.pull(); });
+    if (WL._notice) { var nt = WL._notice; WL._notice = null; setTimeout(function () { alert(nt); }, 600); }
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') WL.push(); });
   }
 
   /* ══════════════ SCHEDA «ACCOUNT, LOGO E SEZIONI» ══════════════ */
+  function roleOpts(sel) {
+    return ['admin', 'pastry_chef', 'demi_chef', 'commis', 'staff'].map(function (r) { return '<option value="' + r + '"' + (r === sel ? ' selected' : '') + '>' + ROLES[r] + '</option>'; }).join('');
+  }
+  function wsCard() {
+    if (!TEAMS.length) return '';
+    var own = { ws: UID, role: 'owner', name: 'Il mio ricettario', sub: WL.email() };
+    return '<section class="wl-card"><b class="wl-t">Ricettario attivo</b><p class="wl-n">Fai parte di altre brigate: scegli quale ricettario aprire.</p><div class="wl-ws">' +
+      [own].concat(TEAMS).map(function (t) {
+        return '<button type="button" class="wl-acc' + (t.ws === WS ? ' on' : '') + '" data-ws="' + esc(t.ws) + '"><img src="' + esc(t.logo || DEFAULT_LOGO) + '" alt=""><span><b>' + esc(t.name || 'Ricettario') + '</b><small>' + esc(WL.roleLabel(t.role)) + (t.ws === WS ? ' · aperto ora' : '') + '</small></span></button>';
+      }).join('') + '</div></section>';
+  }
+  WL.renderTeam = function () {
+    var box = $('wlTeam'); if (!box) return;
+    var msg = $('wlTeamMsg');
+    box.innerHTML = '<p class="wl-n">Caricamento…</p>';
+    rest('brigata?select=*&owner_id=eq.' + WS + '&order=status.desc,created_at.asc').then(function (rows) {
+      rows = rows || [];
+      if (!rows.length) { box.innerHTML = '<p class="wl-n">Nessun membro ancora.</p>'; return; }
+      box.innerHTML = rows.map(function (m) {
+        var st = m.status === 'pending' ? '<em class="wl-st p">Richiesta</em>' : m.status === 'invited' ? '<em class="wl-st i">Invitato</em>' : '<em class="wl-st a">Attivo</em>';
+        return '<div class="wl-mem" data-id="' + esc(m.id) + '"><span class="wl-mem-n"><b>' + esc(m.name || m.email) + '</b><small>' + esc(m.email) + '</small></span>' + st +
+          '<select class="wl-in sm" data-a="role">' + roleOpts(m.role) + '</select>' +
+          (m.status === 'pending' ? '<button type="button" class="wl-btn gold" data-a="ok">Approva</button>' : '') +
+          '<button type="button" class="wl-btn danger" data-a="del" aria-label="Rimuovi">' + (m.status === 'pending' ? 'Rifiuta' : 'Rimuovi') + '</button></div>';
+      }).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('.wl-mem'), function (row) {
+        var id = row.dataset.id, m = rows.filter(function (x) { return x.id === id; })[0];
+        var patch = function (body, ok) {
+          rest('brigata?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: body })
+            .then(function () { msg.textContent = ok; WL.renderTeam(); }).catch(function (e) { msg.textContent = 'Errore: ' + e.message; });
+        };
+        row.querySelector('[data-a=role]').onchange = function () { patch({ role: this.value }, 'Ruolo aggiornato.'); };
+        var okb = row.querySelector('[data-a=ok]'); if (okb) okb.onclick = function () { patch({ status: 'active', role: row.querySelector('[data-a=role]').value }, 'Accesso approvato.'); };
+        row.querySelector('[data-a=del]').onclick = function () {
+          if (!confirm((m.status === 'pending' ? 'Rifiutare la richiesta di ' : 'Togliere dalla brigata ') + (m.name || m.email) + '?')) return;
+          rest('brigata?id=eq.' + id, { method: 'DELETE' }).then(function () { msg.textContent = 'Fatto.'; WL.renderTeam(); }).catch(function (e) { msg.textContent = 'Errore: ' + e.message; });
+        };
+      });
+    }).catch(function (e) {
+      box.innerHTML = '<p class="wl-n">' + (/brigata|schema cache|does not exist/i.test(e.message || '') ? 'Per usare la brigata esegui di nuovo <b>supabase/schema.sql</b> nel SQL Editor di Supabase.' : 'Errore: ' + esc(e.message)) + '</p>';
+    });
+  };
+  function inviteText() {
+    var b = WL.brand();
+    return 'Ti ho aggiunto alla brigata' + (b.name ? ' di ' + b.name : '') + ' sul ricettario. Apri il link e accedi con Google:\n' + WL.inviteLink();
+  }
   WL.openSettings = function () {
     var old = $('wlSheet'); if (old) old.remove();
     var b = WL.brand();
@@ -504,17 +623,24 @@
     bg.innerHTML =
       '<div class="wl-sh" role="dialog" aria-label="Account, logo e sezioni">' +
       '<div class="wl-hd"><b class="fd">Account e personalizzazione</b><button type="button" class="wl-x" aria-label="Chiudi">&times;</button></div>' +
-      '<section class="wl-card"><div class="wl-acc-me"><img class="wl-logo" alt=""><span><b>' + esc(WL.email() || 'Account') + '</b><small>Accesso con Google · dati separati per questo account</small></span></div>' +
+      '<section class="wl-card"><div class="wl-acc-me"><img class="wl-logo" alt=""><span><b>' + esc(WL.email() || 'Account') + '</b><small>' + (WL.inTeam() ? esc(WL.roleLabel()) + ' · brigata di ' + esc(WL.brand().name || 'un altro account') : 'Accesso con Google · dati separati per questo account') + '</small></span></div>' +
       '<div class="wl-row"><button type="button" class="wl-btn" id="wlSwitch">Cambia account</button><button type="button" class="wl-btn danger" id="wlOut">Esci</button></div></section>' +
-      '<section class="wl-card"><b class="wl-t">Logo e nome</b><p class="wl-n">Compaiono nella home, nel menu, nei documenti di stampa e nella pagina d’accesso.</p>' +
+      wsCard() +
+      (WL.canEdit() ? '' : '<section class="wl-card"><b class="wl-t">Solo consultazione</b><p class="wl-n">Sei <b>' + esc(WL.roleLabel()) + '</b> in questa brigata: puoi leggere ricette e biblioteca. Le modifiche le fanno admin e pastry chef.</p></section>') +
+      (WL.isAdmin() ?       '<section class="wl-card"><b class="wl-t">Logo e nome</b><p class="wl-n">Compaiono nella home, nel menu, nei documenti di stampa e nella pagina d’accesso.</p>' +
       '<div class="wl-logo-ed"><img class="wl-logo" alt=""><div class="wl-col"><label class="wl-btn gold">Carica logo<input type="file" accept="image/*" id="wlLogoFile" hidden></label><button type="button" class="wl-btn" id="wlLogoCrop">Ritaglia</button><button type="button" class="wl-btn" id="wlLogoDel">Rimuovi</button></div></div>' +
       '<label class="wl-l">Nome</label><input class="wl-in" id="wlName" maxlength="60" value="' + esc(lsJSON('mdl_brand', {}).name || '') + '" placeholder="Es. Pasticceria Rossi">' +
       '<label class="wl-l">Sottotitolo</label><input class="wl-in" id="wlSub" maxlength="60" value="' + esc(lsJSON('mdl_brand', {}).sub || '') + '" placeholder="Ricettario Professionale">' +
-      '<label class="wl-l">Indirizzo personale della pagina d’accesso</label><div class="wl-row"><input class="wl-in" id="wlSlug" maxlength="40" value="' + esc(b.slug) + '" placeholder="es. pasticceria-rossi"><button type="button" class="wl-btn" id="wlCopy">Copia link</button></div>' +
-      '<p class="wl-n" id="wlSlugInfo"></p>' +
-      '<button type="button" class="wl-btn gold wide" id="wlSaveBrand">Salva logo e nome</button><p class="wl-msg" id="wlBrandMsg"></p></section>' +
-      '<section class="wl-card"><b class="wl-t">Sezioni del ricettario</b><p class="wl-n">Rinomina, riordina, aggiungi o togli le sezioni della home.</p><div id="wlSecs"></div>' +
-      '<button type="button" class="wl-btn" id="wlSecAdd">+ Nuova sezione</button><button type="button" class="wl-btn gold wide" id="wlSecSave">Salva sezioni</button><p class="wl-msg" id="wlSecMsg"></p></section>' +
+      (WL.inTeam() ? '' : '<label class="wl-l">Indirizzo personale della pagina d’accesso</label><div class="wl-row"><input class="wl-in" id="wlSlug" maxlength="40" value="' + esc(b.slug) + '" placeholder="es. pasticceria-rossi"><button type="button" class="wl-btn" id="wlCopy">Copia link</button></div>' +
+      '<p class="wl-n" id="wlSlugInfo"></p>') +
+      '<button type="button" class="wl-btn gold wide" id="wlSaveBrand">Salva logo e nome</button><p class="wl-msg" id="wlBrandMsg"></p></section>' : '') +
+      (WL.canEdit() ?       '<section class="wl-card"><b class="wl-t">Sezioni del ricettario</b><p class="wl-n">Rinomina, riordina, aggiungi o togli le sezioni della home.</p><div id="wlSecs"></div>' +
+      '<button type="button" class="wl-btn" id="wlSecAdd">+ Nuova sezione</button><button type="button" class="wl-btn gold wide" id="wlSecSave">Salva sezioni</button><p class="wl-msg" id="wlSecMsg"></p></section>' : '') +
+      (WL.isAdmin() ? '<section class="wl-card" id="wlTeamCard"><b class="wl-t">Brigata</b><p class="wl-n">Invita i membri con la loro email Google. <b>Admin</b> e <b>Pastry Chef</b> possono modificare; <b>Demi Chef</b>, <b>Commis</b> e <b>Staff</b> possono solo consultare.</p>' +
+        '<div class="wl-row wl-inv"><input class="wl-in" id="wlInvEmail" type="email" placeholder="email@gmail.com" autocomplete="off"><select class="wl-in sm" id="wlInvRole">' + roleOpts('commis') + '</select></div>' +
+        '<button type="button" class="wl-btn gold wide" id="wlInvAdd">Aggiungi alla brigata</button><p class="wl-msg" id="wlTeamMsg"></p><div id="wlTeam"></div>' +
+        '<div class="wl-row"><button type="button" class="wl-btn" id="wlInvShare">Invia il link dell’app</button><button type="button" class="wl-btn" id="wlInvCopy">Copia link</button></div>' +
+        '<p class="wl-n">Chi apre il link e accede con l’email invitata entra subito con il suo ruolo; le altre richieste arrivano qui da approvare.</p></section>' : '') +
       '</div>';
     document.body.appendChild(bg);
     requestAnimationFrame(function () { bg.classList.add('on'); });
@@ -524,6 +650,26 @@
     bg.onclick = function (e) { if (e.target === bg) close(); };
     $('wlSwitch').onclick = WL.switchAccount;
     $('wlOut').onclick = function () { if (confirm('Uscire da questo account? I dati restano salvati.')) WL.signOut(); };
+    Array.prototype.forEach.call(bg.querySelectorAll('.wl-ws .wl-acc'), function (x) { x.onclick = function () { if (x.dataset.ws !== WS) WL.useWorkspace(x.dataset.ws); }; });
+    if ($('wlTeamCard')) {
+      WL.renderTeam();
+      $('wlInvAdd').onclick = function () {
+        var em = $('wlInvEmail').value.trim().toLowerCase(), role = $('wlInvRole').value, msg = $('wlTeamMsg');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { msg.textContent = 'Scrivi un’email valida.'; return; }
+        if (em === String(WL.email()).toLowerCase()) { msg.textContent = 'È il tuo account: sei già il titolare.'; return; }
+        msg.textContent = 'Aggiungo…';
+        rest('brigata?on_conflict=owner_id,email', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: { owner_id: WS, email: em, role: role, status: 'invited' } })
+          .then(function () { $('wlInvEmail').value = ''; msg.textContent = 'Aggiunto. Ora invia il link dell’app a ' + em + '.'; WL.renderTeam(); })
+          .catch(function (e) { msg.textContent = 'Errore: ' + e.message; });
+      };
+      $('wlInvShare').onclick = function () {
+        var t = inviteText();
+        if (navigator.share) { navigator.share({ title: 'Ricettario', text: t }).catch(function () {}); return; }
+        location.href = 'mailto:?subject=' + encodeURIComponent('Invito al ricettario') + '&body=' + encodeURIComponent(t);
+      };
+      $('wlInvCopy').onclick = function () { var l = WL.inviteLink(); try { navigator.clipboard.writeText(l); $('wlTeamMsg').textContent = 'Link copiato.'; } catch (e) { prompt('Copia il link', l); } };
+    }
+    if ($('wlSaveBrand')) (function () {
     var pendingLogo = null;
     var showLogo = function (d) { Array.prototype.forEach.call(bg.querySelectorAll('.wl-logo'), function (im) { im.src = d; }); };
     var cropFrom = function (src) {
@@ -539,20 +685,22 @@
       cropFrom(cur);
     };
     $('wlLogoDel').onclick = function () { pendingLogo = ''; Array.prototype.forEach.call(bg.querySelectorAll('.wl-logo'), function (im) { im.src = DEFAULT_LOGO; }); };
-    var slugIn = $('wlSlug');
+    var slugIn = $('wlSlug') || { value: b.slug || '' };
     var link = function () { var s = WL.slugify(slugIn.value); return s ? location.origin + location.pathname + '?a=' + s : ''; };
-    var info = function () { var l = link(); $('wlSlugInfo').textContent = l ? 'Pagina d’accesso con il tuo logo: ' + l : 'Facoltativo: crea un link alla pagina d’accesso con il tuo logo e il tuo nome.'; };
+    var info = function () { if (!$('wlSlugInfo')) return; var l = link(); $('wlSlugInfo').textContent = l ? 'Pagina d’accesso con il tuo logo: ' + l : 'Facoltativo: crea un link alla pagina d’accesso con il tuo logo e il tuo nome.'; };
     slugIn.oninput = info; info();
-    $('wlCopy').onclick = function () { var l = link(); if (!l) return; try { navigator.clipboard.writeText(l); $('wlSlugInfo').textContent = 'Link copiato: ' + l; } catch (e) { prompt('Copia il link', l); } };
+    if ($('wlCopy')) $('wlCopy').onclick = function () { var l = link(); if (!l) return; try { navigator.clipboard.writeText(l); $('wlSlugInfo').textContent = 'Link copiato: ' + l; } catch (e) { prompt('Copia il link', l); } };
     $('wlSaveBrand').onclick = function () {
-      var patch = { name: $('wlName').value.trim(), sub: $('wlSub').value.trim(), slug: WL.slugify(slugIn.value) };
+      var patch = { name: $('wlName').value.trim(), sub: $('wlSub').value.trim(), slug: WL.inTeam() ? (WL.brand().slug || '') : WL.slugify(slugIn.value) };
       if (pendingLogo !== null) patch.logo = pendingLogo;
       slugIn.value = patch.slug;
       WL.saveBrand(patch);
       var m = $('wlBrandMsg'); m.textContent = 'Salvataggio…';
-      WL.push().then(function (ok) { m.textContent = ok ? 'Salvato su tutti i tuoi dispositivi.' : 'Salvato su questo dispositivo: lo invio appena torna la connessione.'; info(); try { MDL_REFRESH(); } catch (e) {} });
+      WL.push().then(function (ok) { m.textContent = ok ? (WL.inTeam() ? 'Salvato per tutta la brigata.' : 'Salvato su tutti i tuoi dispositivi.') : 'Salvato su questo dispositivo: lo invio appena torna la connessione.'; info(); try { MDL_REFRESH(); } catch (e) {} });
     };
+    })();
     // sezioni
+    if ($('wlSecs')) (function () {
     var work = WL.sections().map(function (s) { return { k: s.k, l: s.l, sub: s.sub || '' }; });
     var counts = function () { var c = {}; (window.CU || []).forEach(function (r) { if (r && r.s) c[r.s] = (c[r.s] || 0) + 1; }); return c; };
     function draw() {
@@ -600,6 +748,7 @@
       try { if (document.getElementById('app').classList.contains('on')) { window.renderCats(); window.renderGrid(); } } catch (e) {}
       WL.push();
     };
+    })();
   };
   WL.slugify = function (s) {
     return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);

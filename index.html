@@ -2269,6 +2269,13 @@ body.ck-open .tabbar{display:none!important}
 .wl-logo-ed img{width:92px;height:92px;border-radius:50%;object-fit:cover;border:1.5px solid var(--rim,#ddd);box-shadow:0 0 0 5px var(--glow,rgba(0,0,0,.03));flex-shrink:0;background:#fff}
 .wl-col{display:flex;flex-direction:column;align-items:flex-start}
 .wl-sec{display:flex;gap:.5rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid var(--cb,#e5e5e5)}
+.wl-ws{display:flex;flex-direction:column;gap:.4rem}.wl-ws .wl-acc.on{border-color:var(--gold,#9A7B4F);box-shadow:0 0 0 1px var(--gold,#9A7B4F) inset}
+.wl-inv select{max-width:9.5rem}
+.wl-mem{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;padding:.6rem 0;border-bottom:1px solid var(--cb,#e5e5e5)}
+.wl-mem-n{display:flex;flex-direction:column;flex:1 1 11rem;min-width:0}.wl-mem-n b{font:500 .82rem "DM Sans",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wl-mem-n small{font-size:.68rem;color:var(--smoke2);overflow:hidden;text-overflow:ellipsis}
+.wl-mem select{width:auto;flex:0 0 auto}.wl-mem .wl-btn{padding:.35rem .7rem;font-size:.72rem}
+.wl-st{font-style:normal;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:99px;border:1px solid currentColor}
+.wl-st.a{color:#4c6b3c}.wl-st.i{color:#8a7a52}.wl-st.p{color:#b0582f}
 .wl-sec:last-child{border-bottom:none}.wl-sec-f{flex:1;min-width:0}
 .wl-sec-a{display:flex;align-items:center;gap:.15rem;padding-top:.25rem}
 .wl-sec-a button{width:30px;height:30px;border-radius:8px;border:1px solid var(--cb,#ddd);background:var(--bg,#fff);color:var(--ink,#222);cursor:pointer;font-size:.9rem}
@@ -2608,7 +2615,7 @@ function loadRecipes(){
   var ctrl=new AbortController();
   var tid=setTimeout(function(){ctrl.abort();},20000); // 20s timeout
 
-  fetch(SB_URL+'/rest/v1/ricette?select=id,data&order=id.asc',{
+  fetch(SB_URL+'/rest/v1/ricette?select=id,data&order=id.asc'+(window.WL&&WL.ws?'&user_id=eq.'+WL.ws:''),{
     headers:sbH(),signal:ctrl.signal
   })
   .then(function(res){
@@ -2749,7 +2756,7 @@ function flushQueue(done){
   var item=_syncQueue[0];
   var local=isLocalId(item.rec._id);
   var url=local?SB_URL+'/rest/v1/ricette':SB_URL+'/rest/v1/ricette?id=eq.'+item.rec._id;
-  fetch(url,{method:local?'POST':'PATCH',headers:Object.assign({},sbH(),{'Prefer':'return=representation'}),body:JSON.stringify({data:cleanRecForDb(item.rec)})})
+  fetch(url,{method:local?'POST':'PATCH',headers:Object.assign({},sbH(),{'Prefer':'return=representation'}),body:JSON.stringify({user_id:WL.ws,data:cleanRecForDb(item.rec)})})
   .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error('HTTP '+r.status+': '+t);});return r.json();})
   .then(function(rows){
     var row=Array.isArray(rows)?rows[0]:null;
@@ -2790,7 +2797,7 @@ function saveRec(rec){
   if(!_dbConnected){saveLocalOnly(rec,'Offline — salvata in memoria, la invio appena torna la connessione');return;}
   try{dbLog('INSERT '+rec.n);}catch(ex){}
   showDbBanner('Salvataggio...','loading');
-  return fetch(SB_URL+'/rest/v1/ricette',{method:'POST',headers:Object.assign({},sbH(),{'Prefer':'return=representation'}),body:JSON.stringify({data:cleanRecForDb(rec)})})
+  return fetch(SB_URL+'/rest/v1/ricette',{method:'POST',headers:Object.assign({},sbH(),{'Prefer':'return=representation'}),body:JSON.stringify({user_id:WL.ws,data:cleanRecForDb(rec)})})
   .then(function(r){
     try{dbLog('INSERT '+r.status);}catch(ex){}
     if(!r.ok)return r.text().then(function(t){throw httpErr(r,t);});
@@ -3211,7 +3218,7 @@ function doMove(){
 }
 
 function checkAdmin(){
-  if(window.WL&&WL.signedIn()){isAdmin=true;try{sessionStorage.setItem('adm','1');}catch(e){}}
+  if(window.WL&&WL.signedIn()){isAdmin=WL.canEdit();try{if(isAdmin)sessionStorage.setItem('adm','1');else{sessionStorage.removeItem('adm');localStorage.removeItem('mdl_adm');}}catch(e){}}
   else try{
     // sessionStorage = source of truth for this tab
     if(sessionStorage.getItem('adm')==='1'){isAdmin=true;}
@@ -5606,7 +5613,7 @@ var LIB={books:[],progress:{},setup:null,covers:{},loaded:false,q:''};
   function loadAll(){
     var cached=null;try{cached=JSON.parse(localStorage.getItem('mdl_lib_cache')||'null');}catch(e){}
     if(cached&&!LIB.loaded){LIB.books=cached.books||[];LIB.progress=cached.progress||{};}
-    return Promise.all([rest('library_books?select=*&order=created_at.desc'),rest('library_progress?select=*')]).then(function(r){
+    return Promise.all([rest('library_books?select=*&order=created_at.desc&user_id=eq.'+WL.ws),rest('library_progress?select=*&user_id=eq.'+WL.uid)]).then(function(r){
       LIB.setup=true;LIB.loaded=true;LIB.books=r[0]||[];LIB.progress={};(r[1]||[]).forEach(function(p){LIB.progress[p.book_id]=p;});
       try{localStorage.setItem('mdl_lib_cache',JSON.stringify({books:LIB.books,progress:LIB.progress}));}catch(e){}
     }).catch(function(e){
@@ -5779,15 +5786,15 @@ var LIB={books:[],progress:{},setup:null,covers:{},loaded:false,q:''};
       LIB.busy='Leggo '+f.name+(files.length>1?' ('+i+' di '+files.length+')':'')+'\u2026';render();
       readMeta(f).then(function(m){
         if(f._title)m.title=f._title;if(f._author&&!m.author)m.author=f._author;
-        var id=uuid(),path=WL.uid+'/books/'+id+'.'+m.kind;
+        var id=uuid(),path=WL.ws+'/books/'+id+'.'+m.kind;
         LIB.busy='Carico \u00ab'+m.title+'\u00bb\u2026';render();
         return upload(path,f,m.kind==='pdf'?'application/pdf':'application/epub+zip').then(function(){
           idbPut(path,f);
           if(!m.cover)return null;
-          var cp=WL.uid+'/covers/'+id+'.jpg';
+          var cp=WL.ws+'/covers/'+id+'.jpg';
           return upload(cp,m.cover,m.cover.type||'image/jpeg').then(function(){idbPut(cp,m.cover);LIB.covers[cp]=URL.createObjectURL(m.cover);return cp;}).catch(function(){return null;});
         }).then(function(cover_path){
-          return rest('library_books',{method:'POST',headers:{Prefer:'return=representation'},body:{id:id,title:m.title.slice(0,200),author:m.author?String(m.author).slice(0,200):null,kind:m.kind,file_path:path,cover_path:cover_path,size_bytes:f.size,pages:m.pages}});
+          return rest('library_books',{method:'POST',headers:{Prefer:'return=representation'},body:{user_id:WL.ws,id:id,title:m.title.slice(0,200),author:m.author?String(m.author).slice(0,200):null,kind:m.kind,file_path:path,cover_path:cover_path,size_bytes:f.size,pages:m.pages}});
         }).then(function(rows){if(rows&&rows[0])LIB.books.unshift(rows[0]);ok++;});
       }).catch(function(e){
         toast(f.name+': '+(/bucket|not found/i.test(e.message)?'manca l\u2019archivio \u00ablibrary\u00bb su Supabase (esegui il codice SQL)':e.message),'err');
@@ -5932,7 +5939,7 @@ var LIB={books:[],progress:{},setup:null,covers:{},loaded:false,q:''};
     clearTimeout(_saveT);if(!R||!R.ready)return;
     var row={book_id:R.book.id,location:R.loc.location,percent:Math.min(1,Math.max(0,R.loc.percent||0)),settings:R.settings,updated_at:new Date().toISOString()};
     LIB.progress[R.book.id]=row;try{localStorage.setItem('mdl_lib_pos_'+R.book.id,JSON.stringify(row));}catch(e){}
-    rest('library_progress?on_conflict=book_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:row}).catch(function(){});
+    rest('library_progress?on_conflict=book_id,user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:row}).catch(function(){});
   }
   function toggleChrome(){if(!R)return;R.el.classList.toggle('hide');setPanel(null);}
   function onTap(z){if(z==='left')R.api&&R.api.prev();else if(z==='right')R.api&&R.api.next();else toggleChrome();}
@@ -7258,7 +7265,7 @@ function aiKeyApply(k){
 }
 function renderStatusAll(){var s=document.getElementById('stStatus');if(s&&typeof _aiServer!=='undefined'){s.textContent=(_aiServer||aiHasLocalKey())?'AI pronta':'Manca la chiave AI';s.className='st-status '+((_aiServer||aiHasLocalKey())?'ok':'warn');}}
 function aiKeyShare(k){
-  var row={data:{_cfg:'ai',k:aiKeyEnc(k),at:new Date().toISOString()}};
+  var row={user_id:WL.ws,data:{_cfg:'ai',k:aiKeyEnc(k),at:new Date().toISOString()}};
   var url=SB_URL+'/rest/v1/ricette'+(_aiCfgRow?'?id=eq.'+_aiCfgRow:''),m=_aiCfgRow?'PATCH':'POST';
   return fetch(url,{method:m,headers:Object.assign({},sbH(),{'Prefer':'return=representation'}),body:JSON.stringify(row)})
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
@@ -7468,6 +7475,11 @@ function rcWidget(host,opt){
 /* ════ ACCESSO ADMIN AL VOLO (dal + o dove serve) ════ */
 function adminGate(then,reason){
   if(isAdmin){then&&then();return;}
+  if(window.WL&&WL.signedIn()){
+    if(WL.canEdit()){isAdmin=true;try{sessionStorage.setItem('adm','1');}catch(e){}try{checkAdmin();}catch(e){}try{tbAdmin();}catch(e){}then&&then();}
+    else WL.readOnlyNote();
+    return;
+  }
   var old=document.getElementById('admGate');if(old)old.remove();
   var bg=document.createElement('div');bg.id='admGate';bg.className='ag-bg';
   bg.innerHTML='<div class="ag" role="dialog" aria-label="Accesso amministratore">'+
