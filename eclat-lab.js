@@ -1,13 +1,13 @@
 /* ════════════════════════════════════════════════════════════════════
    ÉCLAT · LABORATORIO — interfaccia e animazioni sopra il tema Éclat
    · barra in alto (desktop) con navigazione Home · Collezione ·
-     Laboratorio 3D · Bilanciamento · Biblioteca
-   · Laboratorio 3D sulla ricetta vera: fasi dal procedimento, scena 3D,
+     Laboratorio · Bilanciamento · Biblioteca
+   · Laboratorio sulla ricetta vera: fasi dal procedimento, sezione,
      scala della dose, curva termica, composizione, sous-chef AI
    · Bilanciamento: distinta base con mise en place spuntabile
    · Produzione: sequenza spuntabile e timer ad anello
-   · Home: «Riprendi dal laboratorio»; schede: «Apri in Laboratorio 3D»
-   · animazioni: ingressi scaglionati, numeri che scorrono, notifiche
+   · Home: «Riprendi dal laboratorio»; schede: «Apri in Laboratorio»
+   · animazioni leggere: dissolvenze all'apertura, numeri, notifiche
    Visibile solo con il tema Éclat (body.t-eclat): con gli altri temi
    l'app resta identica. Avvolge le funzioni esistenti senza cambiarle.
    ════════════════════════════════════════════════════════════════════ */
@@ -40,7 +40,7 @@
     top.innerHTML =
       '<div class="xl-brand" id="xlBrand"><img class="wl-logo" alt=""><div><strong class="wl-name"></strong><span class="wl-sub"></span></div></div>' +
       '<nav class="xl-nav" id="xlNav">' +
-      '<button data-k="home">Home</button><button data-k="rec">Collezione</button><button data-k="lab">Laboratorio 3D</button><button data-k="formula">Bilanciamento</button><button data-k="lib">Biblioteca</button></nav>' +
+      '<button data-k="home">Home</button><button data-k="rec">Collezione</button><button data-k="lab">Laboratorio</button><button data-k="formula">Bilanciamento</button><button data-k="lib">Biblioteca</button></nav>' +
       '<div class="xl-right"><button class="xl-pill" id="xlTopProd" hidden>' + ICO.clock + 'Produzione</button>' +
       '<button class="xl-pill dark" id="xlTopNew">' + ICO.plus + 'Nuova</button>' +
       '<button class="xl-pill" id="xlTopTheme" aria-label="Tema">' + ICO.palette + '</button>' +
@@ -93,7 +93,7 @@
     var temps = []; steps.forEach(function (s) { var t = ckTemp(s); if (t && temps.indexOf(t) < 0) temps.push(t); });
     return { ings: ings, A: A, P: P, steps: steps, info: S.info, temps: temps, tot: A.tot };
   }
-  /* procedimento → fasi della scena 3D */
+  /* procedimento → fasi */
   var SCENES = ['biscuit', 'inserto', 'mousse', 'glassa'];
   var SCENE_NAME = { biscuit: 'Base e cottura', inserto: 'Inserto e gelificazione', mousse: 'Mousse e montaggio', glassa: 'Glassa e finitura', sezione: 'Sezione esplosa' };
   function sceneFor(t, k) {
@@ -110,8 +110,7 @@
     if (st.length <= 4) idx = st.map(function (_, i) { return i; });
     else for (var j = 0; j < 4; j++) idx.push(Math.round(j * (st.length - 1) / 3));
     idx.forEach(function (i, k) { var s = st[i]; out.push({ lbl: 'Fase ' + (i < 9 ? '0' : '') + (i + 1), title: shortTitle(s), text: s, scene: sceneFor(s, k), temp: ckTemp(s), min: ckMinutes(s) }); });
-    if (!out.length) SCENES.forEach(function (sc, k) { out.push({ lbl: 'Fase 0' + (k + 1), title: SCENE_NAME[sc].split(' ')[0], text: '', scene: sc, temp: '', min: 0 }); });
-    out.push({ lbl: 'Ispezione', title: 'Sezione 3D', text: '', scene: 'sezione', temp: '', min: 0 });
+    if (!out.length) out.push({ lbl: 'Fase 01', title: 'Procedimento', text: '', scene: 'biscuit', temp: '', min: 0, empty: true });
     return out;
   }
   function weighedOf(r) { var k = String(r._id || r.n); return XL.weighed[k] || (XL.weighed[k] = {}); }
@@ -124,7 +123,7 @@
     v.innerHTML = '<div class="xl-shell"><div class="xl-head"><div style="min-width:0">' +
       '<button class="xl-back" id="xlBack">' + ICO.back + 'Collezione</button>' +
       '<h1 class="xl-title" id="xlTitle"></h1><div class="xl-meta" id="xlMeta"></div></div>' +
-      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="xl-seg" id="xlSeg"><button data-m="lab">Laboratorio 3D</button><button data-m="formula">Bilanciamento</button><button data-m="prod">Produzione</button></div>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="xl-seg" id="xlSeg"><button data-m="lab">Laboratorio</button><button data-m="formula">Bilanciamento</button><button data-m="prod">Produzione</button></div>' +
       '<span class="xl-chip" id="xlScaleChip"></span></div></div>' +
       '<div id="xlLab"></div><div id="xlFormula" hidden></div></div>';
     document.body.appendChild(v);
@@ -145,12 +144,10 @@
     if (XL.mode === 'lab') renderLab(); else renderFormula();
     setNav(XL.mode);
     [].forEach.call(document.querySelectorAll('#xlSeg button'), function (b) { b.classList.toggle('on', b.dataset.m === XL.mode); });
-    if (XL.hero && XL.hero.ok) XL.hero.play(XL.mode === 'lab' && XL.playing !== false);
   };
   function closeView() {
     var v = $('xlView'); if (!v || !XL.viewOpen) return;
     XL.viewOpen = false; v.classList.remove('on'); document.body.style.overflow = '';
-    if (XL.hero && XL.hero.ok) XL.hero.play(false);
     try { tbSync(); } catch (e) {}
   }
   XL.close = closeView;
@@ -200,6 +197,7 @@
     var stops = [], acc = 0, unk = Math.max(0, 100 - wat - sug - fat - pro - Math.max(0, sol - sug - fat - pro));
     [['#587c14', sol - sug - fat - pro], ['#d9a44a', sug], ['#c98b5b', fat], ['#8a9a5b', pro], ['#7fb2c9', wat]].forEach(function (s) { var v = Math.max(0, s[1]); if (!v) return; stops.push(s[0] + ' ' + acc + '% ' + (acc + v) + '%'); acc += v; });
     if (acc < 100) stops.push('#b8b2a0 ' + acc + '% 100%');
+    var legend = [['#587c14', 'Altri solidi', sol - sug - fat - pro], ['#d9a44a', 'Zuccheri', sug], ['#c98b5b', 'Grassi', fat], ['#8a9a5b', 'Proteine', pro], ['#7fb2c9', 'Acqua', wat]].filter(function (x) { return x[2] > 0.5; }).map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + x[1] + ' <b class="mono">' + f1(x[2]) + '%</b></span>'; }).join('') || '<span>Composizione non disponibile</span>';
     var dome = A.tot ? 'linear-gradient(180deg,' + stops.join(',') + ')' : 'linear-gradient(180deg,#587c14 0 9%,#a9c268 9% 56%,#a8122f 56% 74%,#a9c268 74% 82%,#b87a33 82% 100%)';
     var dots = '', hot = D.temps.filter(function (t) { return parseInt(t, 10) >= 60; }).length, cold = D.temps.filter(function (t) { return parseInt(t, 10) <= 10; }).length, nT = D.temps.length || 1;
     var na = Math.round(hot / nT * 30), ng = Math.round((nT - hot - cold) / nT * 30) || (D.temps.length ? 0 : 13);
@@ -228,21 +226,21 @@
         '<span style="display:block;font-size:11px;color:var(--smoke2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(tStep || (D.steps.length ? 'Nessuna temperatura scritta nel procedimento' : 'Aggiungi il procedimento per vedere le fasi')) + '</span></div>' +
         '<div class="xl-dotm">' + dots + '</div></div>' + (D.temps.length ? '<div class="xl-temps">' + D.temps.map(function (t) { return '<span>' + t + '</span>'; }).join('') + '</div>' : '') + '</div>' +
       '</div>' +
-      /* CENTRO */
-      '<div class="xl-hero"><div class="xl-stage"><div class="xl-ring"></div><div class="xl-mount" id="xlMount"></div>' +
-        '<div class="xl-legend" id="xlLegend" hidden><span><i style="background:#587c14"></i>Glassa</span><span><i style="background:#a9c268"></i>Mousse</span><span><i style="background:#a8122f"></i>Inserto</span><span><i style="background:#b87a33"></i>Base</span></div>' +
-        '<div class="xl-float tr" id="xlFloat"><span class="xl-ico">' + ICO.drop + '</span><div><strong id="xlFT"></strong><span class="mono" id="xlFS"></span></div></div>' +
-        '<div class="xl-float bl"><span class="xl-ico">' + ICO.orbit + '</span><div><strong>Vista 360° interattiva</strong><span class="mono">Trascina il modello</span></div></div>' +
+      /* CENTRO: fase in corso + sezione della ricetta (2D) */
+      '<div class="xl-hero"><div class="xl-stage xl-flat">' +
+        '<div class="xl-sect"><div class="xl-sect-dome" style="background:' + dome + '"></div><div class="xl-sect-plate"></div>' +
+        '<div class="xl-sect-leg">' + legend + '</div></div>' +
+        '<div class="xl-now" id="xlNow"></div>' +
         '<div class="xl-score" id="xlScore" style="--score:' + misePct(r) + '"><div><strong id="xlScoreV">' + misePct(r) + '%</strong><span>MISE EN PLACE</span></div></div></div>' +
-        '<div><div class="xl-ctrls"><button class="xl-cbtn" id="xlPlay" title="Play/Pausa">' + (XL.playing === false ? '▶' : '❚❚') + '</button>' +
-        '<button class="xl-cbtn ghost ' + (XL.rotating === false ? '' : 'on') + '" id="xlRot" title="Rotazione automatica">↻</button>' +
-        '<input class="xl-scrub" id="xlScrub" type="range" min="0" max="100" value="0" aria-label="Avanzamento della lavorazione"><span class="mono" id="xlPct" style="font-size:11px;font-weight:600;min-width:38px;text-align:right">0%</span></div>' +
-        '<div class="xl-phases" id="xlPhases" style="--n:' + ph.length + '">' + ph.map(function (p, k) { return '<button class="xl-phase' + (k === XL.phase ? ' on' : '') + '" data-k="' + k + '" title="' + esc(p.text || p.title) + '"><span>' + p.lbl + '</span><strong>' + esc(p.title) + '</strong></button>'; }).join('') + '</div></div>' +
+        '<div><div class="xl-ctrls"><button class="xl-cbtn" id="xlPrev" title="Fase precedente">‹</button>' +
+        '<div class="xl-prog"><i id="xlProg"></i></div><span class="mono" id="xlPct" style="font-size:11px;font-weight:600;min-width:46px;text-align:right"></span>' +
+        '<button class="xl-cbtn" id="xlNext" title="Fase successiva">›</button></div>' +
+        '<div class="xl-phases" id="xlPhases" style="--n:' + Math.min(ph.length, 5) + '">' + ph.map(function (p, k) { return '<button class="xl-phase' + (k === XL.phase ? ' on' : '') + '" data-k="' + k + '" title="' + esc(p.text || p.title) + '"><span>' + p.lbl + '</span><strong>' + esc(p.title) + '</strong></button>'; }).join('') + '</div></div>' +
       '</div>' +
       /* DESTRA */
       '<div class="xl-col">' +
         '<div class="xl-card"><div class="xl-card-top"><span class="xl-label">Composizione & peso</span><span class="xl-small xl-muted">' + (A.tot ? Math.round(A.known / A.tot * 100) + '% riconosciuto' : '') + '</span></div>' +
-        '<div class="xl-layers"><button class="xl-dome" id="xlDome" style="background:' + dome + '"><span>Esplodi in 3D ↗</span></button>' +
+        '<div class="xl-layers"><button class="xl-dome" id="xlDome" style="background:' + dome + '"><span>Sezione</span></button>' +
         '<div style="display:flex;flex-direction:column;gap:8px"><div class="xl-kpi"><span>Peso totale</span><strong id="xlKpiW">' + fmtG(D.tot * XL.dose) + ' g</strong></div>' +
         '<div class="xl-kpi"><span>Zuccheri · Grassi</span><strong>' + (A.tot ? f1(sug) + '% · ' + f1(fat) + '%' : '—') + '</strong></div>' +
         '<div class="xl-kpi"><span>Solidi totali</span><strong>' + (A.tot ? f1(sol) + '%' : '—') + '</strong></div></div></div>' +
@@ -261,48 +259,29 @@
     $('xlTarget').onkeydown = function (e) { if (e.key === 'Enter') $('xlTargetGo').click(); };
     $('xlCook').onclick = function () { try { openCucina(r, XL.dose); } catch (e) {} };
     $('xlToFormula').onclick = function () { XL.open(r, 'formula'); };
-    $('xlDome').onclick = function () { selectPhase(ph.length - 1); };
+    $('xlDome').onclick = function () { XL.open(r, 'formula'); };
     [].forEach.call(host.querySelectorAll('[data-rel]'), function (b) { b.onclick = function () { XL.open(related[+b.dataset.rel], 'lab'); }; });
     [].forEach.call(host.querySelectorAll('.xl-phase'), function (b) { b.onclick = function () { selectPhase(+b.dataset.k); }; });
     $('xlSend').onclick = function () { ask(); };
     $('xlAsk').onkeydown = function (e) { if (e.key === 'Enter') ask(); };
     [].forEach.call(host.querySelectorAll('.xl-q button'), function (b) { b.onclick = function () { $('xlAsk').value = b.dataset.q; ask(); }; });
-    $('xlPlay').onclick = function () { if (!XL.hero || !XL.hero.ok) return; XL.playing = XL.playing === false; XL.hero.play(XL.playing); this.textContent = XL.playing ? '❚❚' : '▶'; };
-    $('xlRot').onclick = function () { if (!XL.hero || !XL.hero.ok) return; XL.rotating = XL.rotating === false; XL.hero.setAutoRotate(XL.rotating); this.classList.toggle('on', XL.rotating); };
-    $('xlScrub').oninput = function () { if (!XL.hero || !XL.hero.ok) return; XL.playing = false; XL.hero.play(false); $('xlPlay').textContent = '▶'; XL.hero.setProgress(this.value / 100); paint(+this.value); };
+    $('xlPrev').onclick = function () { selectPhase(Math.max(0, XL.phase - 1)); };
+    $('xlNext').onclick = function () { selectPhase(Math.min(ph.length - 1, XL.phase + 1)); };
     XL._ph = ph;
-    mountHero(ph[XL.phase].scene);
-    selectPhase(XL.phase, true);
+    selectPhase(XL.phase);
     stagger(host); meters(host);
   }
-  function paint(p) {
-    var s = $('xlScrub'); if (!s) return; s.value = p; s.style.setProperty('--fill', p + '%');
-    var l = $('xlPct'); if (l) l.textContent = p + '%';
-    var a = document.querySelector('.xl-phase.on'); if (a) a.style.setProperty('--p', p / 100);
-  }
-  function mountHero(scene) {
-    var m = $('xlMount'); if (!m) return;
-    if (XL.hero) { try { XL.hero.dispose(); } catch (e) {} XL.hero = null; }
-    var token = XL._mountToken = (XL._mountToken || 0) + 1;
-    var fail = function (msg) { if (XL._mountToken === token && $('xlMount') === m) m.innerHTML = '<div class="xl-nogl">' + msg + '</div>'; };
-    if (typeof window.eclatLoad3D !== 'function') { fail('La scena 3D non è disponibile.'); return; }
-    window.eclatLoad3D().then(function (E) {
-      if (XL._mountToken !== token || $('xlMount') !== m || !E) return;
-      XL.hero = E.mount(m, { scene: scene, autoRotate: XL.rotating !== false, autoPlay: XL.playing !== false && XL.viewOpen, onProgress: function (p) { paint(Math.round(p * 100)); } });
-      if (!XL.hero.ok) fail('WebGL non è disponibile su questo dispositivo: la scena 3D non può essere mostrata.');
-      else if (!XL.viewOpen || XL.mode !== 'lab') XL.hero.play(false);
-    }).catch(function () { fail('La scena 3D non è disponibile: controlla la connessione e ricarica la pagina.'); });
-  }
-  function selectPhase(k, first) {
+  function selectPhase(k) {
     var ph = XL._ph; if (!ph || !ph[k]) return;
     XL.phase = k; var p = ph[k];
     [].forEach.call(document.querySelectorAll('.xl-phase'), function (b) { b.classList.toggle('on', +b.dataset.k === k); });
-    $('xlFT').textContent = p.scene === 'sezione' ? 'Sezione esplosa' : p.title;
-    $('xlFS').textContent = [p.temp, p.min ? p.min + ' min' : '', p.scene !== 'sezione' && !p.temp && !p.min ? SCENE_NAME[p.scene] : ''].filter(Boolean).join(' · ') || 'Strati della preparazione';
-    var f = $('xlFloat'); f.classList.remove('swap'); void f.offsetWidth; f.classList.add('swap');
-    $('xlLegend').hidden = p.scene !== 'sezione';
-    paint(0);
-    if (XL.hero && XL.hero.ok && !first) { XL.hero.setScene(p.scene); XL.playing = true; XL.hero.play(true); $('xlPlay').textContent = '❚❚'; }
+    var now = $('xlNow'); if (!now) return;
+    var chips = [p.temp, p.min ? p.min + ' min' : ''].filter(Boolean).map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('');
+    now.innerHTML = p.empty
+      ? '<small>' + p.lbl + '</small><h3>Nessun procedimento</h3><p>Aggiungi il procedimento dalla modifica della ricetta per vedere le fasi di lavorazione.</p>'
+      : '<small>' + p.lbl + ' di ' + ph.length + '</small><h3>' + esc(p.title) + '</h3><p>' + esc(p.text) + '</p>' + (chips ? '<div class="xl-now-chips">' + chips + '</div>' : '');
+    var pr = $('xlProg'); if (pr) pr.style.width = Math.round((k + 1) / ph.length * 100) + '%';
+    var pc = $('xlPct'); if (pc) pc.textContent = (k + 1) + ' / ' + ph.length;
   }
 
   /* sous-chef: domanda all'AI con la ricetta come contesto */
@@ -382,8 +361,8 @@
       par.map(function (x) { return '<div class="xl-chem"><span>' + x[0] + '</span><strong class="mono">' + (A.tot ? f1(pct(x[1], A.tot)) + '%' : '—') + '</strong></div>'; }).join('') +
       (A.unknown.length ? '<p class="xl-muted" style="font-size:11px;margin-top:8px">Senza composizione nota: ' + esc(A.unknown.join(', ')) + '</p>' : '') + '</div>' +
       '<div class="xl-card xl-rc-host" id="xlRcHost"></div>' +
-      '<div class="xl-card"><div class="xl-card-top"><span class="xl-label">Ispezione 3D rapida</span></div><p class="xl-muted" style="font-size:12.5px;line-height:1.55;margin-bottom:14px">Guarda la stratificazione sul modello 3D interattivo.</p>' +
-      '<button class="xl-cta" id="xlToSez"><span>Apri la sezione esplosa in 3D</span><i>↗</i></button></div></div></div>';
+      '<div class="xl-card"><div class="xl-card-top"><span class="xl-label">Fasi di lavorazione</span></div><p class="xl-muted" style="font-size:12.5px;line-height:1.55;margin-bottom:14px">Torna al laboratorio per seguire il procedimento fase per fase.</p>' +
+      '<button class="xl-cta" id="xlToSez"><span>Apri il laboratorio</span><i>→</i></button></div></div></div>';
     [].forEach.call(host.querySelectorAll('.xl-tabs button'), function (b) { b.onclick = function () { XL.setDose(+b.dataset.d); }; });
     [].forEach.call(host.querySelectorAll('.xl-chk'), function (c) {
       c.onchange = function () {
@@ -391,7 +370,7 @@
         if (c.checked && misePct(r) === 100) XL.toast('Mise en place completa');
       };
     });
-    $('xlToSez').onclick = function () { XL.phase = 99; XL.open(r, 'lab'); selectPhase(XL._ph.length - 1); };
+    $('xlToSez').onclick = function () { XL.open(r, 'lab'); };
     XL.rcw = null;
     try {
       XL.rcw = rcWidget($('xlRcHost'), {
@@ -488,7 +467,7 @@
         var c = _bc.apply(this, arguments);
         try {
           c.style.setProperty('--i', idx || 0);
-          var b = h('button', 'xl-card-cta', '<span>Apri in Laboratorio 3D</span><i>→</i>'); b.type = 'button';
+          var b = h('button', 'xl-card-cta', '<span>Apri in Laboratorio</span><i>→</i>'); b.type = 'button';
           b.onclick = function (e) { e.stopPropagation(); XL.open(r, 'lab'); };
           c.appendChild(b);
         } catch (e) {}
@@ -502,7 +481,7 @@
         try {
           var name = $('rpName'), btn = $('xlRpBtn');
           if (name && !btn) {
-            btn = h('button', 'xl-rp-btn', '<span>Laboratorio 3D</span><i>→</i>'); btn.id = 'xlRpBtn'; btn.type = 'button';
+            btn = h('button', 'xl-rp-btn', '<span>Laboratorio</span><i>→</i>'); btn.id = 'xlRpBtn'; btn.type = 'button';
             var blk = name.parentNode; blk.appendChild(btn);
             btn.onclick = function () { var rr = window._rpRec, d = window._rpDose || 1; closeRecipePanel(); if (rr) { XL.open(rr, 'lab'); if (d !== XL.dose) XL.setDose(d, true); } };
           }
@@ -535,31 +514,7 @@
     [].forEach.call(nodes, function (n, i) { n.style.setProperty('--i', Math.min(i, 14)); n.classList.remove(cls); void n.offsetWidth; n.classList.add(cls); });
   }
   function bumpEl(el) { if (!el || calm) return; el.classList.remove('xl-bump'); void el.offsetWidth; el.classList.add('xl-bump'); }
-  /* increspatura al tocco sui pulsanti principali */
-  var RIPPLE = '.wl-google,.xl-cta,.xl-pill,.xl-nav button,.xl-seg button,.xl-tabs button,.tabbar button,.cpill,.cd-chip,.ck-big,.ck-gold,.wl-btn,.lib-btn,.pd-btn1,.pd-btn2,.act-btn,.cucina-open-btn,.xl-card-cta,.xl-rp-btn,.xl-rc,.xl-arch,.xl-phase';
-  function ripple(e) {
-    if (calm || !isEclat() || e.button > 0) return;
-    var b = e.target.closest && e.target.closest(RIPPLE); if (!b) return;
-    var r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2.2;
-    var s = document.createElement('span'); s.className = 'xl-ripple';
-    s.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - r.left - d / 2) + 'px;top:' + (e.clientY - r.top - d / 2) + 'px';
-    if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
-    b.classList.add('xl-rip-host'); b.appendChild(s);
-    setTimeout(function () { s.remove(); }, 650);
-  }
-  /* inclinazione 3D dei pannelli della home seguendo il puntatore */
-  function tilt(e) {
-    if (calm || !isEclat() || e.pointerType === 'touch') return;
-    var p = e.target.closest && e.target.closest('#landPanels .panel'); if (!p) return;
-    var r = p.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
-    p.style.setProperty('--rx', (-y * 7).toFixed(2) + 'deg'); p.style.setProperty('--ry', (x * 9).toFixed(2) + 'deg');
-    p.style.setProperty('--mx', ((x + 0.5) * 100).toFixed(1) + '%'); p.style.setProperty('--my', ((y + 0.5) * 100).toFixed(1) + '%');
-  }
-  function untilt(e) { var p = e.target.closest && e.target.closest('#landPanels .panel'); if (p) { p.style.setProperty('--rx', '0deg'); p.style.setProperty('--ry', '0deg'); } }
   function motionHooks() {
-    document.addEventListener('pointerdown', ripple, true);
-    document.addEventListener('pointermove', tilt, { passive: true });
-    document.addEventListener('pointerout', untilt, true);
     /* conferme: con Éclat diventano notifiche con spunta */
     if (typeof window.showDbBanner === 'function') {
       var _sdb = window.showDbBanner;
@@ -572,34 +527,14 @@
         return _sdb.apply(this, arguments);
       };
     }
-    /* scheda ricetta: ingredienti che entrano uno dopo l'altro, dose che pulsa */
-    if (typeof window.rpRenderIng === 'function') {
-      var _rri = window.rpRenderIng;
-      window.rpRenderIng = function () { var r = _rri.apply(this, arguments); if (isEclat()) stag(document.querySelectorAll('#rpIngList > *'), 'xl-rise'); return r; };
-    }
     if (typeof window.rpChangeDose === 'function') {
       var _rcd = window.rpChangeDose;
       window.rpChangeDose = function () { var r = _rcd.apply(this, arguments); if (isEclat()) bumpEl(document.getElementById('rpDose')); return r; };
-    }
-    /* menu laterale: voci in cascata */
-    if (typeof window.MDL_OPEN === 'function') {
-      var _mo = window.MDL_OPEN;
-      window.MDL_OPEN = function () { var r = _mo.apply(this, arguments); if (isEclat()) setTimeout(function () { var d = document.getElementById('MDL_DRW'); if (d) stag(d.querySelectorAll('.hub-card,.hub-hero,.hub-tile,.hub-sec > *'), 'xl-rise'); }, 20); return r; };
     }
     /* dose generale del ricettario */
     ['dPlus', 'dMinus'].forEach(function (id) { var b = $(id); if (b) b.addEventListener('click', function () { if (isEclat()) bumpEl($('dVal')); }); });
   }
   function motionAfterBoot() {
-    /* elenco ricette: le schede entrano scaglionate a ogni nuovo elenco */
-    if (typeof window.renderGrid === 'function' && !window.renderGrid._xl) {
-      var _rg = window.renderGrid;
-      window.renderGrid = function () {
-        var r = _rg.apply(this, arguments);
-        if (isEclat()) [].forEach.call(document.querySelectorAll('#grid .card'), function (c, i) { c.style.setProperty('--i', Math.min(i, 14)); });
-        return r;
-      };
-      window.renderGrid._xl = 1;
-    }
     /* contatori in home che scorrono */
     var st = $('exStats');
     if (st && window.MutationObserver && !st._xl) {

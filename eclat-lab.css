@@ -314,19 +314,7 @@ body.t-eclat .xl-rise{animation:xlRise .45s var(--xl-ease) backwards;animation-d
 /* schermate che entrano */
 body.t-eclat #app .app-hd{animation:xlSlideIn .45s var(--xl-ease) both}
 body.t-eclat #app .ctrl-shell{animation:xlSlideIn .5s .05s var(--xl-ease) both}
-body.t-eclat #app .card{animation-delay:calc(var(--i,0) * 35ms)!important}
 body.t-eclat .ck,body.t-eclat .st,body.t-eclat .lib-view{animation:xlFadeScale .35s var(--xl-ease) both}
-/* pannelli della home: inclinazione 3D e riflesso che segue il puntatore */
-@media(hover:hover){
-  body.t-eclat .land-panels .panel:hover{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-4px)!important;transition:transform .18s ease-out,box-shadow .35s var(--xl-ease)!important}
-  body.t-eclat .land-panels .panel:hover::after{background:radial-gradient(60% 60% at var(--mx,50%) var(--my,0%),rgba(255,255,255,.32),transparent 60%)!important}
-}
-/* titolo della home: riflesso lento */
-body.t-eclat .land-h em{background:linear-gradient(100deg,var(--ink) 40%,#6F8F3A 50%,var(--ink) 60%)!important;background-size:240% 100%!important;
-  -webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important;animation:xlShine 6s 1.2s ease-in-out infinite}
-/* pulsante "Accedi con Google": bagliore all'attesa */
-body.t-eclat .wl-google{position:relative;overflow:hidden}
-body.t-eclat .wl-google::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%);background-size:250% 100%;animation:xlShine 3.2s 1s ease-in-out infinite;pointer-events:none}
 @media (prefers-reduced-motion: reduce){
   body.t-eclat *,body.t-eclat *::before,body.t-eclat *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
@@ -336,3 +324,26 @@ body.t-eclat .wl-google::after{content:"";position:absolute;inset:0;background:l
 .xl-card-cta i{width:28px;height:28px;border-radius:50%;background:var(--e-acc);display:grid;place-items:center;color:#fff;font-style:normal}
 .grid.list .xl-card-cta{display:none}
 
+
+/* ═════════════ LABORATORIO 2D (sezione + fase in corso) ═════════════ */
+.xl-stage.xl-flat{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:22px;align-items:center;padding:26px 26px 120px;min-height:415px}
+.xl-sect{position:relative;display:flex;flex-direction:column;align-items:center;gap:0}
+.xl-sect-dome{width:min(100%,300px);aspect-ratio:1.55;border-radius:50% 50% 16px 16px/92% 92% 16px 16px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -14px 26px rgba(0,0,0,.14),0 24px 40px -22px rgba(20,28,17,.45)}
+.xl-sect-plate{width:min(112%,340px);height:14px;margin-top:-4px;border-radius:50%;background:radial-gradient(closest-side,rgba(20,28,17,.22),transparent)}
+.xl-sect-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:14px}
+.xl-sect-leg span{display:inline-flex;align-items:center;gap:6px;background:var(--e-glass-s);border:1px solid var(--e-border);border-radius:999px;padding:4px 10px 4px 6px;font-size:11px;font-weight:600}
+.xl-sect-leg i{width:11px;height:11px;border-radius:50%}
+.xl-sect-leg b{font-weight:600;color:var(--smoke2)}
+.xl-now{background:var(--e-glass-s);border:1px solid var(--e-border);border-radius:22px;padding:18px 20px;box-shadow:var(--sh);min-height:150px}
+.xl-now small{font:600 10.5px 'JetBrains Mono',monospace;color:var(--e-mid);letter-spacing:.04em;text-transform:uppercase}
+.xl-now h3{font:700 26px/1.08 'Cormorant Garamond',serif;margin:6px 0 8px;color:var(--ink)}
+.xl-now p{font-size:13.5px;line-height:1.55;color:var(--ink2);margin:0;max-height:9.5em;overflow:auto}
+.xl-now-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.xl-now-chips span{font:600 11px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:999px;background:var(--glow);color:var(--e-deep)}
+.xl-prog{flex:1;height:5px;border-radius:5px;background:rgba(52,70,46,.12);overflow:hidden}
+.xl-prog i{display:block;height:100%;width:0;border-radius:5px;background:linear-gradient(90deg,var(--e-mid),var(--e-acc));transition:width .35s var(--xl-ease)}
+.xl-flat .xl-score{bottom:20px;right:20px}
+@media(max-width:760px){
+  .xl-stage.xl-flat{grid-template-columns:1fr;padding:18px 16px 110px;min-height:0}
+  .xl-sect-dome{width:min(100%,240px)}
+}

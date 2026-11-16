@@ -47,7 +47,6 @@ Facoltativo: in GitHub → *Settings → Secrets and variables → Actions → V
 - `supabase/schema.sql`: il database completo, con le regole di sicurezza
 
 ## Interfaccia ÉCLAT
-- `eclat.css` / `eclat.js`: tema Éclat (predefinito al primo accesso), pagina d'accesso e home con scena 3D
-- `eclat-lab.css` / `eclat-lab.js`: barra in alto, Laboratorio 3D sulla ricetta, Bilanciamento con mise en place, Produzione con timer, sous-chef AI, animazioni
-- `eclat3d.js` + `vendor/three.min.js`: motore delle scene 3D, caricato solo quando serve
-Tutto vale solo con il tema Éclat: scegliendo un altro tema l'app torna com'era.
+- `eclat.css` / `eclat.js`: tema Éclat (predefinito al primo accesso), pagina d'accesso e home
+- `eclat-lab.css` / `eclat-lab.js`: barra in alto, Laboratorio sulla ricetta (sezione e fasi), Bilanciamento con mise en place, Produzione con timer, sous-chef AI
+Versione stabile: niente scene 3D, solo animazioni leggere. Tutto vale solo con il tema Éclat: scegliendo un altro tema l'app torna com'era.

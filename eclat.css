@@ -326,3 +326,10 @@ body.t-eclat button:active,body.t-eclat .cpill:active{transform:scale(.97)}
 @media(prefers-reduced-motion:reduce){
   body.t-eclat *,body.t-eclat *::before,body.t-eclat *::after,.ex-toast{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
 }
+
+/* ═════════════ VERSIONE STABILE: senza 3D, animazioni leggere ═════════════ */
+body.t-eclat #pwd{grid-template-columns:minmax(0,520px)!important;justify-content:center}
+body.t-eclat .ex-stage,body.t-eclat .ex-hero3d{display:none!important}
+body.t-eclat .land-top{grid-template-columns:1fr!important}
+body.t-eclat #app .card{animation:none!important}
+body.t-eclat .land-panels .panel{animation-duration:.35s!important}

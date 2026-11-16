@@ -80,13 +80,11 @@
     stage.innerHTML = '<div class="ex-stage-slot"></div>' +
       '<span class="ex-badge ex-b1"><i>✦</i><span>Laboratorio 3D<small>trascina per ruotare</small></span></span>' +
       '<span class="ex-badge ex-b2"><i>◐</i><span>Glassa a specchio<small>34 °C · 24 °Brix</small></span></span>';
-    pwd.appendChild(card); pwd.appendChild(stage);
+    pwd.appendChild(card); /* niente palco 3D: versione stabile */
     /* la scena parte solo se la pagina d'accesso resta davvero a schermo */
     var check = function () {
       if (isEclat() && pwd.style.display !== 'none' && getComputedStyle(pwd).display !== 'none') mount(stage.firstChild, { scene: 'accesso', autoPlay: !calm });
     };
-    window.addEventListener('load', function () { setTimeout(check, 900); });
-    if (window.MutationObserver) new MutationObserver(check).observe(pwd, { attributes: true, attributeFilter: ['style'] });
   }
 
   /* ── 5. home: marchio a sinistra, scena 3D a destra, numeri del ricettario ── */
@@ -100,8 +98,7 @@
     brand.appendChild(stats);
     var hero = document.createElement('div'); hero.className = 'ex-hero3d'; hero.setAttribute('aria-hidden', 'true');
     hero.innerHTML = '<div class="ex-stage-slot"></div><span class="ex-badge"><i>✦</i><span>Atelier 3D<small>trascina per ruotare</small></span></span>';
-    top.appendChild(brand); top.appendChild(hero);
-    hero.firstChild.style.cssText = 'position:absolute;inset:0';
+    top.appendChild(brand); /* niente scena 3D in home: versione stabile */
   }
   function updateStats() {
     var box = $('exStats'); if (!box) return;
