@@ -217,6 +217,10 @@
     html = html.replace(/\u0001(\d+)\u0002/g, function (m, k) { return tok[+k]; });
     return { html: html, used: used.sort(function (a, b) { return a - b; }) };
   }
+  XL.stepHtml = function (text, ings, d) { var o = XL.dose; if (d) XL.dose = d; try { return stepHtml(text, ings || []); } finally { XL.dose = o; } };
+  XL.stepTitle = function (t) { return stepTitle(t); };
+  XL.bench = function (r) { return { w: weighedOf(r), sd: stepsOf(r), save: saveBench }; };
+  XL.refreshLab = function () { if (XL.viewOpen && XL.mode === 'lab' && XL.rec) { var v = $('xlView'), y = v ? v.scrollTop : 0; renderLab(); if (v) v.scrollTop = y; } };
   function stepTitle(s) { var t = String(s).split(/[.;:]/)[0].trim(); if (t.length > 64) t = t.slice(0, 62).replace(/\s+\S*$/, '') + '…'; return t; }
 
   function renderLab() {
@@ -464,6 +468,7 @@
       if (box) { box.innerHTML = list.length ? list.map(function (t) { return item(t, true); }).join('') : '<p class="lb-empty sm">Nessun timer attivo. Avvialo da un passaggio o qui sotto.</p>'; bind(box); }
       var n = $('lbTimN'); if (n) n.textContent = list.length ? list.length + ' attiv' + (list.length === 1 ? 'o' : 'i') : '';
       var tc = $('lbTabCount'); if (tc) tc.textContent = list.length ? list.length : '';
+      var kc = $('kcTimers'); if (kc) { kc.innerHTML = list.map(function (t) { return item(t, false); }).join(''); bind(kc); kc.hidden = !list.length; }
       dock();
     }
     function dock() {
@@ -490,13 +495,15 @@
     }
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && list.length) { lock = null; start(); } });
     if (list.length) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { render(); start(); }); else { render(); start(); } }
-    return { add: add, render: render, list: function () { return list; }, fmt: fmt };
+    function ack() { var n = 0; list = list.filter(function (t) { if (t.rang) { n++; return false; } return true; }); if (n) { save(); render(); } return n; }
+    function pauseAll() { list.forEach(function (t) { if (t.end) { t.left = left(t); t.end = 0; } }); save(); render(); }
+    return { add: add, render: render, list: function () { return list; }, fmt: fmt, left: left, ack: ack, pauseAll: pauseAll };
   })();
   function showPane(p) { var b = document.querySelector('.lb-tabs button[data-p="' + p + '"]'); if (b) b.click(); }
   document.addEventListener('keydown', function (e) {
     if (!XL.viewOpen || XL.mode !== 'lab' || !XL._benchStep) return;
     var tg = e.target, typing = tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable);
-    if (typing || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.ck.on,#ck.on,.wl-bg.on')) return;
+    if (typing || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.ck.on,#ck.on,#kc.on,.wl-bg.on')) return;
     if (e.key === 'ArrowRight') { e.preventDefault(); XL._benchStep(1); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); XL._benchStep(-1); }
   });
@@ -674,7 +681,7 @@
       var _ab = WL.applyBrand;
       WL.applyBrand = function () { var r = _ab.apply(this, arguments); var c = $('xlChef'); if (c) { c.querySelector('i').textContent = initials(WL.brand().name || WL.email()); } return r; };
     }
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && XL.viewOpen && !$('xlProd') && !document.querySelector('.ck,.st,.wl-bg.on')) closeView(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && XL.viewOpen && !$('xlProd') && !document.querySelector('.ck,.st,.wl-bg.on,#kc.on')) closeView(); });
   }
   XL.toast = function (msg) { try { if (window.eclatToast) window.eclatToast(msg); } catch (e) {} };
   function isEclat() { return document.body.classList.contains('t-eclat'); }
