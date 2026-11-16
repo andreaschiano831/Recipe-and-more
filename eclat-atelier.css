@@ -1,0 +1,233 @@
+/* ════════════════════════════════════════════════════════════════════
+   ATELIER — rifinitura professionale del tema Éclat
+   Più sobria e editoriale: avorio e grafite, oliva profondo, filetti oro,
+   titoli in serif, angoli contenuti, niente colori accesi né effetti vistosi.
+   Vale solo con body.t-eclat. Caricato dopo eclat.css ed eclat-lab.css.
+   ════════════════════════════════════════════════════════════════════ */
+
+body.t-eclat{
+  --bg:#F3F0E8;--bg2:#ECE8DD;--bg3:#E2DDD0;
+  --ink:#1A1A16;--ink2:#34332C;
+  --gold:#2F3B2A;--gold2:#55623F;--gold3:#9A7B4F;
+  --glow:rgba(85,98,63,.10);--rim:rgba(26,26,22,.09);--cb:rgba(26,26,22,.12);
+  --smoke:#55544B;--smoke2:#7B796E;--smoke3:#A9A699;
+  --card:#FFFFFF;--ctrl:#F7F5EF;
+  --sh:0 1px 2px rgba(26,26,22,.04),0 8px 24px -14px rgba(26,26,22,.18);
+  --shm:0 2px 6px rgba(26,26,22,.04),0 24px 56px -28px rgba(26,26,22,.30);
+  --r:12px;
+  --ex-lime:#7F8F5A;--ex-olive:#2F3B2A;--ex-caramel:#9A7B4F;--ex-rasp:#8E2B3A;
+  --ex-glass:rgba(255,255,255,.78);--ex-glass-hi:rgba(255,255,255,.92);--ex-line:rgba(26,26,22,.07);
+  --ex-amb:
+    radial-gradient(1200px 700px at 0% 100%,rgba(85,98,63,.10),transparent 60%),
+    radial-gradient(900px 600px at 100% 0%,rgba(154,123,79,.08),transparent 60%),
+    linear-gradient(180deg,#F5F2EB 0%,#EEEAE0 100%);
+  /* componenti del laboratorio */
+  --e-deep:#2F3B2A;--e-mid:#55623F;--e-acc:#7F8F5A;--e-acc-glow:rgba(127,143,90,.22);--e-warm:#9A7B4F;
+  --e-glass:rgba(255,255,255,.72);--e-glass-s:#FFFFFF;--e-border:rgba(26,26,22,.08);
+  --e-shell:rgba(255,255,255,.55);
+}
+body.t-eclat ::selection{background:rgba(154,123,79,.22)}
+body.t-eclat :focus-visible{outline:2px solid var(--gold3);outline-offset:2px}
+
+/* tipografia: serif per i titoli, sans per l'interfaccia, mono solo per i numeri */
+body.t-eclat .hd-title h1,body.t-eclat #rpName,body.t-eclat .land-h,body.t-eclat #pwd .pwd-h,
+body.t-eclat .xl-title,body.t-eclat .xl-now h3,body.t-eclat #app .card-name{font-family:'Cormorant Garamond',Georgia,serif!important;font-weight:600!important;letter-spacing:-.01em}
+
+/* ═════════════ ACCESSO ═════════════ */
+body.t-eclat .ex-login{border-radius:20px;border:1px solid var(--ex-line);box-shadow:var(--shm);background:#FFFFFF;padding:clamp(30px,4vw,48px)}
+body.t-eclat .ex-eyebrow{color:var(--gold3);letter-spacing:.24em;font-size:.64rem}
+body.t-eclat .ex-eyebrow::before{width:22px;height:1px;border-radius:0;background:var(--gold3);box-shadow:none}
+body.t-eclat #pwd .pwd-logo{border-radius:50%!important;width:72px!important;height:72px!important;box-shadow:0 0 0 1px rgba(154,123,79,.35),0 10px 24px -14px rgba(26,26,22,.35)!important}
+body.t-eclat #pwd .pwd-h{font-size:clamp(2.4rem,4.6vw,3.2rem)!important}
+body.t-eclat #pwd .pwd-sub{text-transform:uppercase!important;letter-spacing:.2em!important;font-size:.68rem!important;color:var(--gold3)!important}
+body.t-eclat .wl-google{border-radius:12px!important;height:52px;background:#1A1A16!important;box-shadow:0 12px 26px -16px rgba(26,26,22,.7)!important}
+body.t-eclat .wl-google:hover{background:#2F3B2A!important}
+body.t-eclat .wl-acc{border-radius:12px;background:var(--ctrl);border-color:var(--cb)}
+
+/* ═════════════ HOME ═════════════ */
+body.t-eclat .land-top{border-radius:20px;background:#FFFFFF;border:1px solid var(--ex-line);box-shadow:var(--shm);-webkit-backdrop-filter:none;backdrop-filter:none;padding:22px 30px 28px!important}
+body.t-eclat .land-logo{border-radius:50%!important;width:76px!important;height:76px!important;box-shadow:0 0 0 1px rgba(154,123,79,.35),0 12px 26px -16px rgba(26,26,22,.4)!important}
+body.t-eclat .land-ey{color:var(--gold3)!important;letter-spacing:.26em!important;font-size:.64rem!important}
+body.t-eclat .land-h{font-size:clamp(2.4rem,4.8vw,3.6rem)!important}
+body.t-eclat .land-h em{color:var(--ink)!important;-webkit-text-fill-color:currentColor!important;background:none!important;animation:none!important}
+body.t-eclat .land-rule{display:flex!important;justify-content:flex-start!important;margin:14px 0 0!important}
+body.t-eclat .land-rule span{display:none}
+body.t-eclat .land-rule::before{content:"";display:block;width:56px;height:1px;background:var(--gold3)}
+body.t-eclat .ex-stats{margin-top:18px;gap:0}
+body.t-eclat .ex-stat{background:none;border:0;box-shadow:none;border-radius:0;padding:2px 22px 2px 0;margin-right:22px;border-right:1px solid var(--cb);font-size:.74rem;letter-spacing:.04em;text-transform:uppercase;color:var(--smoke2)}
+body.t-eclat .ex-stat:last-child{border-right:0}
+body.t-eclat .ex-stat b{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:600;letter-spacing:0;margin-right:4px}
+
+/* sezioni: card sobrie, toni profondi e smorzati, filetto oro */
+body.t-eclat .land-panels{gap:12px!important}
+body.t-eclat .land-panels .panel{border-radius:16px!important;min-height:190px!important;border:1px solid rgba(255,255,255,.06)!important;box-shadow:0 18px 38px -26px rgba(26,26,22,.6)!important}
+body.t-eclat .land-panels .panel[data-pal="colazioni"] .panel-bg{background:linear-gradient(160deg,#6E5434 0%,#43321D 100%)!important}
+body.t-eclat .land-panels .panel[data-pal="fine-dining"] .panel-bg{background:linear-gradient(160deg,#3D4A34 0%,#232B1E 100%)!important}
+body.t-eclat .land-panels .panel[data-pal="gelateria"] .panel-bg{background:linear-gradient(160deg,#3E5552 0%,#22312F 100%)!important}
+body.t-eclat .land-panels .panel[data-pal="torte"] .panel-bg{background:linear-gradient(160deg,#5C2A33 0%,#36161D 100%)!important}
+body.t-eclat .land-panels .panel[data-pal="tutti"] .panel-bg{background:linear-gradient(160deg,#2E2D28 0%,#191915 100%)!important}
+body.t-eclat .land-panels .panel[data-pal="biblioteca"] .panel-bg{background:linear-gradient(160deg,#3A3F4A 0%,#1F232B 100%)!important}
+body.t-eclat .land-panels .panel::before{content:""!important;inset:auto 20px 20px 20px!important;width:auto!important;height:1px!important;border-radius:0!important;
+  background:linear-gradient(90deg,rgba(201,170,120,.7),rgba(201,170,120,0))!important;box-shadow:none!important;transform:none!important}
+body.t-eclat .land-panels .panel::after{background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 40%)!important}
+body.t-eclat .land-panels .panel-num{background:none!important;padding:0!important;color:rgba(232,214,180,.7)!important;letter-spacing:.2em!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.t-eclat .land-panels .panel-icon{opacity:.55!important}
+body.t-eclat .land-panels .panel-title{margin-top:44px!important;margin-bottom:4px!important;text-shadow:none!important;font-weight:500!important;font-size:clamp(1.6rem,2.1vw,1.95rem)!important}
+body.t-eclat .land-panels .panel-sub{text-transform:uppercase!important;letter-spacing:.16em!important;font-size:.6rem!important;color:rgba(232,214,180,.75)!important;padding-bottom:18px}
+body.t-eclat .land-panels .panel-arr{background:transparent!important;border:1px solid rgba(232,214,180,.45);color:#E8D6B4!important;width:34px;height:34px;box-shadow:none;font-size:1.1rem!important}
+@media(hover:hover){body.t-eclat .land-panels .panel:hover{transform:translateY(-2px)!important}
+  body.t-eclat .land-panels .panel:hover .panel-arr{background:#E8D6B4!important;color:#1A1A16!important}}
+
+/* «Riprendi» */
+body.t-eclat .xl-resume-h{color:var(--gold3);letter-spacing:.22em}
+body.t-eclat .xl-rc{border-radius:14px;background:#FFFFFF;border:1px solid var(--ex-line);box-shadow:var(--sh)}
+body.t-eclat .xl-rc i{border-radius:10px;background:linear-gradient(160deg,#55623F,#2F3B2A)}
+body.t-eclat .xl-rc b{font-weight:600}
+
+/* ═════════════ BARRA IN ALTO ═════════════ */
+body.t-eclat .xl-top{border-radius:16px;background:rgba(255,255,255,.88);border:1px solid var(--ex-line);box-shadow:0 10px 30px -20px rgba(26,26,22,.35)}
+body.t-eclat .xl-brand{border-radius:12px;background:transparent;border:0}
+body.t-eclat .xl-brand strong{font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:.02em}
+body.t-eclat .xl-brand span{color:var(--gold3)}
+body.t-eclat .xl-nav{background:var(--ctrl);border:1px solid var(--ex-line);border-radius:12px}
+body.t-eclat .xl-nav button{border-radius:9px}
+body.t-eclat .xl-nav button.on{background:#1A1A16;color:#F3F0E8;box-shadow:none}
+body.t-eclat .xl-pill{border-radius:10px;background:#FFFFFF;border-color:var(--cb);color:var(--ink)}
+body.t-eclat .xl-pill:hover{background:var(--ctrl);color:var(--ink);transform:none}
+body.t-eclat .xl-pill.dark{background:#1A1A16;color:#F3F0E8}
+body.t-eclat .xl-pill.dark:hover{background:#2F3B2A;color:#fff}
+body.t-eclat .xl-chef{border-radius:12px;background:transparent;border:0}
+body.t-eclat .xl-chef i{background:#2F3B2A}
+
+/* ═════════════ RICETTARIO ═════════════ */
+body.t-eclat .app-hd{border-radius:16px!important;background:rgba(255,255,255,.9)!important;border-color:var(--ex-line)!important}
+body.t-eclat .back-btn{border-radius:10px!important}
+body.t-eclat #app .srch-wrap,body.t-eclat #app .dose-box,body.t-eclat #app .vbtns{border-radius:12px;background:#FFFFFF;border-color:var(--cb);box-shadow:none}
+body.t-eclat #app .srch-wrap:focus-within{border-color:var(--gold3);box-shadow:0 0 0 3px rgba(154,123,79,.14)}
+body.t-eclat #app .dose-box .dose-btn,body.t-eclat #app .vbtn{border-radius:9px}
+body.t-eclat #app .vbtn-on{background:#1A1A16}
+body.t-eclat #app .cpill{border-radius:10px;background:#FFFFFF;border-color:var(--cb)}
+body.t-eclat #app .cpill.cpill-on{background:#1A1A16;border-color:#1A1A16;box-shadow:none}
+body.t-eclat #app .sort-sel,body.t-eclat #app .pct-toggle,body.t-eclat #app .sel-btn{border-radius:10px;background-color:#FFFFFF;border-color:var(--cb)}
+body.t-eclat #app .pct-toggle.on,body.t-eclat #app .sel-btn.on{background:#1A1A16}
+body.t-eclat #app .group-hd span{font-family:'Cormorant Garamond',serif;font-size:1.5rem}
+body.t-eclat #app .group-hd small{border-radius:6px;background:transparent;border:1px solid var(--cb)}
+body.t-eclat #app .group-hd::after{background:linear-gradient(90deg,rgba(154,123,79,.45),transparent)}
+body.t-eclat #app .card{border-radius:16px;background:#FFFFFF;border:1px solid var(--ex-line);box-shadow:var(--sh)}
+@media(hover:hover){body.t-eclat #app .card:hover{transform:none;box-shadow:var(--shm)}}
+body.t-eclat #app .card::before{width:2px;height:28px;top:22px;background:var(--gold3)}
+body.t-eclat #app .card-cat{background:transparent;border:1px solid var(--cb);color:var(--gold2);border-radius:6px;letter-spacing:.08em;text-transform:uppercase;font-size:.58rem}
+body.t-eclat #app .card-name{font-size:1.55rem}
+body.t-eclat #app .cucina-open-btn,body.t-eclat #app .card-proc-toggle,body.t-eclat #app .card-proc-add,body.t-eclat #app .act-btn{border-radius:8px;background:#FFFFFF}
+body.t-eclat #app .card-proc{border-left-color:var(--gold3);background:var(--ctrl)}
+body.t-eclat #app .tbl thead th.sc,body.t-eclat #app .td-sc{color:var(--gold2)}
+@media(hover:hover){body.t-eclat #app .tbl tbody tr:hover{background:rgba(154,123,79,.06)}}
+body.t-eclat #app .grid.list{border-radius:16px;background:#FFFFFF;border-color:var(--ex-line)}
+body.t-eclat .cd-bar{border-radius:12px;background:var(--ctrl)}
+body.t-eclat .cd-bar.custom{background:rgba(154,123,79,.10);border-color:rgba(154,123,79,.4)}
+body.t-eclat .cd-step,body.t-eclat .cd-chip{border-radius:8px}
+body.t-eclat .cd-chip.on{background:#1A1A16;box-shadow:none}
+body.t-eclat .xl-card-cta{border-radius:10px;background:var(--ctrl);color:var(--ink);border:1px solid var(--cb)}
+body.t-eclat .xl-card-cta i{border-radius:8px;background:#2F3B2A;width:26px;height:26px}
+body.t-eclat .xl-card-cta:hover{background:#1A1A16;color:#F3F0E8}
+
+/* ═════════════ SCHEDA RICETTA ═════════════ */
+body.t-eclat #recipePanelBg > div{border-radius:20px;background:#FFFFFF;border-color:var(--ex-line)}
+body.t-eclat #recipePanelBg button[onclick="closeRecipePanel()"],
+body.t-eclat #recipePanelBg button[onclick^="openAddToDoc"],body.t-eclat #recipePanelBg button[onclick="openCucinaFromPanel()"]{border-radius:10px!important}
+body.t-eclat #recipePanelBg button[onclick="openCucinaFromPanel()"]{background:#1A1A16!important;border-color:#1A1A16!important}
+body.t-eclat #rpCat,body.t-eclat #rpPiatto{color:var(--gold3)!important}
+body.t-eclat #rpProcWrap{border-left:2px solid var(--gold3)!important;border-radius:0 12px 12px 0!important;background:var(--ctrl)!important}
+body.t-eclat .xl-rp-btn{border-radius:10px;background:#1A1A16}
+body.t-eclat .xl-rp-btn i{border-radius:7px;background:#55623F}
+
+/* ═════════════ MODALITÀ CUCINA ═════════════ */
+body.t-eclat .ck-x,body.t-eclat .ck-dose,body.t-eclat .ck-tabs button,body.t-eclat .ck-ghost,body.t-eclat .ck-btn{border-radius:10px}
+body.t-eclat .ck-tabs button.on{background:#1A1A16;box-shadow:none}
+body.t-eclat .ck-card{border-radius:16px;background:#FFFFFF;border-color:var(--ex-line)}
+body.t-eclat .ck-prog i{background:var(--gold3)}
+body.t-eclat .ck-ing.done .ck-box{background:#2F3B2A;border-color:#2F3B2A}
+body.t-eclat .ck-big,body.t-eclat .ck-gold{border-radius:12px;background:#1A1A16;box-shadow:none}
+body.t-eclat .ck-timer{background:#1A1A16;border-radius:16px}
+body.t-eclat .ck-time.end{color:#D8B98A}
+body.t-eclat .ck-chip{background:var(--ctrl);color:var(--gold2)}
+body.t-eclat .ck-dots button.on{background:var(--gold3)}
+
+/* ═════════════ BARRA IN BASSO, PULSANTI, FINESTRE ═════════════ */
+body.t-eclat.tb-on .tabbar{background:rgba(26,26,22,.94);border-radius:18px}
+body.t-eclat .tabbar button{border-radius:12px}
+body.t-eclat .tabbar .tb-new{background:#E8D6B4;color:#1A1A16;box-shadow:none}
+body.t-eclat #fabWrap .fab,body.t-eclat .fab{background:#1A1A16!important;box-shadow:0 14px 30px -14px rgba(26,26,22,.7)!important}
+body.t-eclat .lib-btn,body.t-eclat .pd-btn2,body.t-eclat .wl-btn{border-radius:10px}
+body.t-eclat .lib-btn-dark,body.t-eclat .pd-btn1{border-radius:10px!important;background:#1A1A16!important}
+body.t-eclat .wl-btn.gold{background:#1A1A16!important}
+body.t-eclat .multi-bar{border-radius:14px!important;background:rgba(26,26,22,.95)!important}
+body.t-eclat .modal,body.t-eclat .ai-modal,body.t-eclat .cfm-box,body.t-eclat .adm-box,body.t-eclat .move-box,
+body.t-eclat .pd-sheet,body.t-eclat .th-sheet,body.t-eclat .wl-sh{background:#FFFFFF!important;border:1px solid var(--ex-line)!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.t-eclat .ex-toast{border-radius:12px!important;background:#1A1A16!important}
+body.t-eclat .ex-toast svg{background:#55623F!important}
+
+/* ═════════════ LABORATORIO / BILANCIAMENTO / PRODUZIONE ═════════════ */
+body.t-eclat .xl-view{background:var(--ex-amb);background-attachment:fixed}
+body.t-eclat .xl-shell{border-radius:20px;background:rgba(255,255,255,.5);border:1px solid var(--ex-line);box-shadow:var(--shm);-webkit-backdrop-filter:none;backdrop-filter:none}
+body.t-eclat .xl-title{font-size:clamp(30px,3.2vw,44px)}
+body.t-eclat .xl-seg{border-radius:12px;background:var(--ctrl);border-color:var(--ex-line)}
+body.t-eclat .xl-seg button{border-radius:9px}
+body.t-eclat .xl-seg button.on{background:#1A1A16;color:#F3F0E8}
+body.t-eclat .xl-chip{border-radius:8px;background:#FFFFFF;border-color:var(--cb);box-shadow:none;color:var(--gold2)}
+body.t-eclat .xl-card{border-radius:16px;background:#FFFFFF;border:1px solid var(--ex-line);box-shadow:var(--sh);-webkit-backdrop-filter:none;backdrop-filter:none}
+body.t-eclat .xl-label{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600}
+body.t-eclat .xl-small{color:var(--gold3)}
+body.t-eclat .xl-voice{border-radius:16px;background:linear-gradient(165deg,#2F3B2A 0%,#1C2318 100%);box-shadow:0 20px 40px -24px rgba(26,26,22,.7)}
+body.t-eclat .xl-voice::before{background:radial-gradient(circle,rgba(201,170,120,.18),transparent 68%)}
+body.t-eclat .xl-wave i{background:rgba(232,214,180,.6);animation-duration:3.2s}
+body.t-eclat .xl-reply{color:#EDE6D6;background:rgba(255,255,255,.06);border-radius:10px}
+body.t-eclat .xl-prompt{border-radius:12px}
+body.t-eclat .xl-q button{border-radius:6px;background:#F3F0E8;color:#2F3B2A}
+body.t-eclat .xl-q button:hover{background:#2F3B2A;color:#fff}
+body.t-eclat .xl-send{border-radius:8px;background:#1A1A16}
+body.t-eclat .xl-tabs button{border-radius:8px;background:var(--ctrl)}
+body.t-eclat .xl-tabs button.on{background:#1A1A16;color:#F3F0E8;box-shadow:none}
+body.t-eclat .xl-big{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;letter-spacing:0}
+body.t-eclat .xl-grad{height:6px;border-radius:3px;background:linear-gradient(90deg,#D9C8A6,#EAE5DA 50%,#A9B48C)}
+body.t-eclat .xl-grad i{top:-4px;bottom:-4px;width:2px;background:#1A1A16}
+body.t-eclat .xl-inline input{border-radius:10px;background:var(--ctrl);border-color:var(--cb)}
+body.t-eclat .xl-inline button{border-radius:10px;background:#1A1A16}
+body.t-eclat .xl-dotm i.a{background:#B89A6A}body.t-eclat .xl-dotm i.g{background:#7F8F5A}
+body.t-eclat .xl-temps span{border-radius:6px;background:var(--ctrl);border-color:var(--cb)}
+body.t-eclat .xl-stage{border-radius:16px;border:1px solid var(--ex-line);background:radial-gradient(120% 90% at 50% 30%,#FFFFFF 0%,#F6F3EC 60%,#ECE7DC 100%);box-shadow:var(--sh)}
+body.t-eclat .xl-sect-dome{box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -12px 22px rgba(0,0,0,.12),0 22px 36px -24px rgba(26,26,22,.5)}
+body.t-eclat .xl-sect-leg span{border-radius:6px;background:#FFFFFF;border-color:var(--cb)}
+body.t-eclat .xl-now{border-radius:14px;background:#FFFFFF;border-color:var(--ex-line);border-left:2px solid var(--gold3)}
+body.t-eclat .xl-now small{color:var(--gold3)}
+body.t-eclat .xl-now-chips span{border-radius:6px;background:var(--ctrl);color:var(--gold2)}
+body.t-eclat .xl-score{background:conic-gradient(#7F8F5A calc(var(--score,0) * 1%),rgba(26,26,22,.08) 0)}
+body.t-eclat .xl-score strong{font-family:'Cormorant Garamond',serif;font-size:24px;color:#2F3B2A}
+body.t-eclat .xl-ctrls{border-radius:12px;background:#FFFFFF;border-color:var(--ex-line);box-shadow:none}
+body.t-eclat .xl-cbtn{border-radius:8px;background:#1A1A16}
+body.t-eclat .xl-prog i{background:var(--gold3)}
+body.t-eclat .xl-phase{border-radius:12px;background:#FFFFFF;border-color:var(--ex-line)}
+body.t-eclat .xl-phase.on,body.t-eclat .xl-phase:hover{transform:none;box-shadow:none;border-color:var(--gold3)}
+body.t-eclat .xl-phase.on::after{background:var(--gold3)}
+body.t-eclat .xl-phase.on strong{color:var(--ink)}
+body.t-eclat .xl-dome{border-radius:50% 50% 10px 10px/82% 82% 10px 10px}
+body.t-eclat .xl-dome span{border-radius:6px}
+body.t-eclat .xl-cta{border-radius:10px;background:#1A1A16;color:#F3F0E8}
+body.t-eclat .xl-cta i{border-radius:7px;background:#55623F}
+body.t-eclat .xl-chem{border-radius:10px;background:var(--ctrl)}
+body.t-eclat .xl-segs i{border-radius:1px}
+body.t-eclat .xl-segs i.g{background:#7F8F5A}body.t-eclat .xl-segs i.a{background:#B89A6A}
+body.t-eclat .xl-link{color:var(--gold2)}
+body.t-eclat .xl-arch{border-radius:10px;background:var(--ctrl)}
+body.t-eclat .xl-arch.on,body.t-eclat .xl-arch:hover{background:#F0ECE2;transform:none}
+body.t-eclat .xl-status{border-radius:6px;background:transparent;border:1px solid var(--cb);color:var(--gold2)}
+body.t-eclat .xl-table th{color:var(--gold3)}
+body.t-eclat .xl-chk{border-radius:5px}
+body.t-eclat .xl-chk:checked{background-color:#2F3B2A;border-color:#2F3B2A}
+body.t-eclat .xl-mise-bar i{background:var(--gold3)}
+body.t-eclat .xl-drawer{background:#FFFFFF;border-left-color:var(--ex-line)}
+body.t-eclat .xl-step{border-radius:12px;background:#FFFFFF}
+body.t-eclat .xl-step.cur{border-color:var(--gold3);box-shadow:inset 2px 0 0 var(--gold3)}
+body.t-eclat .xl-step small{color:var(--gold3)}
+body.t-eclat .xl-timer{border-radius:16px;background:#1A1A16;color:#F3F0E8}
+body.t-eclat .xl-tring .fg{stroke:#D8B98A}

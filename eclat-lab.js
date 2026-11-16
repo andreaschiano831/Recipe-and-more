@@ -195,9 +195,9 @@
     }).slice(0, 4);
     /* cupola: strati per composizione */
     var stops = [], acc = 0, unk = Math.max(0, 100 - wat - sug - fat - pro - Math.max(0, sol - sug - fat - pro));
-    [['#587c14', sol - sug - fat - pro], ['#d9a44a', sug], ['#c98b5b', fat], ['#8a9a5b', pro], ['#7fb2c9', wat]].forEach(function (s) { var v = Math.max(0, s[1]); if (!v) return; stops.push(s[0] + ' ' + acc + '% ' + (acc + v) + '%'); acc += v; });
-    if (acc < 100) stops.push('#b8b2a0 ' + acc + '% 100%');
-    var legend = [['#587c14', 'Altri solidi', sol - sug - fat - pro], ['#d9a44a', 'Zuccheri', sug], ['#c98b5b', 'Grassi', fat], ['#8a9a5b', 'Proteine', pro], ['#7fb2c9', 'Acqua', wat]].filter(function (x) { return x[2] > 0.5; }).map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + x[1] + ' <b class="mono">' + f1(x[2]) + '%</b></span>'; }).join('') || '<span>Composizione non disponibile</span>';
+    [['#4A5A3A', sol - sug - fat - pro], ['#C9A86A', sug], ['#A67B5B', fat], ['#7F8F5A', pro], ['#A7B9BC', wat]].forEach(function (s) { var v = Math.max(0, s[1]); if (!v) return; stops.push(s[0] + ' ' + acc + '% ' + (acc + v) + '%'); acc += v; });
+    if (acc < 100) stops.push('#CFC8B8 ' + acc + '% 100%');
+    var legend = [['#4A5A3A', 'Altri solidi', sol - sug - fat - pro], ['#C9A86A', 'Zuccheri', sug], ['#A67B5B', 'Grassi', fat], ['#7F8F5A', 'Proteine', pro], ['#A7B9BC', 'Acqua', wat]].filter(function (x) { return x[2] > 0.5; }).map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + x[1] + ' <b class="mono">' + f1(x[2]) + '%</b></span>'; }).join('') || '<span>Composizione non disponibile</span>';
     var dome = A.tot ? 'linear-gradient(180deg,' + stops.join(',') + ')' : 'linear-gradient(180deg,#587c14 0 9%,#a9c268 9% 56%,#a8122f 56% 74%,#a9c268 74% 82%,#b87a33 82% 100%)';
     var dots = '', hot = D.temps.filter(function (t) { return parseInt(t, 10) >= 60; }).length, cold = D.temps.filter(function (t) { return parseInt(t, 10) <= 10; }).length, nT = D.temps.length || 1;
     var na = Math.round(hot / nT * 30), ng = Math.round((nT - hot - cold) / nT * 30) || (D.temps.length ? 0 : 13);

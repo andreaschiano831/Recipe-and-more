@@ -6,7 +6,7 @@
    ════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var ID = 't-eclat', FLAG = 'mdl_eclat_v1';
+  var ID = 't-eclat', FLAG = 'mdl_eclat_v2';
   var THREE_URL = '/vendor/three.min.js';
   var ENGINE_URL = '/eclat3d.js';
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -15,12 +15,12 @@
 
   /* ── 1. il tema entra nei selettori esistenti ── */
   try { if (window.THEMES && THEMES.indexOf(ID) === -1) THEMES.unshift(ID); } catch (e) {}
-  try { if (window.THEME_META && !THEME_META.some(function (t) { return t.id === ID; })) THEME_META.unshift({ id: ID, lbl: 'Éclat', color: '#8BB62E' }); } catch (e) {}
-  try { if (window._TH && !_TH.some(function (t) { return t.id === ID; })) _TH.unshift({ id: ID, l: 'Éclat', c: '#8BB62E' }); } catch (e) {}
+  try { if (window.THEME_META && !THEME_META.some(function (t) { return t.id === ID; })) THEME_META.unshift({ id: ID, lbl: 'Atelier', color: '#9A7B4F' }); } catch (e) {}
+  try { if (window._TH && !_TH.some(function (t) { return t.id === ID; })) _TH.unshift({ id: ID, l: 'Atelier', c: '#9A7B4F' }); } catch (e) {}
   var bar = document.querySelector('#landing .t-bar');
   if (bar && !bar.querySelector('.t-dot[data-t="' + ID + '"]')) {
     var dot = document.createElement('div');
-    dot.className = 't-dot'; dot.dataset.t = ID; dot.title = 'Éclat';
+    dot.className = 't-dot'; dot.dataset.t = ID; dot.title = 'Atelier';
     var first = bar.querySelector('.t-dot');
     bar.insertBefore(dot, first || null);
   }
