@@ -1688,7 +1688,7 @@ body.rd-open .tabbar,body.st-open .tabbar{display:none!important}
 .rd-btn.on{background:color-mix(in srgb,var(--rd-ink) 9%,transparent);color:var(--rd-acc)}
 .rd-btn.rd-bm.on svg{fill:currentColor}
 .rd-btn.rd-ai{color:var(--rd-acc)}
-.rd-stage{position:absolute;inset:0;overflow:hidden}
+.rd-stage{position:absolute;inset:0;overflow:hidden;z-index:0;isolation:isolate}
 .rd-epub{position:absolute;top:calc(58px + env(safe-area-inset-top));bottom:calc(84px + env(safe-area-inset-bottom));left:clamp(10px,4vw,48px);right:clamp(10px,4vw,48px)}
 .rd-progress{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--rd-muted)}
 .rd-progress input[type=range]{flex:1;accent-color:var(--rd-acc)}
@@ -2216,7 +2216,7 @@ body.ck-open .tabbar{display:none!important}
 .rd-thumb.cur .rd-thumb-f{border-color:#A47A2C}
 .rd-thumb.cur{color:#A47A2C}
 
-.rd-nextpart{position:absolute;z-index:6;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:99px;border:0;background:linear-gradient(135deg,#A8772A,#C4933A);color:#fff;font:600 .95rem "DM Sans",sans-serif;box-shadow:0 14px 30px -12px rgba(0,0,0,.5);cursor:pointer;white-space:nowrap}
+.rd-nextpart{position:absolute;z-index:9;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:99px;border:0;background:linear-gradient(135deg,#A8772A,#C4933A);color:#fff;font:600 .95rem "DM Sans",sans-serif;box-shadow:0 14px 30px -12px rgba(0,0,0,.5);cursor:pointer;white-space:nowrap}
 /* suggerimenti ingredienti: striscia sopra il campo */
 .isug{position:static!important;display:none;flex-direction:row!important;align-items:center;gap:6px;overflow-x:auto!important;overflow-y:hidden;max-height:none!important;width:auto!important;padding:2px 0 6px!important;margin:0;border:0!important;box-shadow:none!important;background:none!important;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .isug::-webkit-scrollbar{display:none}

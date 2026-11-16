@@ -93,7 +93,7 @@ body.t-eclat .land-panels .panel-arr{position:absolute!important;z-index:2;right
   display:grid!important;place-items:center;background:transparent!important;border:1px solid rgba(232,214,180,.4);color:#E8D6B4!important;font-size:1rem!important;line-height:1!important;opacity:1!important;transform:none!important;box-shadow:none;transition:background .2s,color .2s!important}
 @media(hover:hover){body.t-eclat .land-panels .panel:hover{transform:translateY(-2px)!important;box-shadow:0 22px 40px -24px rgba(26,26,22,.7)!important}
   body.t-eclat .land-panels .panel:hover .panel-arr{background:#E8D6B4!important;color:#1A1A16!important}}
-body.t-eclat .land-panels .panel:active{transform:scale(.99)!important}
+body.t-eclat .land-panels .panel:active{scale:.99}
 @media(max-width:820px){body.t-eclat .land-panels .panel-sub{display:none}body.t-eclat .land-panels .panel-arr{bottom:18px!important;width:26px;height:26px}body.t-eclat .land-panels .panel-body{padding-bottom:22px!important}}
 
 /* ═════════════ BARRA IN ALTO ═════════════ */

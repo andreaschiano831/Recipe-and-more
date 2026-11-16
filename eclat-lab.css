@@ -95,7 +95,7 @@ body.lib-open .xl-top,body.xl-hide-top .xl-top{display:none!important}
 @keyframes xlPulse{0%,100%{box-shadow:0 0 0 0 rgba(139,182,46,.55)}50%{box-shadow:0 0 0 10px rgba(139,182,46,0)}}
 @keyframes xlCheck{to{stroke-dashoffset:0}}
 .xl-bump{animation:xlBump .45s var(--xl-ease);display:inline-block;transform-origin:left center}
-.xl button:active,.xl-cta:active{transform:scale(.97)}
+.xl button:active,.xl-cta:active{scale:.97}
 
 /* sous-chef */
 .xl-voice{position:relative;overflow:hidden;background:linear-gradient(155deg,#4b6141 0%,#273322 100%);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:26px;padding:17px 18px;box-shadow:0 22px 42px -15px rgba(39,51,34,.52)}
