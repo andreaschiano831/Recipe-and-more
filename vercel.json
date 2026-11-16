@@ -6,13 +6,39 @@
     }
   },
   "rewrites": [
-    { "source": "/config.js", "destination": "/api/config" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/config.js",
+      "destination": "/api/config"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ],
   "crons": [
     {
       "path": "/api/keepalive",
       "schedule": "17 6 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)\\.(js|css|html)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
     }
   ]
 }

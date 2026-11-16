@@ -6,7 +6,7 @@
    ════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var ID = 't-eclat', FLAG = 'mdl_eclat_v2';
+  var ID = 't-eclat', FLAG = 'mdl_eclat_v3';
   var THREE_URL = '/vendor/three.min.js';
   var ENGINE_URL = '/eclat3d.js';
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;

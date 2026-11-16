@@ -2506,7 +2506,7 @@ var R = []; /* app bianca: nessuna ricetta precaricata, ogni account parte vuoto
 
 var _aiPhotos=[],CU=[],dose=1,curCat='Tutte',curSec=null,isList=false,isAdmin=false;
 var _editRec=null,_delRec=null,_moveRec=null,_aiB64=null,_aiMime=null;
-var THEMES=['t-crema','t-ebano','t-bordeaux','t-ottanio','t-carta','t-avorio'];
+var THEMES=['t-eclat','t-crema','t-ebano','t-bordeaux','t-ottanio','t-carta','t-avorio'];
 var SLABELS={colazioni:'Monoporzioni','fine-dining':'Fine Dining',gelateria:'Gelateria',torte:'Torte',tutti:'Tutti i Ricettari'};
 var SSUBS={colazioni:'Impasti \u00b7 Creme \u00b7 Lievitati','fine-dining':'Alta cucina \u00b7 Dessert',gelateria:'Gelati \u00b7 Sorbetti \u00b7 Semifreddi',torte:'Torte \u00b7 Mousse \u00b7 Entremet',tutti:'Tutte le ricette'};
 
@@ -4755,7 +4755,7 @@ function mgPickConfirm(){
 }
 
 function boot(){
-  var th;try{th=localStorage.getItem('mdl_th');}catch(e){}setTheme((th&&THEMES.indexOf(th)!==-1)?th:'t-crema');
+  var th;try{th=localStorage.getItem('mdl_th');}catch(e){}setTheme((th&&THEMES.indexOf(th)!==-1)?th:'t-eclat');
   var dots=document.querySelectorAll('.t-dot');for(var di=0;di<dots.length;di++){(function(d){d.addEventListener('click',function(){setTheme(d.dataset.t);});})(dots[di]);}
   var _gmb=qs('globalMenuBtn');
   if(isUnlocked()){
@@ -6019,7 +6019,7 @@ var LIB={books:[],progress:{},setup:null,covers:{},loaded:false,q:''};
     openStudio(Object.assign({auto:true},input));
   }
   function pageToRecipe(){
-    if(R&&R.api&&R.api.thumb&&R.api.pageCount){return pagePicker();}
+    if(R&&R.api&&R.api.thumb&&R.api.pageCount&&R.api.pageCount()>0){return pagePicker();}
     if(!R||!R.api||!R.api.pageContent){toast('Apri prima il libro','err');return;}
     toast('Preparo la pagina\u2026');
     R.api.pageContent().then(function(c){
@@ -6036,7 +6036,7 @@ var LIB={books:[],progress:{},setup:null,covers:{},loaded:false,q:''};
   function trLang(){try{return localStorage.getItem('mdl_tr_lang')||'it';}catch(e){return 'it';}}
   function trCacheKey(label,lang,text){var s=0;for(var i=0;i<text.length;i++)s=(s*31+text.charCodeAt(i))|0;return 'mdl_tr_'+lang+'_'+(R?R.book.id:'')+'_'+s;}
   function translatePages(){
-    if(R&&R.api&&R.api.thumb&&R.api.pageCount)return pagePicker('translate');
+    if(R&&R.api&&R.api.thumb&&R.api.pageCount&&R.api.pageCount()>0)return pagePicker('translate');
     if(!R||!R.api||!R.api.pageContent){toast('Apri prima il libro','err');return;}
     toast('Preparo la pagina…');
     R.api.pageContent().then(function(c){
@@ -6223,7 +6223,34 @@ var LIB={books:[],progress:{},setup:null,covers:{},loaded:false,q:''};
         },
         clearSelection:function(){try{rend.getContents().forEach(function(c){c.window.getSelection().removeAllRanges();});}catch(e){}},
         applySettings:function(s){rend.themes.default(epubStyle(s));rend.themes.fontSize((s.size||100)+'%');try{rend.getContents().forEach(function(c){c.addStylesheetRules(epubStyle(s));});}catch(e){}},
-        pageContent:function(){
+        /* pagine dell'EPUB = posizioni calcolate da epub.js (circa 1200 caratteri ciascuna):
+           così anche gli EPUB hanno numero di pagine, anteprime e scelta delle pagine per l'AI */
+        pageCount:function(){try{return book.locations.length()||0;}catch(e){return 0;}},
+        current:function(){try{var c=rend.currentLocation();return Math.max(1,book.locations.locationFromCfi(c.start.cfi)+1);}catch(e){return 1;}},
+        pageText:function(n){
+          var L=book.locations.length();if(!L)return Promise.resolve('');
+          n=Math.max(1,Math.min(L,n));
+          var a=book.locations.cfiFromLocation(n-1),b=n<L?book.locations.cfiFromLocation(n):null;
+          return book.getRange(a).then(function(ra){
+            var doc=ra.startContainer.ownerDocument,r=doc.createRange();r.setStart(ra.startContainer,ra.startOffset);
+            var endDoc=function(){r.setEnd(doc.body,doc.body.childNodes.length);};
+            if(!b){endDoc();return r.toString();}
+            return book.getRange(b).then(function(rb){if(rb&&rb.startContainer.ownerDocument===doc)r.setEnd(rb.startContainer,rb.startOffset);else endDoc();return r.toString();},function(){endDoc();return r.toString();});
+          }).then(function(t){return String(t||'').replace(/\s+\n/g,'\n').replace(/[ \t]+/g,' ').trim();}).catch(function(){return '';});
+        },
+        thumb:function(n,w){
+          return api.pageText(n).then(function(t){
+            var W=w||150,H=Math.round(W*1.38),cv=document.createElement('canvas'),k=2;cv.width=W*k;cv.height=H*k;var c=cv.getContext('2d');c.scale(k,k);
+            c.fillStyle='#FBF8F1';c.fillRect(0,0,W,H);c.fillStyle='#2b2620';c.font='600 7px Georgia,serif';
+            var words=String(t||'').replace(/\s+/g,' ').split(' '),y=14,line='',lh=8.4,mx=8;
+            c.fillStyle='#9a7b4f';c.fillRect(mx,6,W*0.3,1);c.fillStyle='#3a342c';c.font='6.2px Georgia,serif';
+            for(var i=0;i<words.length&&y<H-6;i++){var tl=line?line+' '+words[i]:words[i];if(c.measureText(tl).width>W-mx*2){c.fillText(line,mx,y);y+=lh;line=words[i];}else line=tl;}
+            if(line&&y<H-6)c.fillText(line,mx,y);
+            return cv.toDataURL('image/png');
+          });
+        },
+        pageContent:function(nn){
+          if(nn){return api.pageText(nn).then(function(t){return {text:t,label:'pag. '+nn};});}
           try{var c=rend.getContents()[0];var loc=rend.currentLocation();var t='';
             t=c?String(c.document.body.innerText||''):'';
             // il capitolo può essere lungo: prendo il testo intorno alla pagina visibile
