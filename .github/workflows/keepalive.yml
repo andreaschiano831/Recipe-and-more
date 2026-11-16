@@ -1,0 +1,14 @@
+# Riserva: se per qualche motivo il cron di Vercel non parte, GitHub sveglia il database ogni 2 giorni.
+# Imposta nel repository: Settings → Secrets and variables → Actions → Variables → APP_URL (es. https://tuaapp.vercel.app)
+name: Database sveglio
+on:
+  schedule:
+    - cron: "41 7 */2 * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lettura leggera su Supabase
+        run: |
+          if [ -n "${{ vars.APP_URL }}" ]; then curl -fsS "${{ vars.APP_URL }}/api/keepalive"; else echo "APP_URL non impostata"; fi
