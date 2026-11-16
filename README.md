@@ -45,3 +45,9 @@ Facoltativo: in GitHub → *Settings → Secrets and variables → Actions → V
 - `white.js`: lo strato account (login, separazione dei dati, logo, sezioni, sincronizzazione delle impostazioni)
 - `api/import.js`: l'AI sul server · `api/config.js`: serve `/config.js` con URL e chiave pubblica · `api/keepalive.js`
 - `supabase/schema.sql`: il database completo, con le regole di sicurezza
+
+## Interfaccia ÉCLAT
+- `eclat.css` / `eclat.js`: tema Éclat (predefinito al primo accesso), pagina d'accesso e home con scena 3D
+- `eclat-lab.css` / `eclat-lab.js`: barra in alto, Laboratorio 3D sulla ricetta, Bilanciamento con mise en place, Produzione con timer, sous-chef AI, animazioni
+- `eclat3d.js` + `vendor/three.min.js`: motore delle scene 3D, caricato solo quando serve
+Tutto vale solo con il tema Éclat: scegliendo un altro tema l'app torna com'era.

@@ -2248,6 +2248,10 @@ body.ck-open .tabbar{display:none!important}
 .wl-sec-a button{width:30px;height:30px;border-radius:8px;border:1px solid var(--cb,#ddd);background:var(--bg,#fff);color:var(--ink,#222);cursor:pointer;font-size:.9rem}
 .wl-cnt{font-size:.66rem;color:var(--smoke2,#777);min-width:1.6rem;text-align:center}
 </style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/eclat.css">
+<link rel="stylesheet" href="/eclat-lab.css">
 </head>
 <body onload="WL.start()">
 
@@ -4218,7 +4222,7 @@ function clearAiPhotos(){
   var abtn=qs('aiAnalyseBtn');if(abtn){abtn.style.display='block';abtn.disabled=false;}
 }
 var _rpRec=null,_rpDose=1;
-function openRecipePanel(r){_rpRec=r;_rpDose=1;var g=function(id){return document.getElementById(id);};g('rpName').textContent=r.n||'';g('rpCat').textContent=r.c||'';g('rpPiatto').textContent=r.piatto?r.piatto.toUpperCase():'';var meta=g('rpMeta');if(meta)meta.textContent=(r.i?r.i.length:0)+' ingredienti · '+({colazioni:'Monoporzioni','fine-dining':'Fine Dining',gelateria:'Gelateria',torte:'Torte'}[r.s]||r.s||'');g('rpDose').textContent='1';g('rpXlbl').textContent='1';rpRenderIng();var pw=g('rpProcWrap'),pe=g('rpProc');if(r.p&&r.p.trim()){pe.textContent=r.p;pw.style.display='block';}else pw.style.display='none';var p=g('recipePanelBg');if(p.parentNode!==document.body)document.body.appendChild(p);p.style.display='block';p.scrollTop=0;document.body.style.overflow='hidden';}
+function openRecipePanel(r){_rpRec=r;_rpDose=1;var g=function(id){return document.getElementById(id);};g('rpName').textContent=r.n||'';g('rpCat').textContent=r.c||'';g('rpPiatto').textContent=r.piatto?r.piatto.toUpperCase():'';var meta=g('rpMeta');if(meta)meta.textContent=(r.i?r.i.length:0)+' ingredienti · '+(WL.secLabel(r.s)||r.s||'');g('rpDose').textContent='1';g('rpXlbl').textContent='1';rpRenderIng();var pw=g('rpProcWrap'),pe=g('rpProc');if(r.p&&r.p.trim()){pe.textContent=r.p;pw.style.display='block';}else pw.style.display='none';var p=g('recipePanelBg');if(p.parentNode!==document.body)document.body.appendChild(p);p.style.display='block';p.scrollTop=0;document.body.style.overflow='hidden';}
 function closeRecipePanel(){document.getElementById('recipePanelBg').style.display='none';document.body.style.overflow='';_rpRec=null;if(_mgReturn){var f=_mgReturn;_mgReturn=null;setTimeout(f,60);}}
 /* ════ PERCENTUALI INGREDIENTI ════
    % sul peso totale (solo ingredienti a peso/volume) oppure % sulla farina (farina = 100). */
@@ -7038,6 +7042,7 @@ function rpChipsSync(){var c=document.getElementById('rpChips');if(!c)return;[].
 /* ════ SCELTA DEL TEMA — anteprime in un pannello ════ */
 (function(){
   var PAL={
+    't-eclat':{n:'Éclat',d:'Chiaro · salvia e vetro',bg:'#EEF1EA',card:'#FFFFFF',ink:'#151914',acc:'#7FA52B'},
     't-crema':{n:'Crema',d:'Chiaro · caldo',bg:'#F5EFE0',card:'#FDFAF3',ink:'#1A1410',acc:'#A8772A'},
     't-avorio':{n:'Avorio',d:'Chiaro · luminoso',bg:'#FAF8F2',card:'#FFFFFF',ink:'#1C1A18',acc:'#8B7A3A'},
     't-carta':{n:'Carta',d:'Chiaro · pergamena',bg:'#EDE4D0',card:'#F5EDD8',ink:'#1E1810',acc:'#A87830'},
@@ -7045,7 +7050,7 @@ function rpChipsSync(){var c=document.getElementById('rpChips');if(!c)return;[].
     't-bordeaux':{n:'Bordeaux',d:'Scuro · vino',bg:'#1A0A10',card:'#240E16',ink:'#F0E4E8',acc:'#D4A878'},
     't-ottanio':{n:'Ottanio',d:'Scuro · verde mare',bg:'#081418',card:'#0C1E24',ink:'#E4F0EE',acc:'#8CCCC0'}
   };
-  var ORDER=['t-crema','t-avorio','t-carta','t-ebano','t-bordeaux','t-ottanio'];
+  var ORDER=['t-eclat','t-crema','t-avorio','t-carta','t-ebano','t-bordeaux','t-ottanio'];
   function cur(){for(var k in PAL)if(document.body.classList.contains(k))return k;return 't-crema';}
   function chipHtml(){var p=PAL[cur()];return '<span class="th-sw" style="background:'+p.bg+';box-shadow:inset 0 0 0 4px '+p.acc+'"></span><span class="th-cn">'+p.n+'</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>';}
   function decorate(){
@@ -7966,5 +7971,7 @@ function aiTranslate(text,lang,onProg){
   </div>
 </div>
 <div id="pdBg" class="pd-bg" onclick="if(event.target===this)pdClose()"><div id="pdSheet" class="pd-sheet"></div></div>
+<script src="/eclat.js"></script>
+<script src="/eclat-lab.js"></script>
 </body>
 </html>

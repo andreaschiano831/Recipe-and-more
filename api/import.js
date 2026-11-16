@@ -246,6 +246,13 @@ module.exports = async function handler(req, res) {
     if (r.error) return res.status(r._status && r._status >= 400 ? r._status : 502).json({ error: r.error });
     return res.status(200).json({ text: r.text });
   }
+  if (body.ask) {
+    const sys = 'Sei il sous-chef di un laboratorio di pasticceria e cucina professionale. Rispondi in italiano, in modo pratico e conciso (massimo 6 frasi o un breve elenco), con quantità in grammi e temperature precise quando servono. Basati sulla ricetta fornita; se un dato manca dillo, non inventarlo.';
+    const user = 'RICETTA\n' + String(body.context || '').slice(0, 9000) + '\n\nDOMANDA DELLO CHEF\n' + String(body.ask).slice(0, 1500);
+    const r = await aiGroqChat(GROQ_URL, key, 'text', sys, user, null, false);
+    if (r.error) return res.status(r._status && r._status >= 400 ? r._status : 502).json({ error: r.error });
+    return res.status(200).json({ answer: r.text });
+  }
   if (body.advice) {
     const sys = 'Sei un pastry chef consulente di alto livello. Ricevi una ricetta con calcoli di composizione stimati. Rispondi in italiano con 3-6 consigli pratici e brevi per migliorarla o bilanciarla (zuccheri, grassi, solidi, struttura, dolcezza; per gelati e sorbetti anche POD/PAC e servizio). Per ogni correzione indica la quantità in grammi. Usa solo i dati forniti, non inventare ingredienti che non servono; se i dati non bastano dillo. Niente premesse, solo elenco puntato.';
     const r = await aiGroqChat(GROQ_URL, key, 'text', sys, String(body.advice).slice(0, 8000), null, false);
