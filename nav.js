@@ -35,8 +35,30 @@
 
   /* ── livelli che il gesto indietro sa chiudere, dal più alto ── */
   function vis(id) { var e = $(id); return !!e && e.style.display !== 'none' && getComputedStyle(e).display !== 'none'; }
+  /* finestre e fogli generici (impostazioni, documenti, menu, conferme…):
+     si chiudono come toccando lo sfondo, o con il loro «Chiudi / Annulla» */
+  var SKIP = { mBg: 1, recipePanelBg: 1, cucinaBg: 1 };
+  function shown(e) { if (!e.getClientRects().length) return false; var cs = getComputedStyle(e); return cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity > 0.05; }
+  function topBackdrop() {
+    var c = [].slice.call(document.querySelectorAll('.wl-bg,.pd-bg,.pp-bg,[class$="-bg"].on,[id$="Bg"].on,[id$="Bg"][style*="flex"],[id$="Bg"][style*="block"]'))
+      .filter(function (e) { return !SKIP[e.id] && !e.closest('#xlView,#sx') && shown(e); });
+    return c.length ? c[c.length - 1] : null;
+  }
+  function closeBackdrop(bg) {
+    var before = document.contains(bg) && shown(bg);
+    bg.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    setTimeout(function () {
+      if (document.contains(bg) && shown(bg) && before) {
+        var b = [].slice.call(bg.querySelectorAll('button,[role=button]')).filter(function (x) { var t = (x.getAttribute('aria-label') || x.textContent || '').trim().toLowerCase(); return /^(×|✕|chiudi|annulla|fatto|indietro)$/.test(t) || /close|chiudi|\bx\b/.test(x.className); })[0];
+        if (b) b.click(); else bg.classList.remove('on');
+      }
+    }, 30);
+  }
+  function drawerOpen() { var d = $('MDL_DRW'); return !!d && d.style.display !== 'none' && shown(d); }
   var LAYERS = [
     { open: function () { return !!document.querySelector('.modal-bg.on,#mBg.on'); }, close: null },        /* modifica ricetta: non chiudere, si perderebbero i dati */
+    { open: drawerOpen, close: function () { MDL_CLOSE(); } },
+    { open: function () { return !!topBackdrop(); }, close: function () { closeBackdrop(topBackdrop()); } },
     { open: function () { return body.classList.contains('sx-open'); }, close: function () { SX.close(); } },
     { open: function () { return body.classList.contains('rd-open'); }, close: function () { window.closeReaderApp && closeReaderApp(); } },
     { open: function () { return body.classList.contains('ck-open'); }, close: function () { closeCucina(); } },

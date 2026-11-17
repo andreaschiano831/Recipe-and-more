@@ -868,3 +868,26 @@ body.t-eclat .xl-card-ms{border-radius:10px}
 .xl .xr-ptab th:nth-child(3),.xl .xr-ptab td:nth-child(3){width:16%}
 .xl .xr-ptab td{overflow:hidden;text-overflow:ellipsis}
 .xl .xr-ptab td:nth-child(4){white-space:nowrap}
+#xlRpMold,#xlRpMold.xl-rp-btn{background:var(--card,#fff)!important;color:var(--ink)!important;border:1px solid var(--cb)!important;box-shadow:none!important;padding:8px 15px!important;gap:7px;display:inline-flex;align-items:center}
+#xlRpMold span{color:var(--ink)!important;display:inline!important}
+#xlRpMold .ico{display:block!important;stroke:currentColor!important}
+/* ═══ telefono ruotato / schermi medi ═══ */
+@media(max-width:899px){.xl-view .lb-bench>.lb-col{width:100%;min-width:0}}
+@media(min-width:600px) and (max-width:899px){
+  .xl-view .lb-bench{display:grid!important;grid-template-columns:minmax(230px,300px) minmax(0,1fr)!important;gap:14px!important;align-items:start}
+  .xl-view .lb-mise{position:sticky!important;top:10px}
+  .xr-bar{grid-template-columns:repeat(2,minmax(0,300px))}
+}
+@media(orientation:landscape) and (max-height:520px){
+  .xr-act{width:min(440px,calc(100% - 20px));padding:4px;border-radius:18px;bottom:calc(6px + env(safe-area-inset-bottom))}
+  .xr-act button{height:42px;flex-direction:row!important;gap:7px;font-size:12.5px}
+  .xr-act button .ico{width:18px;height:18px}
+  .xl-view.xl{padding-bottom:calc(64px + env(safe-area-inset-bottom))!important}
+  .xl-view .xl-shell{padding-left:max(20px,env(safe-area-inset-left))!important;padding-right:max(20px,env(safe-area-inset-right))!important}
+  .xl-view .xl-title{font-size:30px}
+  .xr-sh{left:auto;right:0;top:0;bottom:0;margin:0;max-width:none;max-height:none;width:min(560px,62vw);border-radius:20px 0 0 20px;transform:translateX(100%);padding-right:env(safe-area-inset-right)}
+  .xr-sheet.on .xr-sh{transform:none}
+  .xr-grab{display:none}.xr-sh-h{padding-top:12px}
+  .xr-badge{top:3px;left:auto;right:10px}
+}
+.xl-view .lb-mise,.xl-view .lb-side{grid-area:auto!important}
