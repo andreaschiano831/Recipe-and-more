@@ -194,7 +194,11 @@
      sous-chef. Sul telefono tre schede: Mise · Procedimento · Timer. */
   var BENCH_KEY = 'xl_bench';
   try { var _wb = JSON.parse(localStorage.getItem(BENCH_KEY) || 'null'); if (_wb && typeof _wb === 'object') XL.weighed = _wb; } catch (e) {}
-  function saveBench() { try { localStorage.setItem(BENCH_KEY, JSON.stringify(XL.weighed)); } catch (e) {} }
+  function saveBench(r) {
+    if (r) { var t = XL.weighed._t || (XL.weighed._t = {}); t[String(r._id || r.n)] = Date.now(); }
+    try { localStorage.setItem(BENCH_KEY, JSON.stringify(XL.weighed)); } catch (e) {}
+    try { if (window.HM) HM.soon(); } catch (e) {}
+  }
   function stepsOf(r) { var k = 'p:' + String(r._id || r.n); return XL.weighed[k] || (XL.weighed[k] = {}); }
   function curStep(r, n) { var d = stepsOf(r); for (var i = 0; i < n; i++) if (!d[i]) return i; return -1; }
   var STOPW = /^(di|del|della|dello|dei|delle|in|al|alla|allo|con|e|ed|per|da|sale|un|una|il|la|lo|le|gli|i)$/;
@@ -220,7 +224,7 @@
   }
   XL.stepHtml = function (text, ings, d) { var o = XL.dose; if (d) XL.dose = d; try { return stepHtml(text, ings || []); } finally { XL.dose = o; } };
   XL.stepTitle = function (t) { return stepTitle(t); };
-  XL.bench = function (r) { return { w: weighedOf(r), sd: stepsOf(r), save: saveBench }; };
+  XL.bench = function (r) { return { w: weighedOf(r), sd: stepsOf(r), save: function () { saveBench(r); } }; };
   XL.refreshLab = function () { if (XL.viewOpen && XL.mode === 'lab' && XL.rec) { var v = $('xlView'), y = v ? v.scrollTop : 0; renderLab(); if (v) v.scrollTop = y; } };
   function stepTitle(s) { var t = String(s).split(/[.;:]/)[0].trim(); if (t.length > 64) t = t.slice(0, 62).replace(/\s+\S*$/, '') + '…'; return t; }
 
@@ -312,12 +316,12 @@
     /* mise en place */
     [].forEach.call(host.querySelectorAll('.lb-ing-row input'), function (c) {
       c.onchange = function () {
-        var row = c.closest('.lb-ing-row'), i = +row.dataset.i; w[i] = c.checked; row.classList.toggle('done', c.checked); saveBench(); miseUi();
+        var row = c.closest('.lb-ing-row'), i = +row.dataset.i; w[i] = c.checked; row.classList.toggle('done', c.checked); saveBench(r); miseUi();
         [].forEach.call(host.querySelectorAll('.lb-uses span'), function () {});
         if (c.checked && misePct(r) === 100) XL.toast('Mise en place completa');
       };
     });
-    var mr = $('lbMiseReset'); if (mr) mr.onclick = function () { for (var k in w) delete w[k]; saveBench(); renderLab(); };
+    var mr = $('lbMiseReset'); if (mr) mr.onclick = function () { for (var k in w) delete w[k]; saveBench(r); renderLab(); };
     function miseUi() {
       var c = 0; for (var k in w) if (w[k]) c++;
       var f = $('lbMiseFill'); if (f) f.style.width = (ings.length ? c / ings.length * 100 : 0) + '%';
@@ -326,7 +330,7 @@
     miseUi();
     /* procedimento */
     function setDone(i, on) {
-      sd[i] = on; if (!on) delete sd[i]; saveBench();
+      sd[i] = on; if (!on) delete sd[i]; saveBench(r);
       var c = curStep(r, n), dn = 0; for (var j = 0; j < n; j++) if (sd[j]) dn++;
       [].forEach.call(host.querySelectorAll('.lb-step'), function (el) {
         var k = +el.dataset.i; el.classList.toggle('done', !!sd[k]); el.classList.toggle('cur', k === c);
@@ -355,7 +359,7 @@
       if (tb) tb.onclick = function (e) { e.stopPropagation(); XLT.add({ label: stepTitle(D.steps[i]), sub: r.n, min: +tb.dataset.min, key: String(r._id || r.n) + ':' + i }); };
     });
     if (n) $('lbDone').hidden = curStep(r, n) !== -1;
-    var sr = $('lbStepsReset'); if (sr) sr.onclick = function () { for (var k in sd) delete sd[k]; saveBench(); renderLab(); };
+    var sr = $('lbStepsReset'); if (sr) sr.onclick = function () { for (var k in sd) delete sd[k]; saveBench(r); renderLab(); };
     var ap = $('lbAddProc'); if (ap) ap.onclick = function () { closeView(); try { openEdit(r); } catch (e) {} };
     /* timer */
     [].forEach.call(host.querySelectorAll('.lb-tq button'), function (b) { b.onclick = function () { XLT.add({ label: ($('lbTLab').value || '').trim() || ('Timer ' + b.dataset.q + ' min'), sub: r.n, min: +b.dataset.q }); $('lbTLab').value = ''; }; });
@@ -474,6 +478,7 @@
       if (box) { box.innerHTML = list.length ? list.map(function (t) { return item(t, true); }).join('') : '<p class="lb-empty sm">Nessun timer attivo. Avvialo da un passaggio o qui sotto.</p>'; bind(box); }
       var n = $('lbTimN'); if (n) n.textContent = list.length ? list.length + ' attiv' + (list.length === 1 ? 'o' : 'i') : '';
       var tc = $('lbTabCount'); if (tc) tc.textContent = list.length ? list.length : '';
+      var hmt = $('hmTimers'); if (hmt) { hmt.innerHTML = list.map(function (t) { return item(t, true); }).join(''); bind(hmt); var hc = $('hmTimerCard'); if (hc) hc.hidden = !list.length; }
       var kc = $('kcTimers'); if (kc) { kc.innerHTML = list.map(function (t) { return item(t, false); }).join(''); bind(kc); kc.hidden = !list.length; }
       dock();
     }

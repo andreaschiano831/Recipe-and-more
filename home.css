@@ -1,0 +1,73 @@
+/* ═══ HOME OPERATIVA ═══ */
+.hm{width:min(1180px,calc(100% - 32px));margin:0 auto 22px;font-family:"DM Sans",system-ui,sans-serif;color:var(--ink,#1A1A16)}
+.hm svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hm-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:4px 2px 14px}
+.hm-date{font:600 10.5px "DM Sans",sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--gold3,#9A7B4F)}
+.hm h2{font:600 clamp(26px,3.2vw,34px)/1.1 "Cormorant Garamond",Georgia,serif;margin:4px 0 0;letter-spacing:-.01em}
+.hm-stats{display:flex;gap:14px;font-size:12.5px;color:var(--smoke2,#7B796E)}
+.hm-stats b{font:600 15px "JetBrains Mono",ui-monospace,monospace;color:var(--ink,#1A1A16);margin-right:4px}
+.hm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.hm-card{background:var(--card,#fff);border:1px solid var(--cb,rgba(26,26,22,.1));border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(26,26,22,.04),0 10px 30px -22px rgba(26,26,22,.25);min-width:0;animation:hmIn .45s cubic-bezier(.2,.8,.2,1) backwards}
+.hm-card[hidden]{display:none}
+.hm-k{font:700 10px "DM Sans",sans-serif;letter-spacing:.15em;text-transform:uppercase;color:var(--gold3,#9A7B4F)}
+.hm-ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hm-n{font:600 11px "JetBrains Mono",ui-monospace,monospace;color:var(--smoke2)}
+.hm-prod{grid-column:span 2;grid-row:span 2}
+.hm-prs{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.hm-pr{border:1px solid var(--cb,rgba(26,26,22,.1));border-radius:14px;padding:12px;background:var(--ctrl,#F7F5EF);display:flex;flex-direction:column;gap:12px;transition:opacity .25s,transform .25s;animation:hmIn .4s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
+.hm-pr.out{opacity:0;transform:scale(.96)}
+.hm-pr.done{opacity:.75}
+.hm-pr-top{display:flex;align-items:center;gap:12px;min-width:0}
+.hm-ring{--p:0;width:46px;height:46px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--e-mid,#55623F) calc(var(--p)*1%),rgba(26,26,22,.09) 0);position:relative}
+.hm-ring::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--ctrl,#F7F5EF)}
+.hm-ring b{position:relative;font:600 11px "JetBrains Mono",ui-monospace,monospace}
+.hm-pr-t{display:flex;flex-direction:column;min-width:0}
+.hm-pr-t b{font:600 18px/1.2 "Cormorant Garamond",Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-pr-t small{font-size:11.5px;color:var(--smoke2,#7B796E);margin-top:2px}
+.hm-pr-a{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.hm-b{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:10px;border:1px solid var(--cb,rgba(26,26,22,.14));background:#fff;color:var(--ink,#1A1A16);font:600 12.5px "DM Sans",sans-serif;cursor:pointer}
+.hm-b.dark{background:var(--ink,#1A1A16);border-color:var(--ink,#1A1A16);color:#fff}
+.hm-ib{margin-left:auto;width:30px;height:30px;border-radius:8px;border:0;background:transparent;color:var(--smoke3,#A9A699);cursor:pointer;display:grid;place-items:center}
+.hm-ib:hover{background:rgba(26,26,22,.06);color:var(--ink)}
+.hm-tl{display:flex;flex-direction:column;gap:8px}
+.hm-book{text-align:left;display:flex;flex-direction:column;gap:4px;cursor:pointer;font:inherit;color:inherit}
+.hm-book b{font:600 19px/1.2 "Cormorant Garamond",Georgia,serif;margin-top:6px}
+.hm-book small{font-size:12px;color:var(--smoke2)}
+.hm-bar{display:block;height:4px;border-radius:4px;background:rgba(26,26,22,.08);overflow:hidden;margin-top:8px}
+.hm-bar i{display:block;height:100%;background:var(--e-mid,#55623F)}
+.hm-book:hover{border-color:rgba(85,98,63,.4)}
+.hm-qs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:10px}
+.hm-q{display:flex;align-items:center;gap:8px;height:42px;padding:0 12px;border-radius:11px;border:1px solid var(--cb,rgba(26,26,22,.12));background:var(--ctrl,#F7F5EF);color:var(--ink);font:600 12.5px "DM Sans",sans-serif;cursor:pointer;text-align:left;transition:background .2s,border-color .2s}
+.hm-q:hover{background:#fff;border-color:rgba(85,98,63,.4)}
+.hm-q span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-start{grid-column:span 2}
+.hm-start h3{font:600 24px/1.15 "Cormorant Garamond",Georgia,serif;margin:6px 0 6px}
+.hm-start p{font-size:13.5px;line-height:1.55;color:var(--smoke,#55544B);margin:0 0 14px;max-width:560px}
+@keyframes hmIn{from{opacity:0;transform:translateY(8px)}}
+@media (max-width:980px){.hm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hm-prod{grid-row:auto}}
+@media (max-width:640px){
+  .hm{width:calc(100% - 24px)}
+  .hm-grid{grid-template-columns:minmax(0,1fr)}
+  .hm-prod,.hm-start{grid-column:auto}
+  .hm-prs{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none}
+  .hm-pr{flex:0 0 82%;scroll-snap-align:start}
+  .hm-qs{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+html[data-motion=off] .hm-card,html[data-motion=off] .hm-pr{animation:none}
+/* due colonne: a sinistra il lavoro, a destra timer e lettura */
+.hm-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:14px;align-items:start}
+.hm-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.hm-prod,.hm-start{grid-column:auto;grid-row:auto}
+.hm-side:empty{display:none}
+.hm .lb-ring{width:48px;height:48px}
+.hm .lb-timer .lb-ring circle{stroke-width:3.2}
+.hm-quick .hm-qs{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+@media (max-width:980px){.hm-grid{grid-template-columns:minmax(0,1fr) minmax(250px,.9fr)}}
+@media (max-width:760px){
+  .hm-grid{display:flex;flex-direction:column}
+  .hm-col{display:contents}
+  .hm-start{order:0}.hm-prod{order:1}.hm-timers{order:2}.hm-book{order:3}.hm-quick{order:4}
+  .hm-card{width:100%;box-sizing:border-box}
+}
+.hm-grid:not(:has(.hm-side > :not([hidden]))){grid-template-columns:minmax(0,1fr)}
+.hm-grid:not(:has(.hm-side > :not([hidden]))) .hm-side{display:none}
