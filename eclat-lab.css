@@ -805,3 +805,66 @@ body.xl-open .tabbar,body.xl-open #fabWrap{display:none!important}
 @media (prefers-reduced-motion:reduce){.xr-sh,.xr-sh-bg,.xr-pane:not([hidden]){transition:none!important;animation:none!important}}
 .xr-grab,.xr-sh-h,.xr-seg{flex-shrink:0}
 @media(min-width:900px){.xr-dose{flex:0 1 340px}}
+/* ═══ testata ricetta: dose + stampi, stato del bilancio ═══ */
+.xr-bar{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+@media(min-width:900px){.xr-bar{grid-template-columns:repeat(2,minmax(0,300px))}.xr-dose{flex:none}}
+.xr-mold strong{font:600 14.5px "DM Sans",sans-serif!important;min-width:0;max-width:100%}
+.xr-mold strong span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.xr-mold .ico{flex-shrink:0;opacity:.7}
+.xr-bal{flex-direction:row!important;align-items:center!important;gap:10px!important;min-height:0!important;width:100%;margin-top:8px;padding:10px 14px!important;border-radius:12px!important;font:13px "DM Sans",sans-serif;color:var(--ink2)!important}
+.xr-bal[hidden]{display:none!important}
+.xr-bal>span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xr-bal b{font-weight:600;color:var(--ink)}
+.xr-bal #xlBalTxt{color:var(--ink2)}
+.xr-bal.warn #xlBalTxt{color:var(--xr-warn);font-weight:600}.xr-bal.ok #xlBalTxt{color:var(--xr-ok);font-weight:600}
+.xr-bal em{font-style:normal;font-size:12px;color:var(--smoke2);flex-shrink:0}
+.xr-dot{width:8px;height:8px;border-radius:50%;background:var(--smoke3);flex-shrink:0}
+.xr-bal.warn .xr-dot{background:var(--xr-warn);box-shadow:0 0 0 4px color-mix(in srgb,var(--xr-warn) 18%,transparent)}
+.xr-bal.ok .xr-dot{background:var(--xr-ok)}
+.xr-bal.ok strong::before{content:none}
+.xr-act button{position:relative}
+.xr-badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--xr-warn);color:#fff;font:700 10px/17px "DM Sans",sans-serif;text-align:center}
+.xr-badge[hidden]{display:none}
+/* card della collezione: Laboratorio + Stampi */
+.xl-card-ctas{display:flex;gap:6px;margin:.4rem .9rem .9rem}
+.xl-card-ctas .xl-card-cta{flex:1;margin:0}
+.xl-card-ms{display:inline-flex;align-items:center;gap:6px;padding:0 14px;border-radius:999px;border:1px solid var(--cb);background:var(--card,#fff);color:var(--ink);font:600 12px "DM Sans",sans-serif;cursor:pointer;white-space:nowrap;transition:border-color .2s,transform .15s}
+.xl-card-ms:hover{border-color:var(--e-mid)}.xl-card-ms:active{transform:scale(.96)}
+.xl-card-ms .ico,.xl-rp-ms .ico{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
+.grid.list .xl-card-ctas{display:none}
+body.t-eclat .xl-card-ms{border-radius:10px}
+.xl-rp-btn.xl-rp-ms{background:var(--card,#fff);color:var(--ink);border:1px solid var(--cb);padding:8px 15px;margin-left:.4rem}
+/* ═══ stampi: al volo, contenitori, risultato, preparazione ═══ */
+.xl .ms.ms2{display:flex!important;flex-direction:column;gap:12px}
+.xl .ms2 .ms-res{display:flex;flex-direction:column;gap:12px;position:static!important}
+.xl .ms-quick .lb-eyebrow{display:block;margin:0 0 8px}
+.xl .ms-qs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -20px;padding:2px 20px 4px;scroll-snap-type:x proximity}
+.xl .ms-qs::-webkit-scrollbar{display:none}
+.xl .ms-qs button{flex:0 0 auto;scroll-snap-align:start;height:36px;padding:0 13px;border-radius:99px;border:1px solid var(--cb);background:var(--card);color:var(--ink);font:600 12.5px "DM Sans",sans-serif;white-space:nowrap;cursor:pointer;transition:background .2s,color .2s,border-color .2s,transform .15s}
+.xl .ms-qs button:active{transform:scale(.96)}
+.xl .ms-qs button.on{background:var(--btn-bg);border-color:var(--btn-bg);color:var(--btn-ink)}
+.xl .ms-qs button[data-qm]{border-color:color-mix(in srgb,var(--gold3) 50%,transparent)}
+.xl .ms-break small{color:var(--smoke2);font-size:11.5px}
+.xl .ms-comfy{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0 2px}
+.xl .ms-comfy>span{font:600 10.5px "DM Sans",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold3);margin-right:4px}
+.xl .ms-comfy button{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 11px;border-radius:10px;border:1px solid var(--cb);background:var(--card);color:var(--ink);font:600 13px "JetBrains Mono",ui-monospace,monospace;cursor:pointer}
+.xl .ms-comfy button small{font:500 10.5px "DM Sans",sans-serif;color:var(--smoke2)}
+.xl .ms-comfy button:hover{border-color:var(--e-mid)}
+.xl .ms-prep summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none}
+.xl .ms-prep summary::-webkit-details-marker{display:none}
+.xl .ms-prep summary::after{content:"";width:8px;height:8px;border:solid var(--smoke2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);transition:transform .25s;flex-shrink:0;margin-left:4px}
+.xl .ms-prep[open] summary::after{transform:rotate(-135deg)}
+.xl .ms-prep[open] summary{margin-bottom:12px}
+.xl .ms-prep-s{flex:1;text-align:right;font-size:12px;color:var(--smoke2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xl .xr-ptab{width:100%;font-size:13px}
+.xl .xr-ptab td,.xl .xr-ptab th{padding:7px 6px;border-bottom:1px solid var(--cb);text-align:left}
+.xl .xr-ptab .n{text-align:right;white-space:nowrap}
+.xl .xr-ptab th{font:600 10px "DM Sans",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--smoke2)}
+.xl .xr-ptab .xl-role{color:var(--smoke2);font-size:12px}
+.xl .ms.ms2 .ms-res{order:0!important}
+.xl .xr-ptab{min-width:0!important;table-layout:fixed}
+.xl .xr-ptab th:nth-child(1),.xl .xr-ptab td:nth-child(1){width:38%}
+.xl .xr-ptab th:nth-child(2),.xl .xr-ptab td:nth-child(2){width:22%}
+.xl .xr-ptab th:nth-child(3),.xl .xr-ptab td:nth-child(3){width:16%}
+.xl .xr-ptab td{overflow:hidden;text-overflow:ellipsis}
+.xl .xr-ptab td:nth-child(4){white-space:nowrap}

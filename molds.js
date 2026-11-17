@@ -137,32 +137,50 @@
     return { gn: { k: 'gn', gn: '1/1', h: 2, n: 1 }, tray: { k: 'tray', l: 60, w: 40, h: 1, n: 1 }, ring: { k: 'ring', d: 20, h: 3, n: 1 }, rect: { k: 'rect', l: 30, w: 10, h: 4, n: 1 }, mono: { k: 'mono', sh: 'ml', ml: 90, n: 12 }, vol: { k: 'vol', ml: 1000, n: 1 } }[k];
   }
 
-  /* ══════════ VISTA ══════════ */
+  /* ══════════ VISTA ══════════
+     Ordine pensato per il banco: scegli il contenitore (al volo o su misura) →
+     vedi subito quanto ti serve e la dose → ingredienti pronti da pesare →
+     preparazione (densità, riempimento, scarto) solo se serve ritoccarla. */
+  var QUICK = [
+    ['Cerchio Ø20 · 3 cm', { k: 'ring', d: 20, h: 3, n: 1 }],
+    ['Cerchio Ø24 · 3 cm', { k: 'ring', d: 24, h: 3, n: 1 }],
+    ['Cerchio Ø16 · 4 cm', { k: 'ring', d: 16, h: 4, n: 1 }],
+    ['GN 1/1 · 2 cm', { k: 'gn', gn: '1/1', h: 2, n: 1 }],
+    ['GN 1/2 · 4 cm', { k: 'gn', gn: '1/2', h: 4, n: 1 }],
+    ['Placca 60×40 · 1 cm', { k: 'tray', l: 60, w: 40, h: 1, n: 1 }],
+    ['Cornice 57×37 · 4 cm', { k: 'tray', l: 57, w: 37, h: 4, n: 1 }],
+    ['12 monoporzioni · 90 ml', { k: 'mono', sh: 'ml', ml: 90, n: 12 }],
+    ['24 semisfere Ø7', { k: 'mono', sh: 'hemi', d: 7, n: 24 }]
+  ];
+  function densName(s) { if (s.dens === 'cust') return 'Personalizzata'; var d = DENS.filter(function (x) { return x[0] === s.dens; })[0]; return d ? d[1].split(',')[0] : ''; }
   function render(qtyOnly) {
     var host = $('xlMolds'), r = XL.rec; if (!host || !r) return;
     var s = XL._ms && XL._ms.r === r ? XL._ms.s : load(r); XL._ms = { r: r, s: s };
     if (qtyOnly && host.querySelector('.ms')) { paintResult(); return; }
     var dOpts = DENS.map(function (d) { return '<option value="' + d[0] + '"' + (s.dens === d[0] ? ' selected' : '') + '>' + d[1] + (d[0] === 'cust' ? '' : ' · ' + String(d[2]).replace('.', ',')) + '</option>'; }).join('');
     var mine = myMolds();
-    host.innerHTML = '<div class="ms">' +
-      '<section class="ms-col">' +
-        '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Contenitori</span><span class="lb-count">misti, quanti ne vuoi</span></div>' +
-          '<div class="ms-rows" id="msRows"></div>' +
-          '<div class="ms-add"><span>Aggiungi</span>' + KINDS.map(function (k) { return '<button type="button" data-add="' + k[0] + '">+ ' + k[1] + '</button>'; }).join('') + '</div>' +
-          (mine.length ? '<div class="ms-mine"><span>I miei stampi</span>' + mine.map(function (m, i) { return '<button type="button" data-mine="' + i + '" title="' + esc(m.label || '') + '">' + esc(m.name) + '<i data-del-mine="' + i + '" aria-label="Elimina">×</i></button>'; }).join('') + '</div>' : '') +
-        '</div>' +
-        '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Preparazione</span></div>' +
-          '<label class="ms-f wide"><span>Densità (g per ml)</span><select id="msDens">' + dOpts + '</select></label>' +
-          '<div class="ms-fs">' + '<label class="ms-f" id="msCustWrap"' + (s.dens === 'cust' ? '' : ' hidden') + '><span>Densità</span><span class="ms-in"><input id="msCust" inputmode="decimal" value="' + String(s.custom).replace('.', ',') + '"><em>g/ml</em></span></label>' +
-          '<label class="ms-f"><span>Riempimento monoporzioni</span><span class="ms-in"><input id="msFill" inputmode="decimal" value="' + s.fill + '"><em>%</em></span></label>' +
-          '<label class="ms-f"><span>Scarto e residui</span><span class="ms-in"><input id="msWaste" inputmode="decimal" value="' + s.waste + '"><em>%</em></span></label></div>' +
-          '<p class="ms-tip">La densità trasforma il volume in grammi: 1 litro di mousse pesa circa 620 g, 1 litro di cremoso circa 1.100 g. Per un valore esatto pesa 100 ml della tua preparazione.</p>' +
-        '</div>' +
-      '</section>' +
-      '<section class="ms-col ms-res" id="msRes"></section></div>';
-    drawRows(); paintResult(); bindTop();
+    host.innerHTML = '<div class="ms ms2">' +
+      '<div class="ms-quick"><span class="lb-eyebrow">Al volo</span><div class="ms-qs" id="msQuick">' +
+        mine.slice(0, 6).map(function (m, i) { return '<button type="button" data-qm="' + i + '">★ ' + esc(m.name) + '</button>'; }).join('') +
+        QUICK.map(function (q, i) { return '<button type="button" data-q="' + i + '">' + q[0] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">I tuoi contenitori</span><span class="lb-count">anche misti</span></div>' +
+        '<div class="ms-rows" id="msRows"></div>' +
+        '<div class="ms-add"><span>Aggiungi</span>' + KINDS.map(function (k) { return '<button type="button" data-add="' + k[0] + '">+ ' + k[1] + '</button>'; }).join('') + '</div>' +
+        (mine.length ? '<div class="ms-mine"><span>I miei stampi</span>' + mine.map(function (m, i) { return '<button type="button" data-mine="' + i + '" title="' + esc(m.label || '') + '">' + esc(m.name) + '<i data-del-mine="' + i + '" aria-label="Elimina">×</i></button>'; }).join('') + '</div>' : '') +
+      '</div>' +
+      '<div class="ms-res" id="msRes"></div>' +
+      '<details class="lb-card ms-prep" id="msPrep"><summary><span class="lb-eyebrow">Preparazione</span><span class="ms-prep-s" id="msPrepS"></span></summary>' +
+        '<label class="ms-f wide"><span>Che cosa stai colando</span><select id="msDens">' + dOpts + '</select></label>' +
+        '<div class="ms-fs"><label class="ms-f" id="msCustWrap"' + (s.dens === 'cust' ? '' : ' hidden') + '><span>Densità</span><span class="ms-in"><input id="msCust" inputmode="decimal" value="' + String(s.custom).replace('.', ',') + '"><em>g/ml</em></span></label>' +
+        '<label class="ms-f"><span>Ho pesato 100 ml</span><span class="ms-in"><input id="msWeigh" inputmode="decimal" placeholder="—"><em>g</em></span></label></div>' +
+        '<div class="ms-fs"><label class="ms-f"><span>Riempimento monoporzioni</span><span class="ms-in"><input id="msFill" inputmode="decimal" value="' + s.fill + '"><em>%</em></span></label>' +
+        '<label class="ms-f"><span>Scarto e residui</span><span class="ms-in"><input id="msWaste" inputmode="decimal" value="' + s.waste + '"><em>%</em></span></label></div>' +
+        '<p class="ms-tip">La densità trasforma il volume in grammi: 1 litro di mousse pesa circa 620 g, 1 litro di cremoso circa 1.100 g. Per il valore esatto pesa 100 ml della tua preparazione e scrivilo qui sopra.</p>' +
+      '</details></div>';
+    drawRows(); paintResult(); bindTop(); prepSum();
     if (!calm) [].forEach.call(host.querySelectorAll('.lb-card'), function (c, i) { c.style.setProperty('--i', i); c.classList.add('lb-in'); });
   }
+  function prepSum() { var s = XL._ms.s, el = $('msPrepS'); if (el) el.textContent = densName(s) + ' · ' + it(densityOf(s), 2) + ' g/ml' + (num(s.waste) ? ' · scarto ' + it(num(s.waste), 0) + '%' : '') + (num(s.fill) < 100 ? ' · riempimento ' + it(num(s.fill), 0) + '%' : ''); }
   function drawRows() {
     var s = XL._ms.s, box = $('msRows'); if (!box) return;
     box.innerHTML = s.rows.map(function (x, i) {
@@ -209,13 +227,30 @@
         var m = a[+b.dataset.mine]; if (!m) return; s.rows.push(JSON.parse(JSON.stringify(m.row))); drawRows(); changed();
       };
     });
+    /* al volo: sostituisce i contenitori con quello scelto */
+    [].forEach.call(host.querySelectorAll('#msQuick button'), function (b) {
+      b.onclick = function () {
+        var row = b.dataset.q != null ? QUICK[+b.dataset.q][1] : (myMolds()[+b.dataset.qm] || {}).row; if (!row) return;
+        s.rows = [JSON.parse(JSON.stringify(row))]; drawRows(); changed();
+        [].forEach.call(host.querySelectorAll('#msQuick button'), function (x) { x.classList.toggle('on', x === b); });
+        var res = $('msRes'); if (res && !calm) setTimeout(function () { res.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 120);
+      };
+    });
     $('msDens').onchange = function () { s.dens = this.value; $('msCustWrap').hidden = s.dens !== 'cust'; changed(); };
     $('msCust').oninput = function () { s.custom = num(this.value) || 1; changed(); };
+    $('msWeigh').oninput = function () { var g = num(this.value); if (!(g > 0)) return; s.dens = 'cust'; s.custom = Math.round(g / 100 * 1000) / 1000; $('msDens').value = 'cust'; $('msCustWrap').hidden = false; $('msCust').value = String(s.custom).replace('.', ','); changed(); };
     $('msFill').oninput = function () { s.fill = num(this.value) || 100; changed(); };
     $('msWaste').oninput = function () { s.waste = num(this.value); changed(); };
   }
   var tmr = null;
-  function changed() { save(XL.rec, XL._ms.s); paintRowVols(); clearTimeout(tmr); tmr = setTimeout(paintResult, 60); }
+  function changed() { save(XL.rec, XL._ms.s); paintRowVols(); prepSum(); clearTimeout(tmr); tmr = setTimeout(paintResult, 60); try { if (XL.moldsChanged) XL.moldsChanged(); } catch (e) {} }
+  /* dosi «comode» da preparare: arrotondate per eccesso, con quanto avanza */
+  function comfy(dose, tot) {
+    if (!(dose > 0)) return [];
+    var c = [], add = function (d) { d = Math.round(d * 1000) / 1000; if (d >= dose - 1e-9 && !c.some(function (x) { return Math.abs(x - d) < 1e-9; })) c.push(d); };
+    add(Math.ceil(dose * 4 - 1e-9) / 4); add(Math.ceil(dose * 2 - 1e-9) / 2); add(Math.ceil(dose - 1e-9));
+    return c.filter(function (d) { return Math.abs(d - dose) > 0.004; }).slice(0, 3).map(function (d) { return { d: d, extra: (d - dose) * tot }; });
+  }
 
   function paintResult() {
     var box = $('msRes'); if (!box) return;
@@ -239,17 +274,19 @@
     box.innerHTML =
       '<div class="lb-card ms-hero"><div class="lb-h"><span class="lb-eyebrow">Ti serve</span><span class="lb-count mono">' + mlfmt(C.rows.reduce(function (a, b) { return a + b.ml; }, 0)) + ' · ' + it(C.dens, 2) + ' g/ml</span></div>' +
         '<div class="ms-big"><strong class="mono" id="msNeed">' + gfmt(C.need) + '</strong><span>dose <b class="mono" id="msDose">×' + it(dose, 2) + '</b></span></div>' +
-        '<div class="ms-break">' + C.rows.map(function (R) { return '<div><span>' + (R.V.n > 1 ? R.V.n + ' × ' : '') + esc(R.V.label) + '</span><b class="mono">' + gfmt(R.g) + '</b></div>'; }).join('') +
+        '<div class="ms-break">' + C.rows.map(function (R) { return '<div><span>' + (R.V.n > 1 ? R.V.n + ' × ' : '') + esc(R.V.label) + (R.V.n > 1 && R.gEach ? ' <small>· ' + gfmt(R.gEach) + ' l\'uno</small>' : '') + '</span><b class="mono">' + gfmt(R.g) + '</b></div>'; }).join('') +
         (C.waste ? '<div class="ms-w"><span>Scarto ' + it(C.waste * 100, 0) + '%</span><b class="mono">+ ' + gfmt(C.need - C.net) + '</b></div>' : '') + '</div>' +
         (inv ? '<p class="ms-inv">' + inv + '</p>' : '') +
-        '<div class="ms-acts"><button type="button" class="lb-btn dark" id="msUse"' + (dose > 0 ? '' : ' disabled') + '>Usa ×' + it(dose, 2) + ' nel Laboratorio<i>→</i></button>' +
+        (function () { var cf = comfy(dose, C.A.tot); return cf.length ? '<div class="ms-comfy"><span>Dose comoda</span>' + cf.map(function (x) { return '<button type="button" data-cf="' + x.d + '">×' + it(x.d, 2) + ' <small>avanzano ' + gfmt(x.extra) + '</small></button>'; }).join('') + '</div>' : ''; })() +
+        '<div class="ms-acts"><button type="button" class="lb-btn dark" id="msUse"' + (dose > 0 ? '' : ' disabled') + '>Usa ×' + it(dose, 2) + ' nella ricetta<i>→</i></button>' +
         '<button type="button" class="lb-btn" id="msCook"' + (dose > 0 ? '' : ' disabled') + '>Cucina con questa dose</button></div></div>' +
       '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Ingredienti per questi contenitori</span><label class="ms-sw"><input type="checkbox" id="msRound"' + (s.round ? ' checked' : '') + '><span></span>Arrotonda per la bilancia</label></div>' +
         '<div class="ms-ings">' + list + '</div><div class="ms-tot"><span>Totale</span><b class="mono">' + gfmt(sumR) + '</b></div>' +
         '<div class="ms-acts"><button type="button" class="lb-btn" id="msNote">Salva nelle note</button><button type="button" class="lb-btn" id="msCopy">Copia</button></div>' +
       '</div>';
     var nd = $('msNeed'); if (nd && !calm) { nd.classList.remove('xl-bump'); void nd.offsetWidth; nd.classList.add('xl-bump'); }
-    $('msUse').onclick = function () { XL.setDose(dose, true); XL.toast('Dose ×' + it(dose, 2) + ' nel Laboratorio'); XL.open(r, 'lab'); };
+    $('msUse').onclick = function () { XL.setDose(dose, true); XL.toast('Dose ×' + it(dose, 2) + ' applicata alla ricetta'); XL.open(r, 'lab'); };
+    [].forEach.call(box.querySelectorAll('[data-cf]'), function (b) { b.onclick = function () { var d = +b.dataset.cf; XL.setDose(d, true); XL.toast('Dose ×' + it(d, 2) + ' applicata alla ricetta'); XL.open(r, 'lab'); }; });
     $('msCook').onclick = function () { try { openCucina(r, dose); } catch (e) {} };
     $('msRound').onchange = function () { s.round = this.checked; save(r, s); paintResult(); };
     var text = function () {
@@ -263,5 +300,12 @@
     };
   }
   XL.renderMolds = render;
-  XL.molds = { compute: compute, rowVolume: rowVolume, roundQ: roundQ, densityOf: densityOf };
+  /* riassunto per la pagina ricetta: «Ø20 · 3 cm» oppure null se non ancora impostato */
+  function summary(r) {
+    var raw = null; try { raw = localStorage.getItem(skey(r)); } catch (e) {}
+    if (!raw) return null; var s = load(r); if (!s.rows.length) return null;
+    var C = compute(r, s), R = C.rows[0];
+    return { label: (R.V.n > 1 ? R.V.n + '× ' : '') + R.V.label + (C.rows.length > 1 ? ' + ' + (C.rows.length - 1) : ''), dose: C.dose, need: C.need };
+  }
+  XL.molds = { compute: compute, rowVolume: rowVolume, roundQ: roundQ, densityOf: densityOf, summary: summary, comfy: comfy };
 })();

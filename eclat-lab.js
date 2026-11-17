@@ -151,12 +151,14 @@
           '<h1 class="xl-title" id="xlTitle"></h1><div class="xl-meta" id="xlMeta"></div>' +
           '<div class="xr-bar">' +
             '<button type="button" class="xr-dose" id="xlDoseBtn" aria-haspopup="dialog"><small>Quanto ne fai</small><strong><span class="mono" id="xlScaleChip"></span>' + IC2.down + '</strong></button>' +
-            '<button type="button" class="xr-bal" id="xlBalBtn" aria-haspopup="dialog"><small>Bilancio</small><strong id="xlBalTxt">—</strong></button>' +
-          '</div></header>' +
+            '<button type="button" class="xr-dose xr-mold" id="xlMoldBtn" aria-haspopup="dialog"><small>Stampi e teglie</small><strong><span id="xlMoldTxt">Calcola</span>' + IC2.mold + '</strong></button>' +
+          '</div>' +
+          '<button type="button" class="xr-bal" id="xlBalBtn" aria-haspopup="dialog"><i class="xr-dot"></i><span><b>Bilancio</b> <span id="xlBalTxt">—</span></span><em>Analisi →</em></button>' +
+          '</header>' +
         '<div id="xlLab"></div>' +
       '</div>' +
       '<nav class="xr-act" id="xlSeg" aria-label="Azioni sulla ricetta">' +
-        '<button type="button" data-m="formula">' + IC2.chart + '<span>Analisi</span></button>' +
+        '<button type="button" data-m="formula">' + IC2.chart + '<span>Analisi</span><b class="xr-badge" id="xlBadge" hidden></b></button>' +
         '<button type="button" data-m="cook" class="go">' + IC2.play + '<span id="xlGoL">Inizia</span></button>' +
         '<button type="button" data-m="more">' + IC2.dots + '<span>Altro</span></button>' +
       '</nav>' +
@@ -170,6 +172,7 @@
     $('xlBack').onclick = function () { closeView(); tbGoRecipes(); };
     $('xlDoseBtn').onclick = function () { openSheet('dose'); };
     $('xlBalBtn').onclick = function () { openSheet('formula'); };
+    $('xlMoldBtn').onclick = function () { openSheet('molds'); };
     [].forEach.call(v.querySelectorAll('#xlSeg button'), function (b) {
       b.onclick = function () {
         var m = b.dataset.m;
@@ -217,6 +220,7 @@
     if (XL.rec) renderHead();
   }
   XL.closeSheet = closeSheet; XL.openSheet = openSheet;
+  XL.moldsChanged = function () { if (XL.viewOpen && XL.rec) renderHead(); };
   XL.open = function (r, mode) {
     r = fresh(r); if (!r) return;
     buildView();
@@ -260,7 +264,10 @@
     else if (B.notes) { txt = 'Note da sistemare'; cls = 'warn'; }
     else if (B.has) { txt = 'In equilibrio'; cls = 'ok'; }
     else txt = B.any ? 'Composizione' : '—';
-    bt.textContent = txt; bb.className = 'xr-bal ' + cls;
+    bt.textContent = txt; bb.className = 'xr-bal ' + cls; bb.hidden = !B.any;
+    var bd = $('xlBadge'), nb = B.bad + B.sug + (B.notes && !B.bad && !B.sug ? 1 : 0); if (bd) { bd.hidden = !nb; bd.textContent = nb; }
+    var ms = XL.molds && XL.molds.summary ? XL.molds.summary(r) : null, mt = $('xlMoldTxt');
+    if (mt) mt.textContent = ms ? ms.label : 'Calcola';
     var sd = stepsOf(r), w = weighedOf(r), started = false; for (var k in sd) if (sd[k]) started = true; for (var j in w) if (w[j]) started = true;
     var gl = $('xlGoL'); if (gl) gl.textContent = started ? 'Riprendi' : 'Inizia';
   }
@@ -863,8 +870,12 @@
     return L[i] + ' ' + Math.round(c[i]) + '%';
   }
   function renderFormula(qtyOnly) {
-    var r = XL.rec, D = data(r), host = $('xlFormula');
-    if (qtyOnly && host.querySelector('.xl-formula')) { if (XL.rcw) XL.rcw.refresh(); return; }
+    var r = XL.rec, D = data(r), host = $('xlFormula'), ings = r.i || [];
+    if (qtyOnly && host.querySelector('.xl-formula')) {
+      [].forEach.call(host.querySelectorAll('tr[data-i] .q'), function (cell) { var g = (r.i || [])[+cell.closest('tr').dataset.i]; if (g) cell.textContent = g[1] == null ? 'q.b.' : fmtQ(g[1] * XL.dose) + ' ' + (g[2] || 'g'); });
+      var ft = $('xlFTot'); if (ft) ft.textContent = fmtG(D.tot * XL.dose) + ' g';
+      if (XL.rcw) XL.rcw.refresh(); return;
+    }
     var A = D.A, P = D.P;
     var parts = [['Acqua', A.w, '#A7B9BC'], ['Zuccheri', A.s, '#C9A86A'], ['Grassi', A.f, '#A67B5B'], ['Proteine', A.p, '#7F8F5A'], ['Altri solidi', Math.max(0, A.tot - A.w - A.s - A.f - A.p), '#4A5A3A']];
     var bar = A.tot ? parts.map(function (x) { var v = pct(x[1], A.tot); return v > 0.3 ? '<i style="flex:' + v.toFixed(2) + ';background:' + x[2] + '" title="' + x[0] + ' ' + f1(v) + '%"></i>' : ''; }).join('') : '';
@@ -885,6 +896,10 @@
       '<div class="xl-card bs" id="xlSug"></div>' +
       '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Parametri</span></div>' +
         par.map(function (x) { return '<div class="xl-chem"><span>' + x[0] + '</span><strong class="mono">' + (A.tot ? f1(pct(x[1], A.tot)) + '%' : '—') + '</strong></div>'; }).join('') + '</div>' +
+      (ings.length ? '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Ingredienti in percentuale</span><span class="lb-count mono" id="xlFTot">' + fmtG(D.tot * XL.dose) + ' g</span></div>' +
+        '<div class="xl-tscroll"><table class="xl-table xr-ptab"><thead><tr><th>Ingrediente</th><th>Quantità</th><th>% peso</th><th>Ruolo</th></tr></thead><tbody>' +
+        ings.map(function (g, i) { var gr = grams(g); return '<tr data-i="' + i + '"><td><strong>' + esc(g[0]) + '</strong></td><td class="n"><span class="q mono">' + (g[1] == null ? 'q.b.' : fmtQ(g[1] * XL.dose) + ' ' + esc(g[2] || 'g')) + '</span></td><td class="n mono">' + (gr != null && A.tot ? f1(pct(gr, A.tot)) + '%' : '—') + '</td><td class="xl-role">' + esc(role(g[0])) + '</td></tr>'; }).join('') +
+        '</tbody></table></div></div>' : '') +
       '<div class="xl-card xl-rc-host" id="xlRcHost"></div>' +
       '</div>';
     XL.rcw = null;
@@ -930,9 +945,12 @@
         var c = _bc.apply(this, arguments);
         try {
           c.style.setProperty('--i', idx || 0);
-          var b = h('button', 'xl-card-cta', '<span>Apri in Laboratorio</span><i>→</i>'); b.type = 'button';
+          var row = h('div', 'xl-card-ctas');
+          var b = h('button', 'xl-card-cta', '<span>Laboratorio</span><i>→</i>'); b.type = 'button';
           b.onclick = function (e) { e.stopPropagation(); XL.open(r, 'lab'); };
-          c.appendChild(b);
+          var m = h('button', 'xl-card-ms', IC2.mold + '<span>Stampi</span>'); m.type = 'button'; m.title = 'Scala su stampi, teglie, gastronorm e monoporzioni';
+          m.onclick = function (e) { e.stopPropagation(); XL.open(r, 'molds'); };
+          row.appendChild(b); row.appendChild(m); c.appendChild(row);
         } catch (e) {}
         return c;
       };
@@ -947,6 +965,8 @@
             btn = h('button', 'xl-rp-btn', '<span>Laboratorio</span><i>→</i>'); btn.id = 'xlRpBtn'; btn.type = 'button';
             var blk = name.parentNode; blk.appendChild(btn);
             btn.onclick = function () { var rr = window._rpRec, d = window._rpDose || 1; closeRecipePanel(); if (rr) { XL.open(rr, 'lab'); if (d !== XL.dose) XL.setDose(d, true); } };
+            var mb = h('button', 'xl-rp-btn xl-rp-ms', IC2.mold + '<span>Stampi e teglie</span>'); mb.id = 'xlRpMold'; mb.type = 'button'; blk.appendChild(mb);
+            mb.onclick = function () { var rr = window._rpRec, d = window._rpDose || 1; closeRecipePanel(); if (rr) { XL.open(rr, 'lab'); if (d !== XL.dose) XL.setDose(d, true); XL.open(rr, 'molds'); } };
           }
         } catch (e) {}
         return out;
