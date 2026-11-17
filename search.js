@@ -107,6 +107,7 @@
       { t: 'Importa ricetta con l’AI (foto, testo, documento)', k: 'importa ai foto testo pdf word documento scansiona', run: function () { if (window.openStudio) openStudio(); } },
       { t: 'Home', k: 'home inizio sezioni', run: function () { if (window.XL && XL.viewOpen) XL.close(); tbGoHome(); } },
       { t: 'Tutte le ricette', k: 'tutte ricette collezione elenco', run: function () { if (window.XL && XL.viewOpen) XL.close(); openSection('tutti'); } },
+      { t: 'Importa ricette da un backup', k: 'importa backup ripristina altra app json csv paprika mealie tandoor', run: function () { if (window.BK) BK.open(); } },
       { t: 'Biblioteca', k: 'biblioteca libri ebook pdf epub', run: function () { if (window.openLibrary) openLibrary(); } },
       { t: 'Account, logo e sezioni', k: 'impostazioni account logo sezioni brigata membri cambia account animazioni', run: function () { WL.openSettings(); } },
       { t: 'Brigata: invita membri', k: 'brigata membri invita collaboratori commis ruoli', run: function () { WL.openSettings(); setTimeout(function () { var c = $('wlTeamCard'); if (c) c.scrollIntoView({ block: 'start' }); }, 250); } },
