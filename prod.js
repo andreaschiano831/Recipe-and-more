@@ -265,8 +265,7 @@
   function word(B) {
     var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>' + esc(B.doc.name) + '</title><style>body{font-family:Georgia,serif;color:#222}' + pdCss('') + '.prodtab td{font-size:10pt}</style></head><body>' + docHTML(B) + '</body></html>';
     var blob = new Blob(['﻿', html], { type: 'application/msword' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = B.doc.name.replace(/[\\\/:*?"<>|,]+/g, '_') + '.doc';
-    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+    saveFile(blob, B.doc.name.replace(/[\\\/:*?"<>|,]+/g, '_') + '.doc');
     P.lastWord = html;
   }
   function print(B) {

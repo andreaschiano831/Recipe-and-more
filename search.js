@@ -196,10 +196,70 @@
     if (f === 'all' || f === 'act') actions().forEach(function (a) { var m = matchAll(tokens, [field(a.t, 1), field(a.k, 0.8)]); if (m) res.push({ type: 'act', a: a, s: m.s * 0.85 }); });
     res.sort(function (a, b) { return b.s - a.s; });
     /* in «Tutto» al massimo 8 per tipo, per vedere un po' di tutto */
-    if (f === 'all') { var cnt = {}; res = res.filter(function (x) { cnt[x.type] = (cnt[x.type] || 0) + 1; return cnt[x.type] <= 8; }); }
+    if (f === 'all' && !S.noCap) { var cnt = {}; res = res.filter(function (x) { cnt[x.type] = (cnt[x.type] || 0) + 1; return cnt[x.type] <= 8; }); }
+    if (S.noCap) return res;
     return out.concat(res.slice(0, 60));
   }
   function mins(m) { if (m >= 60) { var h = Math.floor(m / 60), r = Math.round(m % 60); return h + (h === 1 ? ' ora' : ' ore') + (r ? ' ' + r + ' min' : ''); } if (m < 1) return Math.round(m * 60) + ' s'; return fq(m) + ' min'; }
+
+  /* ══════════ LAUNCHER (ricerca vuota) ══════════ */
+  var IC2 = {
+    plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+    spark: '<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
+    home: '<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>',
+    list: '<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+    prod: '<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+    msg: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    up: '<svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 20h14"/></svg>',
+    gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 15H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 4V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5.9z"/></svg>',
+    users: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg>',
+    palette: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.2-1.8-.4-.9.1-2.2 1.3-2.2H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg>',
+    menu: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+    lab: '<svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>',
+    pot: '<svg viewBox="0 0 24 24"><path d="M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM2 10h20M9 6c0-1.5 1-2 1-3M14 6c0-1.5 1-2 1-3"/></svg>',
+    mold: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M3 11h18"/></svg>'
+  };
+  var PALS = ['colazioni', 'fine-dining', 'gelateria', 'torte'];
+  function palOf(r) { try { var S2 = WL.sections(); for (var i = 0; i < S2.length; i++) if (S2[i].k === r.s) return PALS[i % PALS.length]; } catch (e) {} return 'tutti'; }
+  function mono(name) { var w = String(name || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(function (x) { return x.length > 2 || /^\d/.test(x); }); if (!w.length) w = String(name || '?').split(/\s+/); return ((w[0] || '?')[0] + (w[1] ? w[1][0] : (w[0] || '')[1] || '')).toUpperCase(); }
+  function tile(r, big) { return '<span class="sx-tile' + (big ? ' big' : '') + '" data-pal="' + palOf(r) + '">' + esc(mono(r.n)) + '</span>'; }
+  function progressOf(r) {
+    try { var B = XL.bench(r), n = (r.i || []).length, w = 0, s = 0, k; for (k in B.w) if (B.w[k]) w++; for (k in B.sd) if (B.sd[k]) s++; var steps = String(r.p || '').split(/\n+/).filter(function (x) { return x.trim(); }).length; return { w: w, n: n, s: s, steps: steps }; } catch (e) { return null; }
+  }
+  var ACT_IC = { 'Nuova ricetta': 'plus', 'Importa ricetta con l’AI (foto, testo, documento)': 'spark', 'Produzione di oggi': 'prod', 'Comunicazioni della brigata': 'msg', 'Importa ricette da un backup': 'up', 'Biblioteca': 'book', 'Brigata: invita membri': 'users', 'Tema e colori': 'palette' };
+  var ACT_SHORT = { 'Importa ricetta con l’AI (foto, testo, documento)': 'Importa con l’AI', 'Comunicazioni della brigata': 'Comunicazioni', 'Importa ricette da un backup': 'Importa backup', 'Brigata: invita membri': 'Brigata' };
+  function launcher() {
+    var R = recs(), rc = recent().map(function (n) { return R.filter(function (x) { return x.n === n; })[0]; }).filter(Boolean);
+    if (!rc.length) rc = R.slice(-6).reverse();
+    var items = [], html = '';
+    var T = []; try { T = XL.timers.list(); } catch (e) {}
+    if (T.length) html += '<div class="sx-g">Timer attivi</div><div class="sx-tms">' + T.map(function (t) { return '<span class="sx-tm' + (t.rang ? ' ring' : '') + '">' + IC.clock + '<b class="mono">' + (t.rang ? 'Fatto' : XL.timers.fmt(XL.timers.left(t))) + '</b>' + esc(t.label) + '</span>'; }).join('') + '</div>';
+    if (rc.length) {
+      var c = rc[0], P = progressOf(c), tot = totOf(c);
+      items.push({ type: 'rec', r: c, recent: true });
+      var pw = P && P.n ? P.w / P.n : 0, ps = P && P.steps ? P.s / P.steps : 0, started = P && (P.w || P.s);
+      html += '<div class="sx-g">' + (started ? 'Continua' : 'Aperta di recente') + '</div>' +
+        '<div class="sx-row sx-cont" data-i="0" role="option" id="sxo0">' + tile(c, true) +
+          '<div class="sx-cont-b"><b>' + esc(c.n) + '</b><small>' + esc([secLabel(c.s), c.c].filter(Boolean).join(' · ')) + (tot ? ' · ' + fq(tot) + ' g' : '') + '</small>' +
+          (P ? '<div class="sx-prog"><span><i style="width:' + Math.round(pw * 100) + '%"></i></span><em>' + P.w + '/' + P.n + ' pesati</em><span><i style="width:' + Math.round(ps * 100) + '%"></i></span><em>' + P.s + '/' + P.steps + ' passaggi</em></div>' : '') +
+          '<div class="sx-cont-a"><button type="button" class="sx-b dark" data-do="lab">' + IC2.lab + (started ? 'Riprendi' : 'Laboratorio') + '</button><button type="button" class="sx-b" data-do="cook">' + IC2.pot + 'Cucina</button><button type="button" class="sx-b" data-do="molds">' + IC2.mold + 'Stampi</button></div></div></div>';
+      if (rc.length > 1) {
+        html += '<div class="sx-g">Recenti</div><div class="sx-car">' + rc.slice(1, 9).map(function (r) {
+          var i = items.length; items.push({ type: 'rec', r: r, recent: true });
+          return '<div class="sx-row sx-card" data-i="' + i + '" role="option" id="sxo' + i + '">' + tile(r) + '<b>' + esc(r.n) + '</b><small>' + esc(secLabel(r.s) || r.c || '') + '</small></div>';
+        }).join('') + '</div>';
+      }
+    }
+    var ex = (rc[0] || R[0]); var en = ex ? (String(ex.n).split(/\s+/).filter(function (w) { return w.length > 2; })[0] || String(ex.n).split(/\s+/)[0]).toLowerCase() : 'frolla';
+    var tries = [['timer 10 forno', 'Timer'], ['800 g ' + en, 'Peso'], ['×2 ' + en, 'Dose'], ['stampi ' + en, 'Stampi'], ['cucina ' + en, 'Cucina']];
+    html += '<div class="sx-g">Prova a scrivere</div><div class="sx-try">' + tries.map(function (t) { return '<button type="button" data-try="' + esc(t[0]) + '"><em>' + t[1] + '</em>' + esc(t[0]) + '</button>'; }).join('') + '</div>';
+    var top = IDX.ings.slice().sort(function (a, b) { return b.uses.length - a.uses.length; }).slice(0, 12);
+    S.topIngs = top;
+    if (top.length) html += '<div class="sx-g">Ingredienti più usati</div><div class="sx-chips">' + top.map(function (o, i) { return '<button type="button" data-ing="' + i + '">' + IC.ing + esc(o.name) + '<small>' + o.uses.length + '</small></button>'; }).join('') + '</div>';
+    var A = actions().filter(function (a) { return ACT_IC[a.t]; }); S.launchActs = A;
+    html += '<div class="sx-g">Azioni rapide</div><div class="sx-grid">' + A.map(function (a, i) { return '<button type="button" data-act="' + i + '"><span>' + (IC2[ACT_IC[a.t]] || IC[ACT_IC[a.t]]) + '</span>' + esc(ACT_SHORT[a.t] || a.t) + '</button>'; }).join('') + '</div>';
+    return { html: '<div class="sx-launch" id="sxLaunch">' + html + '</div>', items: items };
+  }
 
   /* ══════════ INTERFACCIA ══════════ */
   function ui() {
@@ -207,7 +267,7 @@
     el = document.createElement('div'); el.id = 'sx'; el.className = 'sx'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Cerca');
     el.innerHTML = '<div class="sx-panel"><div class="sx-top">' + IC.search +
       '<span class="sx-drill" id="sxDrill" hidden></span><input id="sxIn" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Cerca ricette, ingredienti, libri… o scrivi «timer 10», «800 g frolla»" role="combobox" aria-expanded="true" aria-controls="sxList">' +
-      '<button type="button" class="sx-x" id="sxX" aria-label="Chiudi">Esc</button></div>' +
+      '<button type="button" class="sx-x" id="sxX" aria-label="Chiudi"><span class="k">Esc</span><span class="t">Annulla</span></button></div>' +
       '<div class="sx-f" id="sxF" role="tablist">' + FILTERS.map(function (x) { return '<button type="button" role="tab" data-f="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       '<div class="sx-body"><div class="sx-list" id="sxList" role="listbox"><i class="sx-hl" id="sxHl"></i><div id="sxRows"></div></div><aside class="sx-prev" id="sxPrev"></aside></div>' +
       '<div class="sx-foot"><span><kbd>↑</kbd><kbd>↓</kbd> scegli</span><span><kbd>↵</kbd> apri</span><span><kbd>⇧</kbd><kbd>↵</kbd> Laboratorio</span><span><kbd>⌘</kbd><kbd>↵</kbd> Cucina</span><span><kbd>Tab</kbd> filtro</span></div></div>';
@@ -220,6 +280,9 @@
     [].forEach.call(el.querySelectorAll('#sxF button'), function (b) { b.onclick = function () { setFilter(b.dataset.f); inp.focus(); }; });
     $('sxRows').addEventListener('mousemove', function (e) { var row = e.target.closest('.sx-row'); if (row && +row.dataset.i !== S.sel) { S.sel = +row.dataset.i; mark(); } });
     $('sxRows').addEventListener('click', function (e) {
+      var tr = e.target.closest('[data-try]'); if (tr) { inp.value = S.q = tr.dataset.try; S.sel = 0; draw(); inp.focus(); return; }
+      var ig = e.target.closest('[data-ing]'); if (ig) { var o = (S.topIngs || [])[+ig.dataset.ing]; if (o) drill(o); return; }
+      var ac = e.target.closest('[data-act]'); if (ac) { var a = (S.launchActs || [])[+ac.dataset.act]; if (a) { close(true); setTimeout(function () { a.run(); }, 30); } return; }
       var b = e.target.closest('[data-do]'), row = e.target.closest('.sx-row'); if (!row) return;
       S.sel = +row.dataset.i; go(b ? b.dataset.do : 'open');
     });
@@ -228,9 +291,22 @@
   }
   function setFilter(f) { S.filter = f; S.sel = 0; [].forEach.call(document.querySelectorAll('#sxF button'), function (b) { b.classList.toggle('on', b.dataset.f === f); b.setAttribute('aria-selected', String(b.dataset.f === f)); }); draw(); }
   var GROUP = { cmd: 'Comando', timer: 'Timer attivi', rec: 'Ricette', ing: 'Ingredienti', book: 'Libri', act: 'Azioni' };
+  function counts() {
+    var f0 = S.filter, c = { rec: 0, ing: 0, book: 0, act: 0 }; S.filter = 'all'; S.noCap = true;
+    try { search().forEach(function (x) { if (c[x.type] != null) c[x.type]++; }); } catch (e) {}
+    S.filter = f0; S.noCap = false; c.all = c.rec + c.ing + c.book + c.act; return c;
+  }
   function draw() {
-    S.items = search();
     var rows = $('sxRows'), html = '', lastG = '';
+    var hasQ = !!tokens().length;
+    var C = hasQ && !S.drill ? counts() : null;
+    [].forEach.call(document.querySelectorAll('#sxF button'), function (b) { var n = C ? C[b.dataset.f] : null; var sp = b.querySelector('i'); if (!sp) { sp = document.createElement('i'); b.appendChild(sp); } sp.textContent = n ? n : ''; b.classList.toggle('none', !!C && !n); });
+    if (!hasQ && S.filter === 'all' && !S.drill) {
+      var L = launcher(); S.items = L.items; S.launch = true; rows.innerHTML = L.html;
+      if (S.sel >= S.items.length) S.sel = 0; mark(true); return;
+    }
+    S.launch = false;
+    S.items = search();
     S.items.forEach(function (it, i) {
       var g = it.type === 'rec' && it.recent ? 'Aperte di recente' : GROUP[it.type];
       if (g !== lastG) { html += '<div class="sx-g">' + g + '</div>'; lastG = g; }
@@ -244,19 +320,20 @@
   function tokens() { return norm(S.q).split(' ').filter(Boolean); }
   function row(it, i) {
     var T = tokens(), ic, t, sub = '', side = '';
-    if (it.type === 'rec') { ic = IC.rec; t = hl(it.r.n, T); sub = esc(it.sub || ''); side = '<span class="sx-acts"><button type="button" data-do="lab" title="Laboratorio (⇧↵)">Lab</button><button type="button" data-do="cook" title="Cucina (⌘↵)">Cucina</button></span>'; }
+    if (it.type === 'rec') { ic = null; t = hl(it.r.n, T); sub = esc(it.sub || ''); side = '<span class="sx-acts"><button type="button" data-do="lab" title="Laboratorio (⇧↵)" aria-label="Laboratorio">' + IC2.lab + '</button><button type="button" data-do="cook" title="Cucina (⌘↵)" aria-label="Cucina">' + IC2.pot + '</button><button type="button" data-do="molds" title="Stampi e teglie" aria-label="Stampi">' + IC2.mold + '</button></span>'; }
     else if (it.type === 'ing') { ic = IC.ing; t = hl(it.o.name, T); sub = 'in ' + it.o.uses.length + (it.o.uses.length === 1 ? ' ricetta' : ' ricette'); side = '<span class="sx-go">›</span>'; }
     else if (it.type === 'book') { ic = IC.book; t = hl(it.b.title, T); sub = esc([it.b.author, String(it.b.kind || '').toUpperCase()].filter(Boolean).join(' · ')); }
-    else if (it.type === 'act') { ic = IC[it.a.icon || 'act']; t = hl(it.a.t, T); }
+    else if (it.type === 'act') { ic = IC2[ACT_IC[it.a.t]] || IC[it.a.icon || 'act']; t = hl(it.a.t, T); }
     else if (it.type === 'cmd') { ic = IC[it.icon || 'act']; t = esc(it.t); sub = esc(it.sub || ''); side = '<kbd class="sx-k">↵</kbd>'; }
     else if (it.type === 'timer') { ic = IC.clock; var L = XL.timers.left(it.t); t = esc(it.t.label); sub = it.t.rang ? 'Finito' : XL.timers.fmt(L) + (it.t.end ? '' : ' · in pausa'); }
-    return '<div class="sx-row sx-' + it.type + '" role="option" data-i="' + i + '" id="sxo' + i + '"><span class="sx-ic">' + ic + '</span><span class="sx-t"><b>' + t + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' + side + '</div>';
+    return '<div class="sx-row sx-' + it.type + '" role="option" data-i="' + i + '" id="sxo' + i + '" style="--d:' + Math.min(i, 12) + '">' + (ic ? '<span class="sx-ic">' + ic + '</span>' : tile(it.r)) + '<span class="sx-t"><b>' + t + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' + side + '</div>';
   }
   function mark(instant) {
     var rows = document.querySelectorAll('#sxRows .sx-row'), hlb = $('sxHl'), list = $('sxList');
     [].forEach.call(rows, function (r) { var on = +r.dataset.i === S.sel; r.classList.toggle('on', on); r.setAttribute('aria-selected', String(on)); });
     var cur = rows[S.sel];
     $('sxIn').setAttribute('aria-activedescendant', cur ? cur.id : '');
+    if (S.launch) { hlb.style.opacity = '0'; if (cur && !instant && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' }); preview(S.items[S.sel] || null); return; }
     if (!cur) { hlb.style.opacity = '0'; preview(null); return; }
     var top = cur.offsetTop, h = cur.offsetHeight;
     if (instant) hlb.style.transition = 'none';

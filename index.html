@@ -1838,6 +1838,24 @@ body.rd-open .tabbar,body.st-open .tabbar{display:none!important}
 .st-check{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:12px;border:1px solid var(--cb);font-size:.84rem;cursor:pointer;margin-right:auto}
 .st-check input{accent-color:var(--gold2);width:16px;height:16px}
 .st-check.on{border-color:var(--gold2);background:var(--glow)}
+.st-empties{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;margin:0 0 12px;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,#9B2C3C 8%,var(--card));border:1px solid color-mix(in srgb,#9B2C3C 28%,transparent);font-size:.88rem;color:var(--ink)}
+.st-hint{font-size:.8rem;color:var(--smoke);margin:-4px 0 10px}
+.st-swipe{position:relative;border-radius:20px;overflow:hidden;transition:max-height .26s ease,opacity .26s ease,margin .26s ease}
+.st-swipe>.st-sheet{position:relative;z-index:1;touch-action:pan-y;transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.st-under{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:26px;background:#B5404F;color:#fff;font:600 .95rem "DM Sans",sans-serif;border-radius:20px;opacity:0;transition:background .2s,opacity .15s}.st-swipe.drag .st-under{opacity:1}
+.st-swipe.arm .st-under{background:#8E2B3A;opacity:1}
+.st-swipe.arm .st-under span{transform:scale(1.08)}
+.st-under span{transition:transform .2s}
+.st-swipe.gone{opacity:0;transform:scale(.97);transition:opacity .25s,transform .25s}
+.st-sheet.empty{border-style:dashed;background:color-mix(in srgb,var(--card) 70%,var(--bg))}.st-sheet.empty .st-name{color:var(--smoke)}
+.st-ask{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:20px;background:color-mix(in srgb,var(--card) 94%,transparent);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);border-radius:20px;animation:stAsk .22s ease}
+.st-ask b{font:600 1.15rem "Cormorant Garamond",Georgia,serif;color:var(--ink)}
+.st-ask>span{font-size:.85rem;color:var(--smoke)}
+.st-ask-a{display:flex;gap:8px;margin-top:12px}
+.st-danger{background:#8E2B3A!important;color:#fff!important;border-color:#8E2B3A!important}
+.st-del{color:#8E2B3A!important}
+@keyframes stAsk{from{opacity:0}}
+
 .st-field{display:flex;flex-direction:column;gap:5px}
 .st-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .st-in{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid var(--cb);background:var(--bg2);color:var(--ink);font:400 .92rem "DM Sans",system-ui,sans-serif;outline:none;-webkit-appearance:none}
@@ -2906,10 +2924,7 @@ function deleteRec(rec){
 function downloadBackup(){
   var data={app:'Ricettario · '+WL.brand().name,account:WL.email(),esportato:new Date().toISOString(),ricette:CU,inAttesaDiSync:_syncQueue};
   var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='ricettario-backup-'+new Date().toISOString().slice(0,10)+'.json';
-  document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},800);
+  saveFile(blob,'ricettario-backup-'+new Date().toISOString().slice(0,10)+'.json');
 }
 
 
@@ -4603,10 +4618,7 @@ function pdWord(id){
   var d=pdFind(pdLoad(),id);if(!d||!d.items.length)return;
   var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+pdEsc(d.name)+'</title><style>body{font-family:Georgia,serif;color:#222}'+pdCss('')+'</style></head><body>'+pdDocHTML(d)+'</body></html>';
   var blob=new Blob(['﻿',html],{type:'application/msword'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=(d.name||'ricette').replace(/[\\\/:*?"<>|]+/g,'_')+'.doc';
-  document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},800);
+  saveFile(blob,(d.name||'ricette').replace(/[\\\/:*?"<>|]+/g,'_')+'.doc');
 }
 
 /* ════ GESTIONE CATEGORIE E PIATTI ════
@@ -5921,6 +5933,7 @@ var LIB={books:[],progress:{},setup:null,covers:{},loaded:false,q:''};
     var v=document.getElementById('libView');if(v&&v.classList.contains('on'))render(),loadCovers();
   }
   window.libCloseReader=closeReader;
+  window.closeReaderApp=function(){closeReader();};
   function keyH(e){
     if(!R)return;var tg=(e.target&&e.target.tagName)||'';if(tg==='INPUT'||tg==='TEXTAREA')return;
     if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();R.api&&R.api.next();}
@@ -6935,9 +6948,11 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     var def=ST.sec||((curSec&&curSec!=='tutti')?curSec:WL.defSec());
     var rec={n:String(r.n||'Ricetta'),c:r.c||'Altro',s:ST.sec||r.s||def,i:(r.i||[]).map(function(x){return [x[0],x[1],x[2]||'g'];})};
     if(r.piatto)rec.piatto=r.piatto;if(r.p)rec.p=r.p;
-    ST.items.push({key:key(),rec:rec,warn:r._warn||[],source:source,label:label,checked:true,open:false});
+    var empty=!rec.i.some(function(x){return x[1]!=null&&x[1]!==''&&+x[1]>0;})&&!String(rec.p||'').trim();
+    ST.items.push({key:key(),rec:rec,warn:r._warn||[],source:source,label:label,checked:!empty,empty:empty,open:false});
   }
 
+  ST._add=function(r,src,l){addItem(r,src,l);render();};ST._render=function(){render();};
   /* ── schede da controllare ── */
   function results(wrap){
     var sec=h('section','st-results');
@@ -6946,8 +6961,16 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     all.onclick=function(){var v=!ST.items.every(function(i){return i.checked;});ST.items.forEach(function(i){i.checked=v;});render();};
     var clr=t('button','st-link','Svuota');clr.type='button';clr.onclick=function(){if(confirm('Togliere tutte le ricette dalla lista? Non verranno salvate.')){ST.items=[];render();}};
     hd.appendChild(all);hd.appendChild(clr);sec.appendChild(hd);
+    var empties=ST.items.filter(function(i){return i.empty;});
+    if(empties.length){
+      var eb=h('div','st-empties');eb.appendChild(t('span','',empties.length+(empties.length===1?' ricetta è vuota':' ricette sono vuote')+': nessun ingrediente né procedimento.'));
+      var ebt=t('button','st-btn st-btn-dark','Scarta le vuote');ebt.type='button';
+      ebt.onclick=function(){if(confirm('Scartare '+empties.length+(empties.length===1?' ricetta vuota':' ricette vuote')+'? Non verranno salvate.')){ST.items=ST.items.filter(function(i){return !i.empty;});render();}};
+      eb.appendChild(ebt);sec.appendChild(eb);
+    }
+    if(ST.items.length&&'ontouchstart' in window)sec.appendChild(t('p','st-hint','Scorri una scheda verso sinistra per scartarla.'));
     var grid=h('div','st-sheets');
-    ST.items.forEach(function(it){grid.appendChild(it.open?editor(it):sheet(it));});
+    ST.items.forEach(function(it){grid.appendChild(it.open?editor(it):swipeable(sheet(it),it));});
     sec.appendChild(grid);wrap.appendChild(sec);
     var pending=ST.items.filter(function(i){return i.checked;}).length;
     if(pending){
@@ -6955,14 +6978,34 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
       bar.appendChild(b);wrap.appendChild(bar);
     }
   }
+  /* scheda scorrevole: verso sinistra per scartare, sempre con conferma */
+  function discard(it){ST.items=ST.items.filter(function(y){return y.key!==it.key;});render();}
+  function swipeable(card,it){
+    var w=h('div','st-swipe'+(it.ask?' ask':''));w.appendChild(h('div','st-under','<span>Scarta</span>'));w.appendChild(card);
+    if(it.ask){
+      var q=h('div','st-ask');q.appendChild(t('b','','Scartare «'+it.rec.n+'»?'));q.appendChild(t('span','','Non verrà salvata.'));
+      var row=h('div','st-ask-a');var no=t('button','st-btn','Annulla');no.type='button';no.onclick=function(){it.ask=false;render();};
+      var yes=t('button','st-btn st-danger','Scarta');yes.type='button';yes.onclick=function(){w.classList.add('gone');setTimeout(function(){discard(it);},260);};
+      row.appendChild(no);row.appendChild(yes);q.appendChild(row);card.appendChild(q);return w;
+    }
+    var x0=0,y0=0,dx=0,mode=0,W=0;
+    card.addEventListener('touchstart',function(e){var tg=e.target;if(tg.closest('input,select,textarea,details,button'))return;x0=e.touches[0].clientX;y0=e.touches[0].clientY;dx=0;mode=0;W=card.offsetWidth;card.style.transition='none';},{passive:true});
+    card.addEventListener('touchmove',function(e){if(!W)return;var mx=e.touches[0].clientX-x0,my=e.touches[0].clientY-y0;
+      if(!mode){if(Math.abs(mx)>10&&Math.abs(mx)>Math.abs(my)*1.3)mode=1;else if(Math.abs(my)>10)mode=2;}
+      if(mode!==1)return;if(e.cancelable)e.preventDefault();w.classList.add('drag');dx=Math.min(0,mx);card.style.transform='translateX('+dx+'px)';w.classList.toggle('arm',-dx>W*.35);},{passive:false});
+    card.addEventListener('touchend',function(){if(!W)return;card.style.transition='';var go=mode===1&&-dx>W*.35;W=0;
+      if(go){card.style.transform='translateX(-100%)';if(navigator.vibrate)try{navigator.vibrate(8);}catch(e){}setTimeout(function(){it.ask=true;render();},180);}else{card.style.transform='';w.classList.remove('arm');setTimeout(function(){w.classList.remove('drag');},280);}});
+    return w;
+  }
   function isWarn(it,ing){return it.warn.indexOf(ing[0]+' '+ing[1]+' '+ing[2])>-1;}
   function sheet(it){
-    var r=it.rec,s=h('article','st-sheet'+(it.checked?' sel':''));
+    var r=it.rec,s=h('article','st-sheet'+(it.checked?' sel':'')+(it.empty?' empty':''));
     var meta=h('div','st-meta');meta.appendChild(t('span','st-tag',WL.secMap()[r.s]||r.s));meta.appendChild(t('span','st-tag ghost',r.c||'Altro'));
     if(it.label)meta.appendChild(t('span','st-src',it.label));s.appendChild(meta);
     s.appendChild(t('h3','st-name',r.n));
     if(r.piatto)s.appendChild(t('p','st-piatto','🍽️ '+r.piatto));
-    if(it.warn.length)s.appendChild(t('div','st-warn','⚠ Non trovo nella fonte: '+it.warn.join(' · ')+'. Controlla prima di salvare.'));
+    if(it.empty)s.appendChild(t('div','st-warn','Ricetta vuota: l’AI non ha trovato ingredienti né procedimento. Di solito è un titolo o un pezzo di testo: scartala.'));
+    else if(it.warn.length)s.appendChild(t('div','st-warn','⚠ Non trovo nella fonte: '+it.warn.join(' · ')+'. Controlla prima di salvare.'));
     else if(it.source)s.appendChild(h('div','st-ok',IC.check+'<span>Quantità verificate sulla fonte</span>'));
     var tot=0;r.i.forEach(function(x){if(x[1]!=null&&/^(g|ml)$/i.test(x[2]))tot+=+x[1];});
     var tb=h('table','st-tbl');
@@ -6977,7 +7020,7 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     var ck=h('label','st-check'+(it.checked?' on':''));var cb=h('input');cb.type='checkbox';cb.checked=it.checked;cb.onchange=function(){it.checked=cb.checked;render();};ck.appendChild(cb);ck.appendChild(t('span','','Da salvare'));act.appendChild(ck);
     var ed=t('button','st-btn','Modifica');ed.type='button';ed.onclick=function(){it.open=true;render();};act.appendChild(ed);
     var sv=t('button','st-btn st-btn-dark','Salva');sv.type='button';sv.onclick=function(){saveItems([it]);};act.appendChild(sv);
-    var dl=t('button','st-btn ghost','Scarta');dl.type='button';dl.onclick=function(){ST.items=ST.items.filter(function(y){return y.key!==it.key;});render();};act.appendChild(dl);
+    var dl=t('button','st-btn ghost st-del','Scarta');dl.type='button';dl.onclick=function(){it.ask=true;render();};act.appendChild(dl);
     s.appendChild(act);return s;
   }
   function field(label,el){var w=h('label','st-field');w.appendChild(t('span','st-lbl',label));w.appendChild(el);return w;}
@@ -8260,5 +8303,6 @@ function aiTranslate(text,lang,onProg){
 <script src="/home.js"></script>
 <script src="/backup.js"></script>
 <script src="/prod.js"></script>
+<script src="/nav.js"></script>
 </body>
 </html>
