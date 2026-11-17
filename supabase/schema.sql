@@ -80,13 +80,16 @@ create table if not exists public.brigata (
   owner_id    uuid not null references auth.users(id) on delete cascade,
   email       text not null,
   member_id   uuid references auth.users(id) on delete cascade,
-  role        text not null default 'commis' check (role in ('admin','pastry_chef','demi_chef','commis','staff')),
+  role        text not null default 'commis',
   status      text not null default 'invited' check (status in ('invited','pending','active')),
   name        text,
   created_at  timestamptz not null default now(),
   unique (owner_id, email)
 );
 create index if not exists brigata_member_idx on public.brigata(member_id);
+-- ruoli ammessi (rieseguibile: aggiorna anche i database creati prima)
+alter table public.brigata drop constraint if exists brigata_role_check;
+alter table public.brigata add constraint brigata_role_check check (role in ('admin','pastry_chef','chef_de_partie','demi_chef','commis','staff'));
 
 -- ruolo di chi è collegato nel ricettario di p_owner ('owner', un ruolo, o null)
 create or replace function public.wl_role(p_owner uuid)
@@ -98,6 +101,9 @@ create or replace function public.wl_can_read(p_owner uuid)
 returns boolean language sql stable as $$ select public.wl_role(p_owner) is not null; $$;
 create or replace function public.wl_can_edit(p_owner uuid)
 returns boolean language sql stable as $$ select coalesce(public.wl_role(p_owner) in ('owner','admin','pastry_chef'), false); $$;
+-- chi guida la produzione: compila i fogli e scrive a tutta la brigata
+create or replace function public.wl_can_lead(p_owner uuid)
+returns boolean language sql stable as $$ select coalesce(public.wl_role(p_owner) in ('owner','admin','pastry_chef','chef_de_partie'), false); $$;
 create or replace function public.wl_is_admin(p_owner uuid)
 returns boolean language sql stable as $$ select coalesce(public.wl_role(p_owner) in ('owner','admin'), false); $$;
 create or replace function public.wl_path_owner(p text)
@@ -217,6 +223,100 @@ begin
 end $$;
 revoke all on function public.brigata_save_settings(uuid, jsonb, jsonb) from public;
 grant execute on function public.brigata_save_settings(uuid, jsonb, jsonb) to authenticated;
+
+-- ─── PRODUZIONE E COMUNICAZIONI ──────────────────────────────────────
+-- fogli di produzione: il foglio base (giorno vuoto) e quelli di ogni giorno
+create table if not exists public.produzione (
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    uuid not null references auth.users(id) on delete cascade,
+  giorno      date,
+  titolo      text not null default 'Foglio di produzione',
+  data        jsonb not null default '{}'::jsonb,
+  updated_by  uuid default auth.uid(),
+  updated_at  timestamptz not null default now(),
+  created_at  timestamptz not null default now()
+);
+create index if not exists produzione_owner_idx on public.produzione(owner_id, giorno);
+alter table public.produzione enable row level security;
+drop policy if exists prod_select on public.produzione;
+drop policy if exists prod_write  on public.produzione;
+create policy prod_select on public.produzione for select to authenticated using (public.wl_can_read(owner_id));
+create policy prod_write  on public.produzione for all to authenticated using (public.wl_can_lead(owner_id)) with check (public.wl_can_lead(owner_id));
+-- chi esegue segna lo stato delle sole righe assegnate a lui (chi guida può tutte)
+create or replace function public.prod_set_status(p_id uuid, p_row text, p_status text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare f public.produzione; rows jsonb; i int; r jsonb;
+begin
+  select * into f from public.produzione where id = p_id;
+  if f.id is null or not public.wl_can_read(f.owner_id) then raise exception 'Foglio non trovato'; end if;
+  if p_status not in ('todo','doing','done') then raise exception 'Stato non valido'; end if;
+  rows := coalesce(f.data->'rows', '[]'::jsonb);
+  for i in 0 .. jsonb_array_length(rows) - 1 loop
+    r := rows->i;
+    if r->>'id' = p_row then
+      if not public.wl_can_lead(f.owner_id) and coalesce(r->>'who','') <> auth.uid()::text then raise exception 'Questa riga è assegnata a un altro membro'; end if;
+      rows := jsonb_set(rows, array[i::text, 'st'], to_jsonb(p_status));
+      rows := jsonb_set(rows, array[i::text, 'by'], to_jsonb(auth.uid()::text));
+      update public.produzione set data = jsonb_set(data, '{rows}', rows), updated_by = auth.uid(), updated_at = now() where id = p_id;
+      return true;
+    end if;
+  end loop;
+  raise exception 'Riga non trovata';
+end $$;
+revoke all on function public.prod_set_status(uuid, text, text) from public;
+grant execute on function public.prod_set_status(uuid, text, text) to authenticated;
+
+-- comunicazioni: a tutta la brigata (to_id vuoto) o personali (solo mittente e destinatario)
+create table if not exists public.messaggi (
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    uuid not null references auth.users(id) on delete cascade,
+  author_id   uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  author_name text,
+  to_id       uuid references auth.users(id) on delete cascade,
+  body        text not null check (length(body) between 1 and 4000),
+  attach      jsonb,
+  created_at  timestamptz not null default now()
+);
+create index if not exists messaggi_owner_idx on public.messaggi(owner_id, created_at desc);
+create table if not exists public.messaggi_letti (
+  msg_id   uuid not null references public.messaggi(id) on delete cascade,
+  user_id  uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  read_at  timestamptz not null default now(),
+  primary key (msg_id, user_id)
+);
+alter table public.messaggi enable row level security;
+alter table public.messaggi_letti enable row level security;
+drop policy if exists msg_select on public.messaggi;
+drop policy if exists msg_insert on public.messaggi;
+drop policy if exists msg_delete on public.messaggi;
+create policy msg_select on public.messaggi for select to authenticated
+  using (public.wl_can_read(owner_id) and (to_id is null or to_id = auth.uid() or author_id = auth.uid()));
+create policy msg_insert on public.messaggi for insert to authenticated
+  with check (author_id = auth.uid() and public.wl_can_read(owner_id) and (to_id is not null or public.wl_can_lead(owner_id)));
+create policy msg_delete on public.messaggi for delete to authenticated
+  using (author_id = auth.uid() or public.wl_is_admin(owner_id));
+drop policy if exists read_select on public.messaggi_letti;
+drop policy if exists read_insert on public.messaggi_letti;
+create policy read_select on public.messaggi_letti for select to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.messaggi m where m.id = msg_id and m.author_id = auth.uid()));
+create policy read_insert on public.messaggi_letti for insert to authenticated
+  with check (user_id = auth.uid() and exists (select 1 from public.messaggi m where m.id = msg_id));
+revoke all on public.produzione, public.messaggi, public.messaggi_letti from anon;
+grant select, insert, update, delete on public.produzione, public.messaggi to authenticated;
+grant select, insert on public.messaggi_letti to authenticated;
+
+-- persone della brigata (titolare compreso), per destinatari e responsabili
+create or replace function public.brigata_people(p_owner uuid)
+returns table(user_id uuid, name text, email text, role text)
+language sql stable security definer set search_path = public as $$
+  select u.id, coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', split_part(u.email, '@', 1)), u.email, 'owner'
+    from auth.users u where u.id = p_owner and public.wl_can_read(p_owner)
+  union all
+  select b.member_id, coalesce(b.name, split_part(b.email, '@', 1)), b.email, b.role
+    from public.brigata b where b.owner_id = p_owner and b.status = 'active' and b.member_id is not null and public.wl_can_read(p_owner);
+$$;
+revoke all on function public.brigata_people(uuid) from public;
+grant execute on function public.brigata_people(uuid) to authenticated;
 
 -- ─── PAGINA D'ACCESSO PERSONALIZZATA (prima del login) ───────────────
 -- Legge SOLO nome e logo di un account dal suo indirizzo personale

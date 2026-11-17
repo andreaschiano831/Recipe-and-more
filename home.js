@@ -56,6 +56,25 @@
   }
   function hasTeam() { try { return WL.inTeam() || (WL.isAdmin() && false); } catch (e) { return false; } }
 
+  function prodCard() {
+    if (!window.PR) return '';
+    var sh = PR.state.todaySheet, L = WL.canLead && WL.canLead();
+    if (!sh && !L) return '';
+    if (!sh) return '<div class="hm-card hm-prodsheet"><span class="hm-k">Produzione di oggi</span><p class="hm-p">Nessun foglio per oggi.</p><div class="hm-pr-a"><button type="button" class="hm-b dark" data-pr="day">Crea il foglio</button></div></div>';
+    var rows = (sh.data && sh.data.rows) || [], done = rows.filter(function (r) { return r.st === 'done'; }).length, mine = rows.filter(function (r) { return r.who === WL.uid && r.st !== 'done'; });
+    return '<div class="hm-card hm-prodsheet"><div class="hm-ch"><span class="hm-k">Produzione di oggi</span><span class="hm-n">' + done + '/' + rows.length + '</span></div><b class="hm-pst">' + esc(sh.titolo) + '</b><span class="hm-bar"><i style="width:' + (rows.length ? done / rows.length * 100 : 0) + '%"></i></span>' +
+      (mine.length ? '<p class="hm-p">Da fare per te: ' + mine.slice(0, 3).map(function (r) { return '<b>' + esc(r.t) + '</b>'; }).join(', ') + (mine.length > 3 ? ' e altre ' + (mine.length - 3) : '') + '</p>' : '') +
+      '<div class="hm-pr-a"><button type="button" class="hm-b dark" data-pr="day">Apri il foglio</button></div></div>';
+  }
+  function msgCard() {
+    if (!window.PR) return '';
+    var M = PR.msgs() || [], U = PR.unread() || [];
+    if (!M.length && !(WL.isAdmin && WL.isAdmin() && WL.inTeam && !WL.inTeam() && PR.state.people && PR.state.people.length > 1)) return '';
+    var show = (U.length ? U : M).slice(0, 2);
+    return '<div class="hm-card hm-msgs' + (U.length ? ' has-new' : '') + '"><div class="hm-ch"><span class="hm-k">Comunicazioni</span>' + (U.length ? '<span class="hm-new">' + U.length + ' nuov' + (U.length === 1 ? 'a' : 'e') + '</span>' : '') + '</div>' +
+      show.map(function (m) { return '<div class="hm-m"><b>' + esc(m.author_name || '') + '</b><span>' + esc(String(m.body).slice(0, 120)) + (String(m.body).length > 120 ? '…' : '') + '</span></div>'; }).join('') +
+      '<div class="hm-pr-a"><button type="button" class="hm-b' + (U.length ? ' dark' : '') + '" data-pr="msg">' + (U.length ? 'Leggi' : 'Apri') + '</button></div></div>';
+  }
   function render() {
     var land = $('landing'); if (!land || !window.WL || !WL.signedIn()) return;
     var box = $('hm');
@@ -76,6 +95,7 @@
     var quick = [
       ed ? ['new', IC.plus, 'Nuova ricetta'] : null,
       ed ? ['ai', IC.spark, 'Importa con l’AI'] : null,
+      ['prod', IC.cook, 'Produzione'],
       ['timer', IC.clock, 'Timer rapido'],
       ['lib', IC.book, 'Biblioteca'],
       (WL.isAdmin && WL.isAdmin()) ? ['team', IC.team, 'Brigata'] : null
@@ -89,6 +109,7 @@
         (prod ? '<div class="hm-card hm-prod"><div class="hm-ch"><span class="hm-k">In produzione</span><span class="hm-n">' + P.length + '</span></div><div class="hm-prs">' + prod + '</div></div>' : '') +
         (!empty ? '<div class="hm-card hm-quick"><span class="hm-k">Azioni rapide</span><div class="hm-qs">' + quick + '</div></div>' : '') +
       '</div><div class="hm-col hm-side">' +
+        prodCard() + msgCard() +
         '<div class="hm-card hm-timers" id="hmTimerCard"' + (T.length ? '' : ' hidden') + '><div class="hm-ch"><span class="hm-k">Timer</span></div><div id="hmTimers" class="hm-tl"></div></div>' +
         (B ? '<button type="button" class="hm-card hm-book" id="hmBook"><span class="hm-k">Continua a leggere</span><b>' + esc(B.b.title) + '</b><small>' + esc(B.b.author || '') + '</small><span class="hm-bar"><i style="width:' + Math.round(B.p.percent * 100) + '%"></i></span><small class="hm-bp">' + Math.round(B.p.percent * 100) + '% · ' + ago(B.t || Date.now()) + '</small></button>' : '') +
       '</div></div>';
@@ -108,11 +129,13 @@
         var q = b.dataset.q;
         if (q === 'new') { if (window.openModal) openModal(); }
         else if (q === 'ai') { if (window.openStudio) openStudio(); }
+        else if (q === 'prod') { if (window.PR) PR.open('day'); }
         else if (q === 'timer') { if (window.SX) SX.open('timer '); }
         else if (q === 'lib') { if (window.openLibrary) openLibrary(); }
         else if (q === 'team') { WL.openSettings(); setTimeout(function () { var c = $('wlTeamCard'); if (c) c.scrollIntoView({ block: 'start' }); }, 250); }
       };
     });
+    [].forEach.call(box.querySelectorAll('[data-pr]'), function (b) { b.onclick = function () { PR.open(b.dataset.pr); }; });
     var hb = $('hmBook'); if (hb) hb.onclick = function () { var b = B.b; if (window.openLibrary) openLibrary(); setTimeout(function () { try { libOpenReader(b); } catch (e) {} }, 350); };
     try { if (XL.timers) XL.timers.render(); } catch (e) {}
   }

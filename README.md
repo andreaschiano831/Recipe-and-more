@@ -47,9 +47,13 @@ Dal menu ≡ → **Account e personalizzazione → Brigata** il titolare (o un a
 |---|---|---|---|
 | Titolare / Admin | modifica | modifica | modifica |
 | Pastry Chef | modifica | modifica | — |
+| Chef de Partie | sola lettura (compila la produzione e scrive alla brigata) | — | — |
 | Demi Chef, Commis, Staff | sola lettura | — | — |
 
 Poi si invia il link dell’app («Invia il link dell’app»). Chi accede con l’email invitata entra subito nel ricettario della brigata; chi apre il link senza invito compare come **richiesta** da approvare. Chi fa parte di più ricettari sceglie quello attivo nella stessa scheda. I permessi sono applicati dal database (RLS), non solo dall’interfaccia; la chiave AI salvata non è visibile a chi ha solo la lettura. Segnalibri, note e posizione di lettura restano personali.
+
+## Produzione e comunicazioni
+Dalla Home (o cercando «produzione»): **Foglio base** (il foglio standard, con nome e preparazioni fisse: le modifiche restano lì), **Foglio del giorno** (si crea dal foglio base, righe collegate alle ricette con quantità, responsabile e stato), **Documento** (Word o PDF con le ricette spuntate, già scalate alle quantità del foglio) e **Comunicazioni** (a tutta la brigata o personali, con il foglio allegato; chi apre l'app vede subito quelle non lette, chi scrive vede chi le ha lette). Per attivarle va rieseguito `supabase/schema.sql`.
 
 ## File
 - `index.html`: l'app (stessa struttura dell'originale)

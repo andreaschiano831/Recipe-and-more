@@ -49,7 +49,7 @@
   var ROLE = WS && WS !== UID ? (WSI.role || 'staff') : 'owner';
   var TEAMS = (WSI && WSI.teams) || [];
   var PREFIX = 'u:' + (UID || 'anon') + ':' + (WS && WS !== UID ? 'w:' + WS + ':' : '');
-  var ROLES = { owner: 'Titolare', admin: 'Admin', pastry_chef: 'Pastry Chef', demi_chef: 'Demi Chef', commis: 'Commis', staff: 'Staff' };
+  var ROLES = { owner: 'Titolare', admin: 'Admin', pastry_chef: 'Pastry Chef', chef_de_partie: 'Chef de Partie', demi_chef: 'Demi Chef', commis: 'Commis', staff: 'Staff' };
   var PERSONAL_KEYS = ['mdl_th', 'mdl_hidden', 'mdl_pct', 'mdl_pct_base', 'mdl_sort', 'mdl_tr_lang'];
 
   /* ── memoria del dispositivo separata per account ── */
@@ -83,6 +83,7 @@
     inTeam: function () { return !!(WS && WS !== UID); },
     canEdit: function () { return ROLE === 'owner' || ROLE === 'admin' || ROLE === 'pastry_chef'; },
     isAdmin: function () { return ROLE === 'owner' || ROLE === 'admin'; },
+    canLead: function () { return ROLE === 'owner' || ROLE === 'admin' || ROLE === 'pastry_chef' || ROLE === 'chef_de_partie'; },
     teams: function () { return TEAMS; },
     signedIn: function () { return !!UID; },
     user: function () { return USER; },
@@ -571,7 +572,7 @@
 
   /* ══════════════ SCHEDA «ACCOUNT, LOGO E SEZIONI» ══════════════ */
   function roleOpts(sel) {
-    return ['admin', 'pastry_chef', 'demi_chef', 'commis', 'staff'].map(function (r) { return '<option value="' + r + '"' + (r === sel ? ' selected' : '') + '>' + ROLES[r] + '</option>'; }).join('');
+    return ['admin', 'pastry_chef', 'chef_de_partie', 'demi_chef', 'commis', 'staff'].map(function (r) { return '<option value="' + r + '"' + (r === sel ? ' selected' : '') + '>' + ROLES[r] + '</option>'; }).join('');
   }
   function wsCard() {
     if (!TEAMS.length) return '';
@@ -636,7 +637,7 @@
       '<button type="button" class="wl-btn gold wide" id="wlSaveBrand">Salva logo e nome</button><p class="wl-msg" id="wlBrandMsg"></p></section>' : '') +
       (WL.canEdit() ?       '<section class="wl-card"><b class="wl-t">Sezioni del ricettario</b><p class="wl-n">Rinomina, riordina, aggiungi o togli le sezioni della home.</p><div id="wlSecs"></div>' +
       '<button type="button" class="wl-btn" id="wlSecAdd">+ Nuova sezione</button><button type="button" class="wl-btn gold wide" id="wlSecSave">Salva sezioni</button><p class="wl-msg" id="wlSecMsg"></p></section>' : '') +
-      (WL.isAdmin() ? '<section class="wl-card" id="wlTeamCard"><b class="wl-t">Brigata</b><p class="wl-n">Invita i membri con la loro email Google. <b>Admin</b> e <b>Pastry Chef</b> possono modificare; <b>Demi Chef</b>, <b>Commis</b> e <b>Staff</b> possono solo consultare.</p>' +
+      (WL.isAdmin() ? '<section class="wl-card" id="wlTeamCard"><b class="wl-t">Brigata</b><p class="wl-n">Invita i membri con la loro email Google. <b>Admin</b> e <b>Pastry Chef</b> modificano le ricette; lo <b>Chef de Partie</b> compila la produzione e scrive alla brigata; <b>Demi Chef</b>, <b>Commis</b> e <b>Staff</b> consultano e segnano le loro preparazioni.</p>' +
         '<div class="wl-row wl-inv"><input class="wl-in" id="wlInvEmail" type="email" placeholder="email@gmail.com" autocomplete="off"><select class="wl-in sm" id="wlInvRole">' + roleOpts('commis') + '</select></div>' +
         '<button type="button" class="wl-btn gold wide" id="wlInvAdd">Aggiungi alla brigata</button><p class="wl-msg" id="wlTeamMsg"></p><div id="wlTeam"></div>' +
         '<div class="wl-row"><button type="button" class="wl-btn" id="wlInvShare">Invia il link dell’app</button><button type="button" class="wl-btn" id="wlInvCopy">Copia link</button></div>' +
