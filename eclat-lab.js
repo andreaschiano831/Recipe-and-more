@@ -124,9 +124,9 @@
     v.innerHTML = '<div class="xl-shell"><div class="xl-head"><div style="min-width:0">' +
       '<button class="xl-back" id="xlBack">' + ICO.back + 'Collezione</button>' +
       '<h1 class="xl-title" id="xlTitle"></h1><div class="xl-meta" id="xlMeta"></div></div>' +
-      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="xl-seg" id="xlSeg"><button data-m="lab">Laboratorio</button><button data-m="formula">Bilanciamento</button><button data-m="molds">Stampi</button><button data-m="cook" title="Modalità cucina a schermo intero">Cucina</button></div>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="xl-seg" id="xlSeg"><button data-m="lab">Laboratorio</button><button data-m="formula">Bilanciamento</button><button data-m="molds">Stampi</button><button data-m="hist">Storico</button><button data-m="cook" title="Modalità cucina a schermo intero">Cucina</button></div>' +
       '<span class="xl-chip" id="xlScaleChip"></span></div></div>' +
-      '<div id="xlLab"></div><div id="xlFormula" hidden></div><div id="xlMolds" hidden></div></div>';
+      '<div id="xlLab"></div><div id="xlFormula" hidden></div><div id="xlMolds" hidden></div><div id="xlHist" hidden></div></div>';
     document.body.appendChild(v);
     $('xlBack').onclick = function () { closeView(); tbGoRecipes(); };
     [].forEach.call(v.querySelectorAll('#xlSeg button'), function (b) { b.onclick = function () { if (b.dataset.m === 'cook') { try { openCucina(XL.rec, XL.dose); } catch (e) {} } else XL.open(XL.rec, b.dataset.m); }; });
@@ -141,8 +141,8 @@
     XL.viewOpen = true; v.classList.add('on'); v.scrollTop = 0; document.body.style.overflow = 'hidden';
     var tp = $('xlTopProd'); if (tp) tp.hidden = false;
     renderHead();
-    $('xlLab').hidden = XL.mode !== 'lab'; $('xlFormula').hidden = XL.mode !== 'formula'; $('xlMolds').hidden = XL.mode !== 'molds';
-    if (XL.mode === 'lab') renderLab(); else if (XL.mode === 'molds') { if (XL.renderMolds) XL.renderMolds(); } else renderFormula();
+    $('xlLab').hidden = XL.mode !== 'lab'; $('xlFormula').hidden = XL.mode !== 'formula'; $('xlMolds').hidden = XL.mode !== 'molds'; $('xlHist').hidden = XL.mode !== 'hist';
+    if (XL.mode === 'lab') renderLab(); else if (XL.mode === 'molds') { if (XL.renderMolds) XL.renderMolds(); } else if (XL.mode === 'hist') { if (XL.renderHist) XL.renderHist(); } else renderFormula();
     setNav(XL.mode);
     [].forEach.call(document.querySelectorAll('#xlSeg button'), function (b) { b.classList.toggle('on', b.dataset.m === XL.mode); });
     XL.pane = null; XLT.render();

@@ -637,3 +637,34 @@ body.t-eclat .ck,body.t-eclat .st,body.t-eclat .lib-view{animation:xlFadeScale .
 .xl .bs-src-h{display:block;font:700 10px "DM Sans",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--gold3);margin-bottom:8px}
 .xl .bs-src .bs-item{background:#fff}
 .xl .bs-link{background:none;border:0;padding:8px 0 0;font:500 12px "DM Sans",sans-serif;color:#8E2B3A;cursor:pointer}
+/* ═══ Storico e note di brigata ═══ */
+.xl .hs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start;margin-top:14px}
+.xl .hs-empty{font-size:13px;color:var(--smoke2);margin-top:14px}
+.xl .hs-add{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.xl .hs-add textarea{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--cb);background:var(--ctrl,#F7F5EF);padding:10px 12px;font:14px/1.5 "DM Sans",sans-serif;color:var(--ink);resize:vertical}
+.xl .hs-add .lb-btn{align-self:flex-end}
+.xl .hs-list{display:flex;flex-direction:column;gap:8px}
+.xl .hs-note{padding:10px 12px;border-radius:12px;background:var(--ctrl,#F7F5EF);border:1px solid var(--e-border);animation:lbIn .3s ease backwards}
+.xl .hs-note.mine{background:rgba(154,123,79,.07)}
+.xl .hs-nh{display:flex;align-items:baseline;gap:8px}.xl .hs-nh b{font-size:13px}.xl .hs-nh span{font-size:11px;color:var(--smoke2)}
+.xl .hs-x{margin-left:auto;border:0;background:none;color:var(--smoke3);font-size:16px;cursor:pointer}
+.xl .hs-note p{font-size:13.5px;line-height:1.5;margin:4px 0 0;color:var(--ink2)}
+.xl .hs-tl{position:relative;display:flex;flex-direction:column}
+.xl .hs-tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:1.5px;background:var(--e-border)}
+.xl .hs-ev{position:relative;display:grid;grid-template-columns:16px minmax(0,1fr);gap:12px;padding:0 0 14px}
+.xl .hs-dot{width:15px;height:15px;border-radius:50%;background:#fff;border:2px solid var(--e-mid,#55623F);margin-top:2px;z-index:1}
+.xl .hs-ev.a-create .hs-dot{background:var(--e-mid)}.xl .hs-ev.a-delete .hs-dot{border-color:#8E2B3A;background:#8E2B3A}
+.xl .hs-eh{font-size:13px;color:var(--ink2)}.xl .hs-eh b{color:var(--ink)}.xl .hs-eh span{display:block;font-size:11px;color:var(--smoke2);margin-top:1px}
+.xl .hs-diff{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:3px}
+.xl .hs-diff li{font:500 12px "JetBrains Mono",ui-monospace,monospace;color:var(--ink2);padding:3px 8px;border-radius:6px;background:var(--ctrl,#F7F5EF)}
+.xl .hs-diff li.k-add{background:rgba(85,98,63,.1);color:#2F3B2A}.xl .hs-diff li.k-del{background:rgba(142,43,58,.08);color:#8E2B3A}
+.xl .hs-diff li.k-qty{background:rgba(154,123,79,.12);color:#6E5530}.xl .hs-diff li.more{background:none;color:var(--smoke2)}
+.xl .hs-ea{display:flex;gap:14px;margin-top:6px}
+.xl .hs-link{border:0;background:none;padding:2px 0;font:500 12px "DM Sans",sans-serif;color:var(--smoke);cursor:pointer}
+.xl .hs-link.strong{color:var(--e-mid);font-weight:600}
+.xl .hs-ver{margin-top:8px;padding:10px 12px;border-radius:12px;border:1px dashed var(--cb);font-size:12.5px}
+.xl .hs-ver table{width:100%;border-collapse:collapse;margin-top:6px}.xl .hs-ver td{padding:3px 0;border-bottom:1px solid var(--e-border)}.xl .hs-ver td:last-child{text-align:right;font-family:"JetBrains Mono",ui-monospace,monospace}
+.xl .hs-ver p{margin:8px 0 0;color:var(--smoke);line-height:1.5}
+.hs-rp{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:8px;padding:6px 10px;border-radius:10px;border:1px solid var(--cb,rgba(26,26,22,.12));background:var(--card,#fff);font:500 12px "DM Sans",sans-serif;color:var(--smoke,#55544B);cursor:pointer;text-align:left}
+.hs-rp[hidden]{display:none}.hs-rp b{color:var(--ink,#1A1A16);font-weight:600}.hs-rp i{font-style:normal;color:var(--smoke3)}
+@media (max-width:899px){.xl .hs{grid-template-columns:minmax(0,1fr)}}
