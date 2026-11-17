@@ -294,7 +294,7 @@
           '<div class="lb-inline"><input id="lbTMin" inputmode="decimal" placeholder="min"><input id="lbTLab" placeholder="Nome (es. forno)"><button type="button" id="lbTAdd">Avvia</button></div></div></div>' +
         '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Composizione</span><button type="button" class="lb-link" id="xlToFormula">Bilanciamento →</button></div>' +
           (A.tot ? '<div class="lb-stack">' + bar + '</div><div class="lb-leg">' + legend + '</div>' + checks +
-            (function () { var S = suggestions(r); return S.items.length ? '<button type="button" class="lb-sug" id="lbSug"><b>' + S.items.length + '</b> suggeriment' + (S.items.length === 1 ? 'o' : 'i') + ' di bilanciamento →</button>' : ''; })() +
+            (function () { var S = suggestions(r), extra = (r.ai_nt ? 1 : 0) + (procNotes(r) ? 1 : 0); if (!S.items.length && extra) return '<button type="button" class="lb-sug" id="lbSug">Note da sistemare nel Bilanciamento →</button>'; return S.items.length ? '<button type="button" class="lb-sug" id="lbSug"><b>' + S.items.length + '</b> suggeriment' + (S.items.length === 1 ? 'o' : 'i') + ' di bilanciamento →</button>' : ''; })() +
             '<p class="lb-note">' + (P.t ? esc(P.t) + ' · ' : '') + Math.round(A.known / A.tot * 100) + '% degli ingredienti riconosciuto</p>' : '<p class="lb-empty">Composizione non disponibile.</p>') +
         '</div>' +
         '<div class="lb-card lb-ai" id="xlVoice"><div class="lb-h"><span class="lb-eyebrow">Sous-chef AI</span><span class="lb-pill ' + (aiOk ? 'ok' : '') + '">' + (aiOk ? 'Attivo' : 'Senza chiave') + '</span></div>' +
@@ -672,6 +672,18 @@
   }
   XL.suggest = suggestions;
   function today() { var d = new Date(); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); }
+  /* modifica controllata di una ricetta (solo campi indicati) */
+  XL.patchRec = function (r, mutate) {
+    if (window.WL && WL.canEdit && !WL.canEdit()) { XL.toast('Solo admin e pastry chef possono modificare la ricetta'); return false; }
+    var nd = JSON.parse(JSON.stringify(r)); delete nd._id; mutate(nd);
+    try { updateRec(r, nd); } catch (e) { XL.toast('Non riesco a salvare'); return false; }
+    var f = fresh(r); [f, r].forEach(function (x) { if (!x) return; Object.keys(nd).forEach(function (k) { x[k] = nd[k]; }); ['ai_nt', 'nt', 'p'].forEach(function (k) { if (!(k in nd)) delete x[k]; }); });
+    if (f) XL.rec = f;
+    return true;
+  };
+  /* note finite dentro il procedimento (importazioni precedenti): «Note: …» */
+  function procNotes(r) { var m = /(^|\n\n)((?:note|nota)\s*:\s*[\s\S]*?)(?=\n\n|$)/i.exec(String(r.p || '')); return m ? m[2].trim() : ''; }
+  XL.procNotes = procNotes;
   XL.addNotes = function (r, lines) {
     if (!lines.length) return false;
     if (window.WL && WL.canEdit && !WL.canEdit()) { XL.toast('Solo admin e pastry chef possono scrivere nelle note'); return false; }
@@ -703,6 +715,8 @@
         : (rows ? '<div class="bs-rows">' + rows + '</div>' : '') +
           (items ? '<p class="bs-hint">La ricetta non viene modificata. Spunta i suggerimenti utili e salvali nelle note. Valori calcolati sulla dose base.</p><div class="bs-items">' + items + '</div>'
             : '<p class="bs-ok">Tutti i parametri sono nella fascia di riferimento.</p>')) +
+      (r.ai_nt ? '<div class="bs-src"><span class="bs-src-h">Note dalla fonte (AI)</span><label class="bs-item"><input type="checkbox" data-src="1"><span class="bs-box"></span><span class="bs-t"><small>Lette dal testo importato: non sono nel procedimento</small><span class="bs-ai-t">' + esc(r.ai_nt) + '</span></span></label>' + (ed ? '<button type="button" class="bs-link" id="bsSrcDrop">Scarta queste note</button>' : '') + '</div>' : '') +
+      (procNotes(r) && ed ? '<div class="bs-src warn"><span class="bs-src-h">Note dentro il procedimento</span><p class="bs-hint">' + esc(procNotes(r).slice(0, 180)) + (procNotes(r).length > 180 ? '…' : '') + '</p><button type="button" class="lb-btn" id="bsMoveNotes">Sposta nelle note della ricetta</button></div>' : '') +
       (ai ? '<div class="bs-ai"><label class="bs-item"><input type="checkbox" data-ai="1"><span class="bs-box"></span><span class="bs-t"><small>Consigli dell’AI</small><span class="bs-ai-t">' + esc(ai.text) + '</span></span></label></div>' : '') +
       '<div class="bs-acts">' + (ed ? '<button type="button" class="lb-btn dark" id="bsAdd" disabled>Aggiungi alle note</button>' : '<button type="button" class="lb-btn" id="bsCopy" disabled>Copia</button>') +
       '<button type="button" class="lb-btn" id="bsAi">' + (XL._sugBusy ? 'L’AI sta pensando…' : 'Altri consigli dall’AI') + '</button></div>' +
@@ -712,11 +726,21 @@
       var L = [], d = today();
       [].forEach.call(box.querySelectorAll('input[data-i]:checked'), function (c) { var it = S.items[+c.dataset.i]; L.push('[Bilanciamento ' + d + '] ' + it.head + ': ' + it.act + ' → ' + it.after + (it.warn && it.warn.length ? ' (restano ' + it.warn.join(', ') + ')' : '') + '.'); });
       var a = box.querySelector('input[data-ai]:checked'); if (a && ai) L.push('[Consigli AI ' + d + '] ' + ai.text.replace(/\s*\n\s*/g, ' · '));
+      var sn = box.querySelector('input[data-src]:checked'); if (sn && r.ai_nt) L.push('[Note dalla fonte] ' + r.ai_nt);
       return L;
     };
     var btn = $('bsAdd') || $('bsCopy');
     [].forEach.call(box.querySelectorAll('input[type=checkbox]'), function (c) { c.onchange = function () { var n = chosen().length; btn.disabled = !n; btn.textContent = ($('bsAdd') ? 'Aggiungi alle note' : 'Copia') + (n ? ' (' + n + ')' : ''); }; });
-    if ($('bsAdd')) $('bsAdd').onclick = function () { var L = chosen(); if (XL.addNotes(r, L)) { XL.toast(L.length === 1 ? 'Suggerimento aggiunto alle note' : L.length + ' suggerimenti aggiunti alle note'); renderSuggest(XL.rec); } };
+    if ($('bsAdd')) $('bsAdd').onclick = function () {
+      var L = chosen(), src = !!box.querySelector('input[data-src]:checked');
+      var ok = XL.patchRec(r, function (nd) { nd.nt = (nd.nt ? String(nd.nt).replace(/\s+$/, '') + '\n' : '') + L.join('\n'); if (src) delete nd.ai_nt; });
+      if (ok) { XL.toast(L.length === 1 ? 'Aggiunto alle note' : L.length + ' suggerimenti aggiunti alle note'); renderSuggest(XL.rec); }
+    };
+    var dr = $('bsSrcDrop'); if (dr) dr.onclick = function () { if (XL.patchRec(r, function (nd) { delete nd.ai_nt; })) { XL.toast('Note della fonte scartate'); renderSuggest(XL.rec); } };
+    var mv = $('bsMoveNotes'); if (mv) mv.onclick = function () {
+      var pn = procNotes(r);
+      if (XL.patchRec(r, function (nd) { nd.p = String(nd.p || '').replace(pn, '').replace(/\n{3,}/g, '\n\n').trim(); if (!nd.p) delete nd.p; nd.nt = (nd.nt ? String(nd.nt).replace(/\s+$/, '') + '\n' : '') + pn.replace(/^(note|nota)\s*:\s*/i, ''); })) { XL.toast('Note spostate dal procedimento'); renderSuggest(XL.rec); }
+    };
     if ($('bsCopy')) $('bsCopy').onclick = function () { var t = chosen().join('\n'); try { navigator.clipboard.writeText(t); XL.toast('Copiato'); } catch (e) { prompt('Copia', t); } };
     $('bsAi').onclick = function () {
       if (XL._sugBusy) return; XL._sugBusy = true; renderSuggest(r);

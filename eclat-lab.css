@@ -632,3 +632,8 @@ body.t-eclat .ck,body.t-eclat .st,body.t-eclat .lib-view{animation:xlFadeScale .
   .xl .ms-row-h b{flex:1}
   .xl .ms-row-v{order:3;width:100%;margin-left:0}
 }
+.xl .bs-src{margin-top:12px;padding:12px;border-radius:12px;background:rgba(154,123,79,.07);border:1px solid rgba(154,123,79,.25)}
+.xl .bs-src.warn{background:rgba(142,43,58,.05);border-color:rgba(142,43,58,.22)}
+.xl .bs-src-h{display:block;font:700 10px "DM Sans",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--gold3);margin-bottom:8px}
+.xl .bs-src .bs-item{background:#fff}
+.xl .bs-link{background:none;border:0;padding:8px 0 0;font:500 12px "DM Sans",sans-serif;color:#8E2B3A;cursor:pointer}

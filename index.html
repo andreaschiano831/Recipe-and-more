@@ -2182,6 +2182,7 @@ body.ck-open .tabbar{display:none!important}
 @media(max-width:420px){.rd-top .rd-btn{width:34px}}
 
 /* gesti del lettore: lo zoom lo gestisce il lettore, non il browser */
+.st-ainote-h{font-size:.74rem;color:var(--smoke2);margin:.3rem 0 .5rem;line-height:1.45}
 .rd,.rd .rd-car,.rd .rd-slide,.rd .rd-epub,.rd .rd-epub iframe{touch-action:pan-x pan-y!important}
 .rd-car.zoomed{overflow-x:hidden!important;scroll-snap-type:none!important;cursor:grab}
 .rd-car.zoomed .rd-slide{overflow:auto!important;justify-content:flex-start!important;align-items:flex-start!important;overscroll-behavior:contain}
@@ -5388,11 +5389,13 @@ function aiToApp(r, source) {
   if (r.yield_note) parts.push('Resa: ' + String(r.yield_note).trim());
   if (steps.length) parts.push(steps.join('\n'));
   else if (r.p) parts.push(String(r.p).trim());
-  if (r.notes) parts.push('Note: ' + String(r.notes).trim());
   var out = { n: n, c: aiCategory(r.category || r.c), s: aiSectionKey(r.section || r.s), i: ings };
   var piatto = String(r.dish_group || r.piatto || '').trim();
   if (piatto && piatto.toLowerCase() !== n.toLowerCase()) out.piatto = piatto;
   if (parts.length) out.p = parts.join('\n\n');
+  /* le note della fonte non vanno nel procedimento: diventano un suggerimento del Bilanciamento */
+  var notes = String(r.notes || '').trim();
+  if (notes) out.ai_nt = notes;
   if (warn.length) out._warn = warn;
   return out;
 }
@@ -7003,6 +7006,7 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
       scale:function(k,round){r.i.forEach(function(x){if(x[1]==null)return;var v=x[1]*k;x[1]=round?Math.round(v):Math.round(v*10)/10;});drawIngs();calc.refresh();}});
     list.addEventListener('input',function(){calc.refresh();});se.addEventListener('change',function(){calc.refresh();});ca.addEventListener('change',function(){calc.refresh();});
     var pr=h('textarea','st-in');pr.rows=5;pr.value=r.p||'';pr.oninput=function(){r.p=pr.value;if(!r.p.trim())delete r.p;};s.appendChild(field('Procedimento',pr));
+    if(r.ai_nt){var dn=h('details','st-proc st-ainote');dn.open=true;dn.appendChild(t('summary','','Note dalla fonte \u2192 Bilanciamento'));dn.appendChild(t('p','st-ainote-h','Non entrano nel procedimento: le trovi in Bilanciamento \u2192 Suggerimenti, da aggiungere alle note della ricetta o scartare.'));dn.appendChild(t('pre','st-srcbox',r.ai_nt));s.appendChild(dn);}
     if(it.source){var d2=h('details','st-proc');d2.appendChild(t('summary','','Testo letto dalla fonte'));d2.appendChild(t('pre','st-srcbox',it.source));s.appendChild(d2);}
     var act=h('div','st-acts');
     var back=t('button','st-btn','Fatto');back.type='button';back.onclick=function(){r.i=r.i.filter(function(x){return String(x[0]).trim();});it.warn=it.warn.filter(function(w){return r.i.some(function(x){return x[0]+' '+x[1]+' '+x[2]===w;});});it.open=false;render();};

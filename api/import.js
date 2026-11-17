@@ -110,11 +110,13 @@ function aiToApp(r, source) {
   if (r.yield_note) parts.push('Resa: ' + String(r.yield_note).trim());
   if (steps.length) parts.push(steps.join('\n'));
   else if (r.p) parts.push(String(r.p).trim());
-  if (r.notes) parts.push('Note: ' + String(r.notes).trim());
   var out = { n: n, c: aiCategory(r.category || r.c), s: aiSectionKey(r.section || r.s), i: ings };
   var piatto = String(r.dish_group || r.piatto || '').trim();
   if (piatto && piatto.toLowerCase() !== n.toLowerCase()) out.piatto = piatto;
   if (parts.length) out.p = parts.join('\n\n');
+  /* le note della fonte non vanno nel procedimento: diventano un suggerimento del Bilanciamento */
+  var notes = String(r.notes || '').trim();
+  if (notes) out.ai_nt = notes;
   if (warn.length) out._warn = warn;
   return out;
 }
