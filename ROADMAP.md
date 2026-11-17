@@ -12,3 +12,9 @@ Si procede un punto alla volta: a ogni punto si prova, si pubblica e si aspetta 
 8. **Home operativa** — FATTO (home.js). timer attivi, ricette in produzione, ripresa del lavoro.
 9. **Scheda di produzione** — FATTO (prod.js): foglio base con nome modificabile, foglio del giorno collegato alle ricette, documento Word/PDF con le ricette spuntate alle quantità del foglio, comunicazioni a tutta la brigata o personali con il foglio allegato, briefing all'apertura e conferme di lettura; ruolo Chef de Partie. funzionale: un modello standard modificabile dall'app che fa da base e che si compila ogni giorno. Con la brigata attiva c'è una sezione **Briefing**: messaggi che i collaboratori vedono quando aprono l'app.
 10. **Storico e note di brigata** — FATTO (storia.js + trigger nel database). chi ha modificato cosa, note di produzione per ricetta.
+
+## Ricetta: pagina unica (FATTO)
+- Laboratorio, procedimento e cucina in un'unica pagina: ingredienti con spunta (mise en place) e procedimento con quantità e timer dentro i passaggi.
+- Barra in basso: **Analisi** (Bilanciamento · Note e storico · Sous-chef), **Inizia/Riprendi** (cucina a schermo intero, stessi progressi), **Altro** (timer, stampa/documenti, produzione, modifica, scheda classica).
+- «Quanto ne fai»: dose, peso finale, stampi e teglie in un solo pannello. «Bilancio» in alto segnala fuori fascia e suggerimenti.
+- Tema Crema rifatto con i toni degli impasti (burro, cacao, pistacchio, frutti rossi, vaniglia, nocciola).

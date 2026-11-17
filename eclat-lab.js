@@ -118,60 +118,223 @@
   function misePct(r) { var w = weighedOf(r), n = (r.i || []).length; if (!n) return 0; var c = 0; for (var k in w) if (w[k]) c++; return Math.round(c / n * 100); }
 
   /* ══════════ VISTE LABORATORIO / BILANCIAMENTO ══════════ */
+  /* ══════════ LA RICETTA: UNA PAGINA, TRE AZIONI ══════════
+     Pagina: ingredienti (mise en place) + procedimento, con i timer attivi in alto.
+     «Quanto ne fai» (dose e stampi), «Analisi» (bilanciamento, note e storico, sous-chef)
+     e «Altro» si aprono come pannelli dal basso. «Inizia» apre la cucina a schermo intero,
+     che condivide pesate e passaggi con questa pagina. */
+  var IC2 = {
+    chart: '<svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+    play: '<svg class="ico" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>',
+    dots: '<svg class="ico" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>',
+    down: '<svg class="ico" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+    mold: '<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M3 11h18"/></svg>',
+    print: '<svg class="ico" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>',
+    edit: '<svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg>',
+    card: '<svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+    prod: '<svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>'
+  };
+  var SHEETS = {
+    dose: { t: 'Quanto ne fai', panes: [['dose', 'Dose'], ['molds', 'Stampi e teglie']] },
+    analisi: { t: 'Analisi', panes: [['formula', 'Bilanciamento'], ['hist', 'Note e storico'], ['ai', 'Sous-chef']] },
+    more: { t: 'Altro', panes: [['more', '']] }
+  };
+  var PANE_EL = { dose: 'xlDose', molds: 'xlMolds', formula: 'xlFormula', hist: 'xlHist', ai: 'xlAI', more: 'xlMore' };
+  function sheetOf(p) { for (var k in SHEETS) if (SHEETS[k].panes.some(function (x) { return x[0] === p; })) return k; return null; }
+
   function buildView() {
     if ($('xlView')) return;
-    var v = h('section', 'xl-view xl'); v.id = 'xlView'; v.setAttribute('aria-label', 'Laboratorio');
-    v.innerHTML = '<div class="xl-shell"><div class="xl-head"><div style="min-width:0">' +
-      '<button class="xl-back" id="xlBack">' + ICO.back + 'Collezione</button>' +
-      '<h1 class="xl-title" id="xlTitle"></h1><div class="xl-meta" id="xlMeta"></div></div>' +
-      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="xl-seg" id="xlSeg"><button data-m="lab">Laboratorio</button><button data-m="formula">Bilanciamento</button><button data-m="molds">Stampi</button><button data-m="hist">Storico</button><button data-m="cook" title="Modalità cucina a schermo intero">Cucina</button></div>' +
-      '<span class="xl-chip" id="xlScaleChip"></span></div></div>' +
-      '<div id="xlLab"></div><div id="xlFormula" hidden></div><div id="xlMolds" hidden></div><div id="xlHist" hidden></div></div>';
+    var v = h('section', 'xl-view xl'); v.id = 'xlView'; v.setAttribute('aria-label', 'Ricetta');
+    v.innerHTML =
+      '<div class="xl-shell">' +
+        '<header class="xl-head"><button class="xl-back" id="xlBack">' + ICO.back + 'Collezione</button>' +
+          '<h1 class="xl-title" id="xlTitle"></h1><div class="xl-meta" id="xlMeta"></div>' +
+          '<div class="xr-bar">' +
+            '<button type="button" class="xr-dose" id="xlDoseBtn" aria-haspopup="dialog"><small>Quanto ne fai</small><strong><span class="mono" id="xlScaleChip"></span>' + IC2.down + '</strong></button>' +
+            '<button type="button" class="xr-bal" id="xlBalBtn" aria-haspopup="dialog"><small>Bilancio</small><strong id="xlBalTxt">—</strong></button>' +
+          '</div></header>' +
+        '<div id="xlLab"></div>' +
+      '</div>' +
+      '<nav class="xr-act" id="xlSeg" aria-label="Azioni sulla ricetta">' +
+        '<button type="button" data-m="formula">' + IC2.chart + '<span>Analisi</span></button>' +
+        '<button type="button" data-m="cook" class="go">' + IC2.play + '<span id="xlGoL">Inizia</span></button>' +
+        '<button type="button" data-m="more">' + IC2.dots + '<span>Altro</span></button>' +
+      '</nav>' +
+      '<div class="xr-sheet" id="xlSheet" hidden><div class="xr-sh-bg" data-x></div>' +
+        '<div class="xr-sh" role="dialog" aria-modal="true" aria-labelledby="xlShT"><div class="xr-grab" data-x aria-hidden="true"><i></i></div>' +
+          '<div class="xr-sh-h"><strong id="xlShT"></strong><button type="button" class="xr-x" data-x aria-label="Chiudi">×</button></div>' +
+          '<div class="xr-seg" id="xlShSeg" role="tablist"></div>' +
+          '<div class="xr-sh-b" id="xlShB">' + Object.keys(PANE_EL).map(function (p) { return '<div class="xr-pane" id="' + PANE_EL[p] + '" hidden></div>'; }).join('') + '</div>' +
+        '</div></div>';
     document.body.appendChild(v);
     $('xlBack').onclick = function () { closeView(); tbGoRecipes(); };
-    [].forEach.call(v.querySelectorAll('#xlSeg button'), function (b) { b.onclick = function () { if (b.dataset.m === 'cook') { try { openCucina(XL.rec, XL.dose); } catch (e) {} } else XL.open(XL.rec, b.dataset.m); }; });
+    $('xlDoseBtn').onclick = function () { openSheet('dose'); };
+    $('xlBalBtn').onclick = function () { openSheet('formula'); };
+    [].forEach.call(v.querySelectorAll('#xlSeg button'), function (b) {
+      b.onclick = function () {
+        var m = b.dataset.m;
+        if (m === 'cook') { closeSheet(); try { openCucina(XL.rec, XL.dose); } catch (e) {} }
+        else openSheet(m === 'formula' ? (XL.lastAnalisi || 'formula') : m);
+      };
+    });
+    [].forEach.call(v.querySelectorAll('#xlSheet [data-x]'), function (x) { x.onclick = function () { closeSheet(); }; });
+    /* trascina giù per chiudere */
+    var sh = v.querySelector('.xr-sh'), y0 = null, dy = 0;
+    function startDrag(e) { var b = $('xlShB'); if (e.target.closest('.xr-sh-b') && b.scrollTop > 0) return; y0 = e.touches[0].clientY; dy = 0; sh.style.transition = 'none'; }
+    sh.addEventListener('touchstart', startDrag, { passive: true });
+    sh.addEventListener('touchmove', function (e) { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 0 && e.cancelable && e.target.closest('.xr-sh-b')) e.preventDefault(); sh.style.transform = dy ? 'translateY(' + dy + 'px)' : ''; }, { passive: false });
+    sh.addEventListener('touchend', function () { if (y0 == null) return; sh.style.transition = ''; sh.style.transform = ''; if (dy > 90) closeSheet(); y0 = null; dy = 0; });
   }
+  function openSheet(p) {
+    var k = sheetOf(p); if (!k || !XL.rec) return;
+    var S = SHEETS[k], sh = $('xlSheet'), seg = $('xlShSeg');
+    $('xlShT').textContent = S.t;
+    seg.hidden = S.panes.length < 2;
+    seg.innerHTML = S.panes.map(function (x) { return '<button type="button" role="tab" data-p="' + x[0] + '">' + x[1] + '</button>'; }).join('');
+    [].forEach.call(seg.querySelectorAll('button'), function (b) { b.onclick = function () { sheetPane(b.dataset.p); }; });
+    XL.sheet = k; sheetPane(p);
+    if (!sh.classList.contains('on')) { sh.hidden = false; void sh.offsetWidth; sh.classList.add('on'); document.body.classList.add('xr-sheet-on'); }
+    [].forEach.call(document.querySelectorAll('#xlSeg button'), function (b) { b.classList.toggle('on', (b.dataset.m === 'formula' && k === 'analisi') || (b.dataset.m === 'more' && k === 'more')); });
+  }
+  function sheetPane(p) {
+    XL.mode = p; if (XL.sheet === 'analisi') XL.lastAnalisi = p;
+    for (var q in PANE_EL) $(PANE_EL[q]).hidden = q !== p;
+    [].forEach.call(document.querySelectorAll('#xlShSeg button'), function (b) { var on = b.dataset.p === p; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    if (p === 'dose') renderDose();
+    else if (p === 'molds') { if (XL.renderMolds) XL.renderMolds(); }
+    else if (p === 'formula') renderFormula();
+    else if (p === 'hist') { if (XL.renderHist) XL.renderHist(); }
+    else if (p === 'ai') renderAI();
+    else if (p === 'more') renderMore();
+    $('xlShB').scrollTop = 0;
+  }
+  function closeSheet() {
+    var sh = $('xlSheet'); XL.mode = 'lab'; XL.sheet = null;
+    if (!sh || !sh.classList.contains('on')) return;
+    sh.classList.remove('on'); document.body.classList.remove('xr-sheet-on');
+    [].forEach.call(document.querySelectorAll('#xlSeg button'), function (b) { b.classList.remove('on'); });
+    setTimeout(function () { if (!sh.classList.contains('on')) sh.hidden = true; }, calm ? 0 : 320);
+    if (XL.rec) renderHead();
+  }
+  XL.closeSheet = closeSheet; XL.openSheet = openSheet;
   XL.open = function (r, mode) {
     r = fresh(r); if (!r) return;
     buildView();
     var changed = !XL.rec || XL.rec._id !== r._id || XL.rec.n !== r.n;
-    if (changed) { XL.dose = (typeof cardDoseOf === 'function' ? cardDoseOf(r) : 1) || 1; XL.phase = 0; if (!XL.pane || XL.pane === 'all') XL.pane = null; }
-    XL.rec = r; XL.mode = mode || 'lab';
-    var v = $('xlView');
-    XL.viewOpen = true; v.classList.add('on'); v.scrollTop = 0; document.body.style.overflow = 'hidden';
-    var tp = $('xlTopProd'); if (tp) tp.hidden = false;
+    if (changed) { XL.dose = (typeof cardDoseOf === 'function' ? cardDoseOf(r) : 1) || 1; XL.phase = 0; XL.lastAnalisi = null; }
+    var v = $('xlView'), again = XL.viewOpen && !changed;
+    XL.rec = r; mode = mode || 'lab';
+    if (!again) {
+      XL.viewOpen = true; v.classList.add('on'); v.scrollTop = 0; document.body.style.overflow = 'hidden'; document.body.classList.add('xl-open');
+      var tp = $('xlTopProd'); if (tp) tp.hidden = false;
+      renderLab();
+    } else if (mode === 'lab') { var y = v.scrollTop; renderLab(); v.scrollTop = y; }
     renderHead();
-    $('xlLab').hidden = XL.mode !== 'lab'; $('xlFormula').hidden = XL.mode !== 'formula'; $('xlMolds').hidden = XL.mode !== 'molds'; $('xlHist').hidden = XL.mode !== 'hist';
-    if (XL.mode === 'lab') renderLab(); else if (XL.mode === 'molds') { if (XL.renderMolds) XL.renderMolds(); } else if (XL.mode === 'hist') { if (XL.renderHist) XL.renderHist(); } else renderFormula();
-    setNav(XL.mode);
-    [].forEach.call(document.querySelectorAll('#xlSeg button'), function (b) { b.classList.toggle('on', b.dataset.m === XL.mode); });
+    if (mode === 'lab' || mode === 'cook') closeSheet(); else openSheet(mode);
+    setNav('lab');
     XL.pane = null; XLT.render();
+    if (mode === 'cook') { try { openCucina(r, XL.dose); } catch (e) {} }
   };
   function closeView() {
     var v = $('xlView'); if (!v || !XL.viewOpen) return;
-    XL.viewOpen = false; v.classList.remove('on'); document.body.style.overflow = ''; XL._benchStep = null; XLT.render();
+    var sh = $('xlSheet'); if (sh) { sh.classList.remove('on'); sh.hidden = true; } document.body.classList.remove('xr-sheet-on');
+    XL.viewOpen = false; XL.mode = 'lab'; XL.sheet = null; v.classList.remove('on'); document.body.style.overflow = ''; document.body.classList.remove('xl-open'); XL._benchStep = null; XLT.render();
     try { tbSync(); } catch (e) {}
   }
   XL.close = closeView;
+  function balState(r) {
+    var D = data(r), A = D.A, P = D.P, bad = 0, has = !!(P.r && A.tot), S = { items: [] };
+    if (has) [[A.s, P.r.s], [A.f, P.r.f], [A.tot - A.w, P.r.sol]].forEach(function (x) { if (!x[1]) return; var v = pct(x[0], A.tot); if (v < x[1][0] || v > x[1][1]) bad++; });
+    try { S = suggestions(r); } catch (e) {}
+    return { bad: bad, sug: S.items.length, notes: (r.ai_nt ? 1 : 0) + (procNotes(r) ? 1 : 0), has: has, any: A.tot > 0 };
+  }
   function renderHead() {
     var r = XL.rec, D = data(r);
     $('xlTitle').textContent = r.n;
-    var bits = [WL.secLabel(r.s), r.c, r.piatto].filter(Boolean).map(esc);
-    $('xlMeta').innerHTML = bits.join('<span>•</span>') + '<span>•</span><span class="mono">' + (r.i || []).length + ' ingredienti</span>' + (D.P.t ? '<span>•</span><span>' + esc(D.P.t) + '</span>' : '');
-    $('xlScaleChip').textContent = 'BATCH ' + fmtX(XL.dose) + ' · ' + fmtG(D.tot * XL.dose) + ' g TOTALI';
+    var nSteps = D.steps.length, bits = [WL.secLabel(r.s), r.c].filter(Boolean).map(esc);
+    $('xlMeta').innerHTML = bits.join('<span>·</span>') + (bits.length ? '<span>·</span>' : '') + '<span>' + (r.i || []).length + ' ingredienti</span>' + (nSteps ? '<span>·</span><span>' + nSteps + ' passaggi</span>' : '') + (D.P.t ? '<span>·</span><span>' + esc(D.P.t) + '</span>' : '');
+    $('xlScaleChip').textContent = fmtG(D.tot * XL.dose) + ' g · ' + fmtX(XL.dose);
+    var B = balState(r), bb = $('xlBalBtn'), bt = $('xlBalTxt'), cls = '', txt;
+    if (B.bad) { txt = B.bad + ' fuori fascia'; cls = 'warn'; }
+    else if (B.sug) { txt = B.sug + ' suggeriment' + (B.sug === 1 ? 'o' : 'i'); cls = 'warn'; }
+    else if (B.notes) { txt = 'Note da sistemare'; cls = 'warn'; }
+    else if (B.has) { txt = 'In equilibrio'; cls = 'ok'; }
+    else txt = B.any ? 'Composizione' : '—';
+    bt.textContent = txt; bb.className = 'xr-bal ' + cls;
+    var sd = stepsOf(r), w = weighedOf(r), started = false; for (var k in sd) if (sd[k]) started = true; for (var j in w) if (w[j]) started = true;
+    var gl = $('xlGoL'); if (gl) gl.textContent = started ? 'Riprendi' : 'Inizia';
   }
   XL.setDose = function (d, silent) {
     d = Math.max(0.05, Math.min(100, Math.round(d * 1000) / 1000));
     if (d === XL.dose) return;
     var D = data(XL.rec), from = D.tot * XL.dose; XL.dose = d;
-    renderHead();
+    renderHead(); bumpEl($('xlScaleChip'));
     roll($('xlBig'), from, D.tot * d, function (v) { return fmtG(v) + ' g'; });
     [].forEach.call(document.querySelectorAll('.xl-tabs button'), function (b) { b.classList.toggle('on', +b.dataset.d === d); });
+    benchQty();
     if (XL.mode === 'formula') renderFormula(true);
-    else if (XL.mode === 'lab') benchQty();
     else if (XL.mode === 'molds' && XL.renderMolds) XL.renderMolds(true);
     if (!silent) XL.toast('Dose ' + fmtX(d) + ' applicata');
   };
+  /* pannello «Quanto ne fai» → Dose */
+  function renderDose() {
+    var r = XL.rec, D = data(r), host = $('xlDose');
+    var presets = [0.5, 1, 1.5, 2, 3, 4].map(function (d) { return '<button type="button" data-d="' + d + '" class="' + (Math.abs(d - XL.dose) < 1e-6 ? 'on' : '') + '">' + fmtX(d) + '</button>'; }).join('');
+    host.innerHTML =
+      '<div class="xr-big"><strong class="mono" id="lbTot">' + fmtG(D.tot * XL.dose) + ' g</strong><span class="mono" id="lbDoseV">' + fmtX(XL.dose) + '</span></div>' +
+      '<p class="xr-l">Moltiplica la ricetta</p><div class="lb-presets">' + presets + '</div>' +
+      '<p class="xr-l">Oppure scegli il peso finale</p>' +
+      '<div class="lb-inline"><input id="xlTarget" inputmode="decimal" placeholder="Peso in grammi, es. 1500"><button type="button" id="xlTargetGo">Applica</button></div>' +
+      '<button type="button" class="lb-molds" id="lbMolds">' + IC2.mold + '<span>Calcola da stampi, teglie, gastronorm o monoporzioni</span><i>→</i></button>' +
+      '<p class="xr-note">La dose vale per ingredienti, procedimento, cucina e documenti.</p>';
+    [].forEach.call(host.querySelectorAll('.lb-presets button'), function (b) { b.onclick = function () { XL.setDose(+b.dataset.d); }; });
+    $('xlTargetGo').onclick = function () { var v = parseFloat(String($('xlTarget').value).replace(',', '.')); if (!(v > 0) || !D.tot) { $('xlTarget').focus(); return; } XL.setDose(v / D.tot); $('xlTarget').value = ''; };
+    $('xlTarget').onkeydown = function (e) { if (e.key === 'Enter') $('xlTargetGo').click(); };
+    $('lbMolds').onclick = function () { openSheet('molds'); };
+  }
+  /* pannello Analisi → Sous-chef */
+  function renderAI() {
+    var r = XL.rec, host = $('xlAI');
+    var aiOk = (typeof _aiServer !== 'undefined' && _aiServer) || (typeof aiHasLocalKey === 'function' && aiHasLocalKey());
+    host.innerHTML = '<div class="lb-card lb-ai" id="xlVoice"><div class="lb-h"><span class="lb-eyebrow">Sous-chef AI</span><span class="lb-pill ' + (aiOk ? 'ok' : '') + '">' + (aiOk ? 'Attivo' : 'Senza chiave') + '</span></div>' +
+      '<div class="xl-reply lb-reply" id="xlReply">Chiedi una sostituzione, un ricalcolo o un consiglio su «' + esc(r.n) + '».</div>' +
+      '<div class="lb-q">' + [['Agar al posto della gelatina', 'Come sostituisco la gelatina con l\'agar-agar in questa ricetta?'], ['−10% zucchero', 'Riduci lo zucchero del 10% mantenendo la struttura: cosa cambio?'], ['Punti critici', 'Quali sono i punti critici (tempi e temperature) di questa ricetta?']].map(function (q) { return '<button type="button" data-q="' + esc(q[1]) + '">' + q[0] + '</button>'; }).join('') + '</div>' +
+      '<div class="lb-inline"><input id="xlAsk" type="text" placeholder="Scrivi una domanda…" autocomplete="off"><button type="button" id="xlSend" aria-label="Invia">Chiedi</button></div></div>';
+    $('xlSend').onclick = function () { ask(); };
+    $('xlAsk').onkeydown = function (e) { if (e.key === 'Enter') ask(); };
+    [].forEach.call(host.querySelectorAll('.lb-q button'), function (b) { b.onclick = function () { $('xlAsk').value = b.dataset.q; ask(); }; });
+  }
+  /* pannello Altro: timer, documenti, modifica, scheda completa */
+  function renderMore() {
+    var r = XL.rec, host = $('xlMore'), canEdit = WL.canEdit && WL.canEdit();
+    var acts = [
+      ['print', IC2.print, 'Stampa o aggiungi a un documento', 'Word, PDF e documenti di produzione'],
+      ['prod', IC2.prod, 'Produzione del giorno', 'Foglio, preparazioni e messaggi']
+    ];
+    if (canEdit) acts.push(['edit', IC2.edit, 'Modifica la ricetta', 'Ingredienti, procedimento, note']);
+    acts.push(['card', IC2.card, 'Scheda classica', 'La vista ricetta tradizionale']);
+    host.innerHTML =
+      '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Timer</span><span class="lb-count mono" id="lbTimN"></span></div>' +
+        '<div class="lb-tnew"><div class="lb-tq">' + [1, 3, 5, 10, 15, 30].map(function (m) { return '<button type="button" data-q="' + m + '">' + m + '′</button>'; }).join('') + '</div>' +
+        '<div class="lb-inline"><input id="lbTMin" inputmode="decimal" placeholder="min"><input id="lbTLab" placeholder="Nome (es. forno)"><button type="button" id="lbTAdd">Avvia</button></div></div></div>' +
+      '<div class="xr-list">' + acts.map(function (a) { return '<button type="button" class="xr-row" data-a="' + a[0] + '">' + a[1] + '<span><b>' + a[2] + '</b><small>' + a[3] + '</small></span><i>›</i></button>'; }).join('') + '</div>';
+    [].forEach.call(host.querySelectorAll('.lb-tq button'), function (b) { b.onclick = function () { XLT.add({ label: ($('lbTLab').value || '').trim() || ('Timer ' + b.dataset.q + ' min'), sub: r.n, min: +b.dataset.q }); $('lbTLab').value = ''; }; });
+    $('lbTAdd').onclick = function () {
+      var m = parseFloat(String($('lbTMin').value).replace(',', '.')); if (!(m > 0)) { $('lbTMin').focus(); return; }
+      XLT.add({ label: ($('lbTLab').value || '').trim() || ('Timer ' + String(m).replace('.', ',') + ' min'), sub: r.n, min: m }); $('lbTMin').value = ''; $('lbTLab').value = '';
+    };
+    $('lbTMin').onkeydown = $('lbTLab').onkeydown = function (e) { if (e.key === 'Enter') $('lbTAdd').click(); };
+    [].forEach.call(host.querySelectorAll('.xr-row'), function (b) {
+      b.onclick = function () {
+        var a = b.dataset.a, d = XL.dose;
+        if (a === 'print') { closeSheet(); try { openAddToDoc(r, d); } catch (e) {} }
+        else if (a === 'prod') { closeView(); try { PR.open(); } catch (e) {} }
+        else if (a === 'edit') { closeView(); try { openEdit(r); } catch (e) {} }
+        else if (a === 'card') { closeView(); try { openRecipePanel(r); } catch (e) {} }
+      };
+    });
+    XLT.render();
+  }
   function roll(el, from, to, fmt, ms) {
     if (!el) return; cancelAnimationFrame(el._roll);
     if (calm || from === to || !isFinite(from) || !isFinite(to)) { el.textContent = fmt(to); return; }
@@ -225,103 +388,56 @@
   XL.stepHtml = function (text, ings, d) { var o = XL.dose; if (d) XL.dose = d; try { return stepHtml(text, ings || []); } finally { XL.dose = o; } };
   XL.stepTitle = function (t) { return stepTitle(t); };
   XL.bench = function (r) { return { w: weighedOf(r), sd: stepsOf(r), save: function () { saveBench(r); } }; };
-  XL.refreshLab = function () { if (XL.viewOpen && XL.mode === 'lab' && XL.rec) { var v = $('xlView'), y = v ? v.scrollTop : 0; renderLab(); if (v) v.scrollTop = y; } };
+  XL.refreshLab = function () { if (XL.viewOpen && XL.rec) { var v = $('xlView'), y = v ? v.scrollTop : 0; renderLab(); renderHead(); if (v) v.scrollTop = y; } };
   function stepTitle(s) { var t = String(s).split(/[.;:]/)[0].trim(); if (t.length > 64) t = t.slice(0, 62).replace(/\s+\S*$/, '') + '…'; return t; }
 
   function renderLab() {
-    var r = XL.rec, D = data(r), A = D.A, P = D.P, host = $('xlLab'), ings = r.i || [], w = weighedOf(r), sd = stepsOf(r);
+    var r = XL.rec, D = data(r), host = $('xlLab'), ings = r.i || [], w = weighedOf(r), sd = stepsOf(r);
     var n = D.steps.length, cur = curStep(r, n), doneN = 0; for (var k = 0; k < n; k++) if (sd[k]) doneN++;
-    var pane = XL.pane || (window.innerWidth < 900 ? 'proc' : 'all');
-    var presets = [0.5, 1, 1.5, 2, 3, 4].map(function (d) { return '<button data-d="' + d + '" class="' + (Math.abs(d - XL.dose) < 1e-6 ? 'on' : '') + '">' + fmtX(d) + '</button>'; }).join('');
-    /* mise en place */
     var mise = ings.map(function (g, i) {
       return '<label class="lb-ing-row' + (w[i] ? ' done' : '') + '" data-i="' + i + '"><input type="checkbox"' + (w[i] ? ' checked' : '') + '><span class="lb-box" aria-hidden="true"></span>' +
         '<span class="lb-ing-n">' + esc(g[0]) + '</span><span class="lb-ing-q mono">' + esc(qtyTxt(g)) + '</span></label>';
     }).join('');
-    /* procedimento */
     var steps = D.steps.map(function (s, i) {
       var t = ckTemp(s), m = ckMinutes(s), sh = stepHtml(s, ings), st = sd[i] ? 'done' : i === cur ? 'cur' : '';
-      var chips = (t ? '<span class="lb-chip t">' + t + '</span>' : '') + (m ? '<span class="lb-chip">' + (m >= 60 ? (Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '')) : m + ' min') + '</span>' : '');
+      var chips = (t ? '<span class="lb-chip t">' + t + '</span>' : '') + (m ? '<button type="button" class="lb-chip lb-tbtn" data-min="' + m + '" aria-label="Avvia timer di ' + m + ' minuti">' + ICO.clock + (m >= 60 ? (Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + '′' : '')) : m + '′') + '</button>' : '');
       return '<article class="lb-step ' + st + '" data-i="' + i + '">' +
         '<button type="button" class="lb-num" aria-label="' + (sd[i] ? 'Segna da fare' : 'Segna fatto') + ' il passaggio ' + (i + 1) + '"><span>' + (i + 1) + '</span><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>' +
-        '<div class="lb-step-b"><div class="lb-step-h"><span class="lb-step-k">Passaggio ' + (i + 1) + ' di ' + n + '</span><strong>' + esc(stepTitle(s)) + '</strong>' + chips + '</div>' +
+        '<div class="lb-step-b"><div class="lb-step-h"><span class="lb-step-k">Passaggio ' + (i + 1) + ' di ' + n + '</span><strong>' + esc(stepTitle(s)) + '</strong></div>' +
         '<div class="lb-step-more"><div><p>' + sh.html + '</p>' +
         (sh.used.length ? '<div class="lb-uses">' + sh.used.map(function (j) { return '<span class="' + (w[j] ? 'ok' : '') + '">' + esc(ings[j][0]) + ' <b class="mono">' + esc(qtyTxt(ings[j])) + '</b></span>'; }).join('') + '</div>' : '') +
-        '<div class="lb-step-a">' + (m ? '<button type="button" class="lb-btn lb-tbtn" data-min="' + m + '">' + ICO.clock + '<span>Timer ' + (m >= 60 ? (Math.round(m / 6) / 10).toString().replace('.', ',') + ' h' : m + ' min') + '</span></button>' : '') +
-        '<button type="button" class="lb-btn dark lb-next">' + (i === n - 1 ? 'Ultimo passaggio fatto' : 'Fatto, avanti') + '<i>→</i></button></div></div></div></div></article>';
+        '<div class="lb-step-a">' + chips + '<button type="button" class="lb-btn dark lb-next">' + (i === n - 1 ? 'Ultimo passaggio fatto' : 'Fatto, avanti') + '<i>→</i></button></div></div></div></div></article>';
     }).join('');
-    /* composizione */
-    var parts = [['Acqua', A.w, '#A7B9BC'], ['Zuccheri', A.s, '#C9A86A'], ['Grassi', A.f, '#A67B5B'], ['Proteine', A.p, '#7F8F5A'], ['Altri solidi', Math.max(0, A.tot - A.w - A.s - A.f - A.p), '#4A5A3A']];
-    var bar = A.tot ? parts.map(function (x) { var v = pct(x[1], A.tot); return v > 0.3 ? '<i style="flex:' + v.toFixed(2) + ';background:' + x[2] + '" title="' + x[0] + ' ' + f1(v) + '%"></i>' : ''; }).join('') : '';
-    var legend = A.tot ? parts.map(function (x) { var v = pct(x[1], A.tot); return v > 0.3 ? '<span><i style="background:' + x[2] + '"></i>' + x[0] + ' <b class="mono">' + f1(v) + '%</b></span>' : ''; }).join('') : '';
-    var checks = '';
-    if (P.r && A.tot) {
-      [['Zuccheri', pct(A.s, A.tot), P.r.s], ['Grassi', pct(A.f, A.tot), P.r.f], ['Solidi', pct(A.tot - A.w, A.tot), P.r.sol]].forEach(function (x) {
-        if (!x[2]) return; var st = x[1] < x[2][0] ? 'Basso' : x[1] > x[2][1] ? 'Alto' : 'OK';
-        checks += '<div class="lb-chk"><span>' + x[0] + '</span><span class="mono">' + f1(x[1]) + '%</span><span class="lb-rng mono">' + x[2][0] + '–' + x[2][1] + '%</span><em class="' + (st === 'OK' ? 'ok' : 'warn') + '">' + st + '</em></div>';
-      });
-    }
-    var aiOk = (typeof _aiServer !== 'undefined' && _aiServer) || (typeof aiHasLocalKey === 'function' && aiHasLocalKey());
     var pctDone = n ? Math.round(doneN / n * 100) : 0;
     host.innerHTML =
-      '<div class="lb-tabs" role="tablist">' + [['mise', 'Mise en place'], ['proc', 'Procedimento'], ['tim', 'Timer']].map(function (t) { return '<button role="tab" data-p="' + t[0] + '" class="' + (pane === t[0] ? 'on' : '') + '">' + t[1] + (t[0] === 'tim' ? '<b class="lb-tcount" id="lbTabCount"></b>' : '') + '</button>'; }).join('') + '</div>' +
-      '<div class="lb-bench" data-pane="' + pane + '">' +
-      /* MISE EN PLACE */
-      '<section class="lb-col lb-mise" data-p="mise"><div class="lb-card">' +
-        '<div class="lb-h"><span class="lb-eyebrow">Mise en place</span><span class="lb-count mono" id="lbMiseN"></span></div>' +
-        '<div class="lb-dose"><div class="lb-dose-v"><span>Dose</span><strong class="mono" id="lbDoseV">' + fmtX(XL.dose) + '</strong><small class="mono" id="lbTot">' + fmtG(D.tot * XL.dose) + ' g</small></div>' +
-        '<div class="lb-presets">' + presets + '</div>' +
-        '<div class="lb-inline"><input id="xlTarget" inputmode="decimal" placeholder="Peso finale in g"><button type="button" id="xlTargetGo">Porta a peso</button></div>' +
-        '<button type="button" class="lb-molds" id="lbMolds"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M3 11h18"/></svg><span>Scala su stampi, placche, gastronorm…</span><i>→</i></button></div>' +
+      '<div class="lb-tstrip" id="lbTStrip" hidden><div class="lb-timers" id="lbTimers"></div></div>' +
+      '<div class="lb-bench">' +
+      '<section class="lb-col lb-mise" aria-label="Ingredienti"><div class="lb-card">' +
+        '<div class="lb-h"><span class="lb-eyebrow">Ingredienti</span><span class="lb-count mono" id="lbMiseN"></span></div>' +
         '<div class="lb-bar"><i id="lbMiseFill"></i></div>' +
-        (ings.length ? '<div class="lb-ings">' + mise + '</div><button type="button" class="lb-link" id="lbMiseReset">Azzera le spunte</button>' : '<p class="lb-empty">Questa ricetta non ha ancora ingredienti.</p>') +
+        (ings.length ? '<div class="lb-ings">' + mise + '</div><div class="lb-foot"><span class="lb-hint">Spunta mentre pesi</span><button type="button" class="lb-link" id="lbMiseReset">Azzera</button></div>' : '<p class="lb-empty">Questa ricetta non ha ancora ingredienti.</p>') +
       '</div></section>' +
-      /* PROCEDIMENTO */
-      '<section class="lb-col lb-proc" data-p="proc"><div class="lb-card lb-proc-card">' +
+      '<section class="lb-col lb-proc" aria-label="Procedimento"><div class="lb-card lb-proc-card">' +
         '<div class="lb-h"><span class="lb-eyebrow">Procedimento</span><span class="lb-count mono" id="lbStepN">' + (n ? doneN + ' / ' + n : '') + '</span></div>' +
         (n ? '<div class="lb-bar"><i id="lbStepFill" style="width:' + pctDone + '%"></i></div><div class="lb-steps" id="lbSteps">' + steps + '</div>' +
-          '<div class="lb-proc-f"><button type="button" class="lb-link" id="lbStepsReset">Ricomincia</button><span class="lb-hint">Tasti: → passaggio fatto · ← torna indietro</span></div>' +
-          (D.info.length ? '<div class="lb-info">' + D.info.map(esc).join('<br>') + '</div>' : '') +
-          (r.nt ? '<div class="lb-notes"><span class="lb-eyebrow">Note</span><p>' + esc(r.nt) + '</p></div>' : '')
+          '<div class="lb-foot"><span class="lb-hint">Tocca un passaggio per rileggerlo · tasti → ←</span><button type="button" class="lb-link" id="lbStepsReset">Ricomincia</button></div>'
           : '<div class="lb-empty"><p>Nessun procedimento scritto per questa ricetta.</p>' + (WL.canEdit && WL.canEdit() ? '<button type="button" class="lb-btn dark" id="lbAddProc">Aggiungi il procedimento<i>✎</i></button>' : '') + '</div>') +
         '<div class="lb-done" id="lbDone" hidden><strong>Produzione completata</strong><span>Tutti i passaggi sono fatti.</span></div>' +
-      '</div></section>' +
-      /* DESTRA */
-      '<section class="lb-col lb-side" data-p="tim">' +
-        '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Timer</span><span class="lb-count mono" id="lbTimN"></span></div>' +
-          '<div class="lb-timers" id="lbTimers"></div>' +
-          '<div class="lb-tnew"><div class="lb-tq">' + [1, 3, 5, 10, 15, 30].map(function (m) { return '<button type="button" data-q="' + m + '">' + m + '′</button>'; }).join('') + '</div>' +
-          '<div class="lb-inline"><input id="lbTMin" inputmode="decimal" placeholder="min"><input id="lbTLab" placeholder="Nome (es. forno)"><button type="button" id="lbTAdd">Avvia</button></div></div></div>' +
-        '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Composizione</span><button type="button" class="lb-link" id="xlToFormula">Bilanciamento →</button></div>' +
-          (A.tot ? '<div class="lb-stack">' + bar + '</div><div class="lb-leg">' + legend + '</div>' + checks +
-            (function () { var S = suggestions(r), extra = (r.ai_nt ? 1 : 0) + (procNotes(r) ? 1 : 0); if (!S.items.length && extra) return '<button type="button" class="lb-sug" id="lbSug">Note da sistemare nel Bilanciamento →</button>'; return S.items.length ? '<button type="button" class="lb-sug" id="lbSug"><b>' + S.items.length + '</b> suggeriment' + (S.items.length === 1 ? 'o' : 'i') + ' di bilanciamento →</button>' : ''; })() +
-            '<p class="lb-note">' + (P.t ? esc(P.t) + ' · ' : '') + Math.round(A.known / A.tot * 100) + '% degli ingredienti riconosciuto</p>' : '<p class="lb-empty">Composizione non disponibile.</p>') +
-        '</div>' +
-        '<div class="lb-card lb-ai" id="xlVoice"><div class="lb-h"><span class="lb-eyebrow">Sous-chef AI</span><span class="lb-pill ' + (aiOk ? 'ok' : '') + '">' + (aiOk ? 'Attivo' : 'Senza chiave') + '</span></div>' +
-          '<div class="xl-reply lb-reply" id="xlReply">Chiedi una sostituzione, un ricalcolo o un consiglio su «' + esc(r.n) + '».</div>' +
-          '<div class="lb-q">' + [['Agar al posto della gelatina', 'Come sostituisco la gelatina con l\'agar-agar in questa ricetta?'], ['−10% zucchero', 'Riduci lo zucchero del 10% mantenendo la struttura: cosa cambio?'], ['Punti critici', 'Quali sono i punti critici (tempi e temperature) di questa ricetta?']].map(function (q) { return '<button type="button" data-q="' + esc(q[1]) + '">' + q[0] + '</button>'; }).join('') + '</div>' +
-          '<div class="lb-inline"><input id="xlAsk" type="text" placeholder="Scrivi una domanda…" autocomplete="off"><button type="button" id="xlSend" aria-label="Invia">Chiedi</button></div>' +
-        '</div>' +
+      '</div>' +
+      (D.info.length ? '<div class="lb-card lb-info"><span class="lb-eyebrow">Informazioni</span><p>' + D.info.map(esc).join('<br>') + '</p></div>' : '') +
+      (r.nt ? '<div class="lb-card lb-notes"><span class="lb-eyebrow">Note</span><p>' + esc(r.nt) + '</p></div>' : '') +
       '</section></div>';
 
-    /* eventi: schede (telefono) */
-    [].forEach.call(host.querySelectorAll('.lb-tabs button'), function (b) {
-      b.onclick = function () { XL.pane = b.dataset.p; host.querySelector('.lb-bench').dataset.pane = b.dataset.p; [].forEach.call(host.querySelectorAll('.lb-tabs button'), function (x) { x.classList.toggle('on', x === b); }); $('xlView').scrollTop = 0; };
-    });
-    /* dose */
-    [].forEach.call(host.querySelectorAll('.lb-presets button'), function (b) { b.onclick = function () { XL.setDose(+b.dataset.d); }; });
-    $('xlTargetGo').onclick = function () { var v = parseFloat(String($('xlTarget').value).replace(',', '.')); if (!(v > 0) || !D.tot) { $('xlTarget').focus(); return; } XL.setDose(v / D.tot); $('xlTarget').value = ''; };
-    $('xlTarget').onkeydown = function (e) { if (e.key === 'Enter') $('xlTargetGo').click(); };
-    $('lbMolds').onclick = function () { XL.open(r, 'molds'); };
     /* mise en place */
     [].forEach.call(host.querySelectorAll('.lb-ing-row input'), function (c) {
       c.onchange = function () {
         var row = c.closest('.lb-ing-row'), i = +row.dataset.i; w[i] = c.checked; row.classList.toggle('done', c.checked); saveBench(r); miseUi();
-        [].forEach.call(host.querySelectorAll('.lb-uses span'), function () {});
+        [].forEach.call(host.querySelectorAll('mark.lb-ing[data-ing="' + i + '"]'), function (mk) { mk.classList.toggle('ok', c.checked); });
         if (c.checked && misePct(r) === 100) XL.toast('Mise en place completa');
+        renderHead();
       };
     });
-    var mr = $('lbMiseReset'); if (mr) mr.onclick = function () { for (var k in w) delete w[k]; saveBench(r); renderLab(); };
+    var mr = $('lbMiseReset'); if (mr) mr.onclick = function () { for (var k in w) delete w[k]; saveBench(r); renderLab(); renderHead(); };
     function miseUi() {
       var c = 0; for (var k in w) if (w[k]) c++;
       var f = $('lbMiseFill'); if (f) f.style.width = (ings.length ? c / ings.length * 100 : 0) + '%';
@@ -333,14 +449,15 @@
       sd[i] = on; if (!on) delete sd[i]; saveBench(r);
       var c = curStep(r, n), dn = 0; for (var j = 0; j < n; j++) if (sd[j]) dn++;
       [].forEach.call(host.querySelectorAll('.lb-step'), function (el) {
-        var k = +el.dataset.i; el.classList.toggle('done', !!sd[k]); el.classList.toggle('cur', k === c);
+        var k = +el.dataset.i; el.classList.toggle('done', !!sd[k]); el.classList.toggle('cur', k === c); el.classList.remove('peek');
         el.querySelector('.lb-num').setAttribute('aria-label', (sd[k] ? 'Segna da fare' : 'Segna fatto') + ' il passaggio ' + (k + 1));
       });
       $('lbStepFill').style.width = (n ? dn / n * 100 : 0) + '%'; $('lbStepN').textContent = dn + ' / ' + n;
       $('lbDone').hidden = c !== -1;
       if (c === -1 && on) XL.toast('Produzione completata');
+      renderHead();
       var ce = host.querySelector('.lb-step.cur');
-      if (ce && on && !calm) setTimeout(function () { ce.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 280);
+      if (ce && on && !calm) setTimeout(function () { ce.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 280);
     }
     XL._benchStep = function (dir) {
       if (!n) return; var c = curStep(r, n);
@@ -351,30 +468,14 @@
       var i = +el.dataset.i;
       el.querySelector('.lb-num').onclick = function (e) { e.stopPropagation(); setDone(i, !sd[i]); };
       el.querySelector('.lb-next').onclick = function (e) { e.stopPropagation(); setDone(i, true); };
-      el.querySelector('.lb-step-h').onclick = function () {
-        if (el.classList.contains('cur')) return;
-        el.classList.toggle('peek');
-      };
+      el.querySelector('.lb-step-h').onclick = function () { if (!el.classList.contains('cur')) el.classList.toggle('peek'); };
       var tb = el.querySelector('.lb-tbtn');
       if (tb) tb.onclick = function (e) { e.stopPropagation(); XLT.add({ label: stepTitle(D.steps[i]), sub: r.n, min: +tb.dataset.min, key: String(r._id || r.n) + ':' + i }); };
     });
     if (n) $('lbDone').hidden = curStep(r, n) !== -1;
-    var sr = $('lbStepsReset'); if (sr) sr.onclick = function () { for (var k in sd) delete sd[k]; saveBench(r); renderLab(); };
+    var sr = $('lbStepsReset'); if (sr) sr.onclick = function () { for (var k in sd) delete sd[k]; saveBench(r); renderLab(); renderHead(); };
     var ap = $('lbAddProc'); if (ap) ap.onclick = function () { closeView(); try { openEdit(r); } catch (e) {} };
-    /* timer */
-    [].forEach.call(host.querySelectorAll('.lb-tq button'), function (b) { b.onclick = function () { XLT.add({ label: ($('lbTLab').value || '').trim() || ('Timer ' + b.dataset.q + ' min'), sub: r.n, min: +b.dataset.q }); $('lbTLab').value = ''; }; });
-    $('lbTAdd').onclick = function () {
-      var m = parseFloat(String($('lbTMin').value).replace(',', '.')); if (!(m > 0)) { $('lbTMin').focus(); return; }
-      XLT.add({ label: ($('lbTLab').value || '').trim() || ('Timer ' + String(m).replace('.', ',') + ' min'), sub: r.n, min: m }); $('lbTMin').value = ''; $('lbTLab').value = '';
-    };
-    $('lbTMin').onkeydown = $('lbTLab').onkeydown = function (e) { if (e.key === 'Enter') $('lbTAdd').click(); };
     XLT.render();
-    /* composizione e sous-chef */
-    $('xlToFormula').onclick = function () { XL.open(r, 'formula'); };
-    var sg = $('lbSug'); if (sg) sg.onclick = function () { XL.open(r, 'formula'); setTimeout(function () { var b = $('xlSug'); if (b) b.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' }); }, 120); };
-    $('xlSend').onclick = function () { ask(); };
-    $('xlAsk').onkeydown = function (e) { if (e.key === 'Enter') ask(); };
-    [].forEach.call(host.querySelectorAll('.lb-q button'), function (b) { b.onclick = function () { $('xlAsk').value = b.dataset.q; ask(); }; });
     if (!calm) [].forEach.call(host.querySelectorAll('.lb-card'), function (c, i) { c.style.setProperty('--i', i); c.classList.remove('lb-in'); void c.offsetWidth; c.classList.add('lb-in'); });
   }
   /* aggiorna solo quantità e dose, senza ridisegnare (spunte e scroll restano) */
@@ -475,7 +576,7 @@
     }
     function render() {
       var box = $('lbTimers');
-      if (box) { box.innerHTML = list.length ? list.map(function (t) { return item(t, true); }).join('') : '<p class="lb-empty sm">Nessun timer attivo. Avvialo da un passaggio o qui sotto.</p>'; bind(box); }
+      if (box) { box.innerHTML = list.map(function (t) { return item(t, false); }).join(''); bind(box); var ts = $('lbTStrip'); if (ts) ts.hidden = !list.length; }
       var n = $('lbTimN'); if (n) n.textContent = list.length ? list.length + ' attiv' + (list.length === 1 ? 'o' : 'i') : '';
       var tc = $('lbTabCount'); if (tc) tc.textContent = list.length ? list.length : '';
       var hmt = $('hmTimers'); if (hmt) { hmt.innerHTML = list.map(function (t) { return item(t, true); }).join(''); bind(hmt); var hc = $('hmTimerCard'); if (hc) hc.hidden = !list.length; }
@@ -498,7 +599,7 @@
       paint();
     }
     function add(o) {
-      if (o.key) { var ex = list.filter(function (x) { return x.key === o.key && !x.rang; })[0]; if (ex) { XL.toast('Timer già attivo: ' + ex.label); if (XL.viewOpen && window.innerWidth < 900) showPane('tim'); return ex; } }
+      if (o.key) { var ex = list.filter(function (x) { return x.key === o.key && !x.rang; })[0]; if (ex) { XL.toast('Timer già attivo: ' + ex.label); return ex; } }
       var sec = Math.round(o.min * 60), t = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), label: o.label || 'Timer', sub: o.sub || '', key: o.key || '', total: sec, left: sec, end: Date.now() + sec * 1000 };
       list.push(t); save(); askNotify(); render(); start();
       XL.toast('Timer avviato: ' + t.label);
@@ -510,7 +611,6 @@
     function pauseAll() { list.forEach(function (t) { if (t.end) { t.left = left(t); t.end = 0; } }); save(); render(); }
     return { add: add, render: render, list: function () { return list; }, fmt: fmt, left: left, ack: ack, pauseAll: pauseAll };
   })();
-  function showPane(p) { var b = document.querySelector('.lb-tabs button[data-p="' + p + '"]'); if (b) b.click(); }
   document.addEventListener('keydown', function (e) {
     if (!XL.viewOpen || XL.mode !== 'lab' || !XL._benchStep) return;
     var tg = e.target, typing = tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable);
@@ -679,6 +779,7 @@
     try { updateRec(r, nd); } catch (e) { XL.toast('Non riesco a salvare'); return false; }
     var f = fresh(r); [f, r].forEach(function (x) { if (!x) return; Object.keys(nd).forEach(function (k) { x[k] = nd[k]; }); ['ai_nt', 'nt', 'p'].forEach(function (k) { if (!(k in nd)) delete x[k]; }); });
     if (f) XL.rec = f;
+    try { XL.refreshLab(); } catch (e) {}
     return true;
   };
   /* note finite dentro il procedimento (importazioni precedenti): «Note: …» */
@@ -762,47 +863,30 @@
     return L[i] + ' ' + Math.round(c[i]) + '%';
   }
   function renderFormula(qtyOnly) {
-    var r = XL.rec, D = data(r), host = $('xlFormula'), w = weighedOf(r), ings = r.i || [];
-    if (qtyOnly && host.querySelector('.xl-table')) {
-      [].forEach.call(host.querySelectorAll('tr[data-i]'), function (tr) {
-        var g = ings[+tr.dataset.i], cell = tr.querySelector('.q'), to = g[1] == null ? null : g[1] * XL.dose, from = cell._v;
-        if (to == null) { cell.textContent = 'q.b.'; return; }
-        roll(cell, from == null ? to : from, to, function (v) { return fmtQ(v) + ' ' + (g[2] || 'g'); }); cell._v = to;
+    var r = XL.rec, D = data(r), host = $('xlFormula');
+    if (qtyOnly && host.querySelector('.xl-formula')) { if (XL.rcw) XL.rcw.refresh(); return; }
+    var A = D.A, P = D.P;
+    var parts = [['Acqua', A.w, '#A7B9BC'], ['Zuccheri', A.s, '#C9A86A'], ['Grassi', A.f, '#A67B5B'], ['Proteine', A.p, '#7F8F5A'], ['Altri solidi', Math.max(0, A.tot - A.w - A.s - A.f - A.p), '#4A5A3A']];
+    var bar = A.tot ? parts.map(function (x) { var v = pct(x[1], A.tot); return v > 0.3 ? '<i style="flex:' + v.toFixed(2) + ';background:' + x[2] + '" title="' + x[0] + ' ' + f1(v) + '%"></i>' : ''; }).join('') : '';
+    var legend = A.tot ? parts.map(function (x) { var v = pct(x[1], A.tot); return v > 0.3 ? '<span><i style="background:' + x[2] + '"></i>' + x[0] + ' <b class="mono">' + f1(v) + '%</b></span>' : ''; }).join('') : '';
+    var checks = '';
+    if (P.r && A.tot) {
+      [['Zuccheri', pct(A.s, A.tot), P.r.s], ['Grassi', pct(A.f, A.tot), P.r.f], ['Solidi', pct(A.tot - A.w, A.tot), P.r.sol]].forEach(function (x) {
+        if (!x[2]) return; var st = x[1] < x[2][0] ? 'Basso' : x[1] > x[2][1] ? 'Alto' : 'OK';
+        checks += '<div class="lb-chk"><span>' + x[0] + '</span><span class="mono">' + f1(x[1]) + '%</span><span class="lb-rng mono">' + x[2][0] + '–' + x[2][1] + '%</span><em class="' + (st === 'OK' ? 'ok' : 'warn') + '">' + st + '</em></div>';
       });
-      $('xlFTot').textContent = 'Totale: ' + fmtG(D.tot * XL.dose) + ' g';
-      [].forEach.call(host.querySelectorAll('.xl-tabs button'), function (b) { b.classList.toggle('on', +b.dataset.d === XL.dose); });
-      if (XL.rcw) XL.rcw.refresh();
-      return;
     }
-    var A = D.A, rows = '';
-    ings.forEach(function (g, i) {
-      var gr = grams(g), q = g[1] == null ? null : g[1] * XL.dose;
-      rows += '<tr data-i="' + i + '" class="' + (w[i] ? 'done' : '') + '"><td><input type="checkbox" class="xl-chk" aria-label="Pesato: ' + esc(g[0]) + '"' + (w[i] ? ' checked' : '') + '></td>' +
-        '<td><strong>' + esc(g[0]) + '</strong></td><td class="n"><strong class="q">' + (q == null ? 'q.b.' : fmtQ(q) + ' ' + esc(g[2] || 'g')) + '</strong></td>' +
-        '<td class="n xl-muted">' + (gr != null && A.tot ? f1(pct(gr, A.tot)) + '%' : '—') + '</td><td class="xl-role">' + esc(role(g[0])) + '</td></tr>';
-    });
-    var tabs = [0.5, 1, 2, 4].map(function (d) { return '<button data-d="' + d + '" class="' + (d === XL.dose ? 'on' : '') + '">' + fmtX(d) + '</button>'; }).join('');
-    var P = D.P, par = [['Acqua', A.w], ['Zuccheri', A.s], ['Grassi', A.f], ['Proteine', A.p], ['Solidi totali', A.tot - A.w]];
-    host.innerHTML = '<div class="xl-formula"><div class="xl-card"><div class="xl-card-top"><span class="xl-label">Ingredienti & mise en place</span><span class="xl-chip" id="xlFTot">Totale: ' + fmtG(D.tot * XL.dose) + ' g</span></div>' +
-      '<div class="xl-tabs" style="max-width:320px">' + tabs + '</div>' +
-      '<div class="xl-mise" id="xlMise"><div class="xl-mise-bar"><i id="xlMiseFill"></i></div><span class="mono" id="xlMiseN"></span></div>' +
-      (ings.length ? '<div class="xl-tscroll"><table class="xl-table"><thead><tr><th>✓</th><th>Ingrediente</th><th>Quantità</th><th>% peso</th><th>Componente principale</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<p class="xl-muted" style="padding:24px 4px;font-size:13px">Questa ricetta non ha ancora ingredienti.</p>') +
-      (r.p ? '<details style="margin-top:14px"><summary class="xl-label" style="cursor:pointer">Procedimento</summary><p style="white-space:pre-wrap;font-size:13px;line-height:1.6;margin-top:8px;color:var(--ink2)">' + esc(r.p) + '</p></details>' : '') +
-      '</div><div class="xl-col"><div class="xl-card bs" id="xlSug"></div><div class="xl-card"><div class="xl-card-top"><span class="xl-label">Parametri di composizione</span><span class="xl-small">' + esc(P.t || 'Stima') + '</span></div>' +
-      par.map(function (x) { return '<div class="xl-chem"><span>' + x[0] + '</span><strong class="mono">' + (A.tot ? f1(pct(x[1], A.tot)) + '%' : '—') + '</strong></div>'; }).join('') +
-      (A.unknown.length ? '<p class="xl-muted" style="font-size:11px;margin-top:8px">Senza composizione nota: ' + esc(A.unknown.join(', ')) + '</p>' : '') + '</div>' +
+    var par = [['Acqua', A.w], ['Zuccheri', A.s], ['Grassi', A.f], ['Proteine', A.p], ['Solidi totali', A.tot - A.w]];
+    host.innerHTML = '<div class="xl-formula xr-formula">' +
+      '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Composizione</span><span class="xl-small">' + esc(P.t || 'Stima') + '</span></div>' +
+        (A.tot ? '<div class="lb-stack">' + bar + '</div><div class="lb-leg">' + legend + '</div>' + checks +
+          '<p class="lb-note">' + Math.round(A.known / A.tot * 100) + '% degli ingredienti riconosciuto' + (A.unknown.length ? ' · senza dati: ' + esc(A.unknown.join(', ')) : '') + '</p>'
+          : '<p class="lb-empty">Composizione non disponibile.</p>') + '</div>' +
+      '<div class="xl-card bs" id="xlSug"></div>' +
+      '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Parametri</span></div>' +
+        par.map(function (x) { return '<div class="xl-chem"><span>' + x[0] + '</span><strong class="mono">' + (A.tot ? f1(pct(x[1], A.tot)) + '%' : '—') + '</strong></div>'; }).join('') + '</div>' +
       '<div class="xl-card xl-rc-host" id="xlRcHost"></div>' +
-      '<div class="xl-card"><div class="xl-card-top"><span class="xl-label">Fasi di lavorazione</span></div><p class="xl-muted" style="font-size:12.5px;line-height:1.55;margin-bottom:14px">Torna al laboratorio per seguire il procedimento fase per fase.</p>' +
-      '<button class="xl-cta" id="xlToSez"><span>Apri il laboratorio</span><i>→</i></button></div></div></div>';
-    [].forEach.call(host.querySelectorAll('.xl-tabs button'), function (b) { b.onclick = function () { XL.setDose(+b.dataset.d); }; });
-    [].forEach.call(host.querySelectorAll('.xl-chk'), function (c) {
-      c.onchange = function () {
-        var i = +c.closest('tr').dataset.i; w[i] = c.checked; c.closest('tr').classList.toggle('done', c.checked); mise();
-        if (c.checked && misePct(r) === 100) XL.toast('Mise en place completa');
-      };
-    });
-    $('xlToSez').onclick = function () { XL.open(r, 'lab'); };
+      '</div>';
     XL.rcw = null;
     try {
       XL.rcw = rcWidget($('xlRcHost'), {
@@ -810,19 +894,12 @@
         dose: function () { return XL.dose; }, scale: function (k, round) { if (round) { XL.toast('Le quantità della scheda si arrotondano dalla modifica ricetta'); return; } XL.setDose(k); }
       });
     } catch (e) {}
-    [].forEach.call(host.querySelectorAll('.xl-table td .q'), function (c, i) { var g = ings[i]; c._v = g && g[1] != null ? g[1] * XL.dose : null; });
-    mise(); stagger(host); renderSuggest(r);
-    function mise() {
-      var p = misePct(r), n = 0; for (var k in w) if (w[k]) n++;
-      $('xlMiseFill').style.width = p + '%'; $('xlMiseN').textContent = n + ' / ' + ings.length + ' pesati';
-      $('xlMise').classList.toggle('complete', p === 100);
-    }
+    renderSuggest(r);
   }
-
   /* «Produzione» porta al banco di lavoro, sulla scheda dei timer */
   XL.openProd = function () {
     var r = XL.rec ? fresh(XL.rec) : null; if (!r) { XL.toast('Apri prima una ricetta'); return; }
-    XL.pane = window.innerWidth < 900 ? 'tim' : null; XL.open(r, 'lab');
+    XL.open(r, 'lab');
   };
   /* ══════════ HOME: «Riprendi» ══════════ */
   function refreshHome() {

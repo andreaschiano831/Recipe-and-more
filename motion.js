@@ -119,7 +119,7 @@
       var xo = XL.open, xc = XL.close;
       XL.open = function (r, mode) {
         var s = this, a = arguments, was = XL.viewOpen, wasMode = XL.mode;
-        if (was && wasMode === mode && XL.rec && r && XL.rec._id === r._id) return xo.apply(s, a);
+        if (was && XL.rec && r && XL.rec._id === r._id) return xo.apply(s, a);
         vt(function () { xo.apply(s, a); }, was ? 'fade' : 'fwd');
       };
       XL.open._mo = 1;
