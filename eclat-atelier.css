@@ -166,7 +166,7 @@ body.t-eclat .ck-chip{background:var(--ctrl);color:var(--gold2)}
 body.t-eclat .ck-dots button.on{background:var(--gold3)}
 
 /* ═════════════ BARRA IN BASSO, PULSANTI, FINESTRE ═════════════ */
-body.t-eclat.tb-on .tabbar{background:rgba(26,26,22,.94);border-radius:18px}
+body.t-eclat.tb-on .tabbar::before{background:rgba(26,26,22,.94);border-radius:18px}
 body.t-eclat .tabbar button{border-radius:12px}
 body.t-eclat .tabbar .tb-new{background:#E8D6B4;color:#1A1A16;box-shadow:none}
 body.t-eclat #fabWrap .fab,body.t-eclat .fab{background:#1A1A16!important;box-shadow:0 14px 30px -14px rgba(26,26,22,.7)!important}

@@ -1,0 +1,64 @@
+/* ════════════════════════════════════════════════════════════════════
+   DOCK — la barra in basso ripensata
+   · barra compatta di sole icone: la voce attiva si allarga e mostra il nome
+   · «+» staccato e rotondo (tocco = nuova ricetta, tenuto premuto = scelte)
+   · si fa da parte quando scorri in giù, torna quando risali
+   · materiale e colori dal tema (variabili --tb-* di skins.css, sfondo in ::before)
+   ════════════════════════════════════════════════════════════════════ */
+body{--dk-h:60px;--dk-new:60px;--dk-gap:10px}
+body.tb-on .tabbar{
+  display:flex;align-items:center;gap:2px;
+  left:50%!important;right:auto!important;transform:translateX(-50%);
+  width:min(440px,calc(100% - 24px));max-width:none!important;margin:0!important;
+  height:var(--dk-h);padding:6px calc(var(--dk-new) + var(--dk-gap) + 6px) 6px 6px!important;
+  background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-radius:0!important;
+  transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .3s;
+}
+/* lo sfondo della barra (senza il «+») */
+body.tb-on .tabbar::before{
+  content:"";position:absolute;z-index:0;left:0;top:0;bottom:0;right:calc(var(--dk-new) + var(--dk-gap));
+  border-radius:24px;background:color-mix(in srgb,var(--ink) 92%,transparent);
+  -webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);
+  box-shadow:0 20px 40px -18px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.07) inset,0 1px 0 rgba(255,255,255,.08) inset;
+}
+body.dk-away.tb-on .tabbar{transform:translate(-50%,calc(100% + 30px));opacity:.0;pointer-events:none}
+/* voci: sole icone, l'attiva si allarga con il nome */
+body.tb-on .tabbar button:not(.tb-new){
+  position:relative;z-index:1;flex:1 1 0;min-width:44px;height:48px;padding:0 10px!important;
+  flex-direction:row!important;gap:7px!important;border-radius:16px!important;
+  font:600 13px/1 "DM Sans",system-ui,sans-serif!important;letter-spacing:0!important;white-space:nowrap;
+  transition:color .2s,transform .12s!important;
+}
+body.tb-on .tabbar button:not(.tb-new) span{display:none}
+body.tb-on .tabbar button.on:not(.tb-new) span{display:inline;animation:dkLbl .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes dkLbl{from{opacity:0;transform:translateX(-4px)}}
+body.tb-on .tabbar button.on:not(.tb-new){flex:2.4 1 0}
+body.tb-on .tabbar button svg{width:22px;height:22px;flex-shrink:0}
+body.tb-on .tabbar .mo-pill{border-radius:16px!important}
+/* il «+» staccato */
+body.tb-on .tabbar .tb-new{
+  position:absolute!important;z-index:2;right:0;top:0;width:var(--dk-new)!important;height:var(--dk-new)!important;min-width:0;padding:0!important;
+  border-radius:50%!important;flex:none!important;display:grid!important;place-items:center;
+  box-shadow:0 14px 28px -12px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.15) inset,0 1px 0 rgba(255,255,255,.35) inset!important;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s!important;
+}
+body.tb-on .tabbar .tb-new span{display:none}
+body.tb-on .tabbar .tb-new svg{width:26px;height:26px;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+body.tb-on .tabbar .tb-new:active{transform:scale(.92)}
+body.tb-on .tabbar .tb-new.on svg{transform:rotate(45deg)}
+body.tb-on .tabbar .tb-new.locked{opacity:.5}
+/* spazio sotto i contenuti */
+body.tb-on #landing,body.tb-on #app{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+/* mini menu del «+» */
+.dk-menu{position:fixed;inset:0;z-index:95;pointer-events:none}
+.dk-mbg{position:absolute;inset:0;background:rgba(12,11,8,.35);opacity:0;transition:opacity .2s;pointer-events:auto;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.dk-menu.on .dk-mbg{opacity:1}
+.dk-ml{position:absolute;right:max(12px,calc(50% - 220px));bottom:calc(84px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto}
+.dk-ml button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:230px;padding:12px 16px;border-radius:16px;border:1px solid var(--cb);background:var(--card,#fff);color:var(--ink);text-align:left;cursor:pointer;
+  box-shadow:0 16px 30px -16px rgba(0,0,0,.45);opacity:0;transform:translateY(12px) scale(.96);transform-origin:bottom right;
+  transition:opacity .22s,transform .3s cubic-bezier(.2,.8,.2,1);transition-delay:calc((3 - var(--i)) * 35ms)}
+.dk-menu.on .dk-ml button{opacity:1;transform:none}
+.dk-ml b{font:600 14.5px "DM Sans",sans-serif}
+.dk-ml small{font:500 12px "DM Sans",sans-serif;color:var(--smoke2,#7B796E)}
+@media (prefers-reduced-motion:reduce){body.tb-on .tabbar,body.tb-on .tabbar button,body.tb-on .tabbar button span,.dk-ml button{transition:none!important}}
+@media(orientation:landscape) and (max-height:520px){body{--dk-h:52px;--dk-new:52px}body.tb-on .tabbar button:not(.tb-new){height:40px}}

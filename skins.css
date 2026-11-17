@@ -189,26 +189,26 @@ body:not(.t-eclat) .tabbar .mo-pill{background:var(--tb-pill,color-mix(in srgb,v
 body:not(.t-eclat) .tabbar .tb-new{background:var(--tb-new,linear-gradient(135deg,var(--gold2),var(--gold3)));color:var(--tb-new-ink,#fff);box-shadow:var(--tb-new-sh,0 6px 16px -6px var(--gold2))}
 
 body.t-avorio{--tb-ink:#9C8848;--tb-on:#3E3618;--tb-pill:rgba(139,122,58,.14);--tb-new:linear-gradient(135deg,#C2A85A,#8B7A3A);--tb-new-ink:#FFFDF6;--tb-new-sh:0 6px 16px -8px rgba(139,122,58,.8)}
-body.t-avorio.tb-on .tabbar{background:rgba(255,253,246,.9);border-radius:20px;box-shadow:0 18px 36px -18px rgba(62,54,24,.45),0 0 0 1px rgba(139,122,58,.28) inset,0 1px 0 rgba(255,255,255,.9) inset}
+body.t-avorio.tb-on .tabbar::before{background:rgba(255,253,246,.9);border-radius:20px;box-shadow:0 18px 36px -18px rgba(62,54,24,.45),0 0 0 1px rgba(139,122,58,.28) inset,0 1px 0 rgba(255,255,255,.9) inset}
 
 body.t-crema{--tb-ink:#9A8064;--tb-on:#3A2818;--tb-pill:rgba(168,119,42,.13);--tb-new:linear-gradient(135deg,#BE8F4E,#97692F);--tb-new-ink:#FFF9EF;--tb-new-sh:0 8px 18px -10px rgba(151,105,47,.8)}
-body.t-crema.tb-on .tabbar{background:rgba(253,250,243,.92);border-radius:22px;box-shadow:0 18px 38px -18px rgba(90,62,34,.4),0 0 0 1px rgba(168,119,42,.2) inset}
+body.t-crema.tb-on .tabbar::before{background:rgba(253,250,243,.92);border-radius:22px;box-shadow:0 18px 38px -18px rgba(90,62,34,.4),0 0 0 1px rgba(168,119,42,.2) inset}
 
 body.t-carta{--tb-ink:#86704C;--tb-on:#2A2218;--tb-pill:rgba(122,90,42,.15);--tb-new:#7A2E3A;--tb-new-ink:#F6EAD6;--tb-new-sh:0 4px 0 rgba(60,20,25,.35)}
-body.t-carta.tb-on .tabbar{background:var(--tex-paper),linear-gradient(180deg,#EFE2C6,#E3D1AE);background-size:160px 160px,auto;border-radius:8px;
+body.t-carta.tb-on .tabbar::before{background:var(--tex-paper),linear-gradient(180deg,#EFE2C6,#E3D1AE);background-size:160px 160px,auto;border-radius:8px;
   box-shadow:0 12px 26px -16px rgba(60,40,15,.6),0 0 0 1px rgba(90,66,30,.3) inset;-webkit-backdrop-filter:none;backdrop-filter:none}
 body.t-carta .tabbar button{border-radius:5px}
 body.t-carta .tabbar .mo-pill{border-radius:5px}
 
 body.t-ebano{--tb-ink:rgba(232,214,160,.55);--tb-on:#E8C458;--tb-pill:rgba(212,174,66,.14);--tb-new:linear-gradient(135deg,#E8C458,#B8962C);--tb-new-ink:#0E0C09;--tb-new-sh:0 6px 18px -8px rgba(212,174,66,.7)}
-body.t-ebano.tb-on .tabbar{background:var(--tex-wood),rgba(12,10,8,.95);border-radius:16px;box-shadow:0 18px 40px -16px rgba(0,0,0,.8),0 0 0 1px rgba(212,174,66,.32) inset}
+body.t-ebano.tb-on .tabbar::before{background:var(--tex-wood),rgba(12,10,8,.95);border-radius:16px;box-shadow:0 18px 40px -16px rgba(0,0,0,.8),0 0 0 1px rgba(212,174,66,.32) inset}
 body.t-ebano .tabbar button,body.t-ebano .tabbar .mo-pill{border-radius:11px}
 
 body.t-bordeaux{--tb-ink:rgba(246,227,214,.55);--tb-on:#F6E3D6;--tb-pill:rgba(212,168,120,.16);--tb-new:linear-gradient(135deg,#E4BC90,#C49060);--tb-new-ink:#1A0A10;--tb-new-sh:0 6px 18px -8px rgba(212,168,120,.6)}
-body.t-bordeaux.tb-on .tabbar{background:radial-gradient(120% 200% at 50% 0%,rgba(138,24,64,.55),transparent 70%),rgba(36,8,18,.95);border-radius:24px;box-shadow:0 18px 40px -16px rgba(0,0,0,.75),0 0 0 1px rgba(212,168,120,.22) inset}
+body.t-bordeaux.tb-on .tabbar::before{background:radial-gradient(120% 200% at 50% 0%,rgba(138,24,64,.55),transparent 70%),rgba(36,8,18,.95);border-radius:24px;box-shadow:0 18px 40px -16px rgba(0,0,0,.75),0 0 0 1px rgba(212,168,120,.22) inset}
 
 body.t-ottanio{--tb-ink:rgba(200,236,228,.55);--tb-on:#A0E0D4;--tb-pill:rgba(140,204,192,.14);--tb-new:linear-gradient(135deg,#A0E0D4,#6FB8A8);--tb-new-ink:#081418;--tb-new-sh:0 6px 18px -8px rgba(140,204,192,.6)}
-body.t-ottanio.tb-on .tabbar{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 60%),rgba(8,22,28,.62);border-radius:22px;
+body.t-ottanio.tb-on .tabbar::before{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 60%),rgba(8,22,28,.62);border-radius:22px;
   -webkit-backdrop-filter:blur(26px) saturate(1.6);backdrop-filter:blur(26px) saturate(1.6);box-shadow:0 18px 40px -16px rgba(0,0,0,.7),0 0 0 1px rgba(140,204,192,.25) inset}
 
 @media(prefers-reduced-motion:reduce){body:is(.t-avorio,.t-crema,.t-carta) .land-panels .panel{transition:none!important}}

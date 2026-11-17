@@ -2369,6 +2369,7 @@ body.ck-open .tabbar{display:none!important}
 <link rel="stylesheet" href="/search.css">
 <link rel="stylesheet" href="/home.css">
 <link rel="stylesheet" href="/skins.css">
+<link rel="stylesheet" href="/dock.css">
 <link rel="stylesheet" href="/backup.css">
 <link rel="stylesheet" href="/prod.css">
 <link rel="stylesheet" href="/motion.css">
@@ -7205,14 +7206,43 @@ function tbSync(){
     if(document.getElementById('tabbar'))return;
     var nav=document.createElement('nav');nav.id='tabbar';nav.className='tabbar';nav.setAttribute('aria-label','Navigazione');
     [['home','Home',ICO.home,tbGoHome],['rec','Ricette',ICO.rec,tbGoRecipes],['new','Nuova',ICO.add,function(){openStudio();}],['lib','Biblioteca',ICO.lib,function(){try{if(ST.open)closeStudio();}catch(e){}if(typeof ST!=='undefined'&&ST.open)return;openLibrary();}],['menu','Altro',ICO.menu,function(){MDL_OPEN();}]].forEach(function(x){
-      var b=document.createElement('button');b.type='button';b.dataset.k=x[0];b.className='tb-'+x[0];b.innerHTML=x[2]+'<span>'+x[1]+'</span>';b.onclick=x[3];nav.appendChild(b);
+      var b=document.createElement('button');b.type='button';b.dataset.k=x[0];b.className='tb-'+x[0];b.innerHTML=x[2]+'<span>'+x[1]+'</span>';b.setAttribute('aria-label',x[1]);b.onclick=x[3];nav.appendChild(b);
     });
     document.body.appendChild(nav);
+    /* «+»: tocco = nuova ricetta; tenuto premuto = scegli da dove crearla */
+    var nb=nav.querySelector('.tb-new'),lpT=null,lpDone=false;
+    if(nb){
+      nb.setAttribute('aria-label','Nuova ricetta (tieni premuto per altre scelte)');
+      var origClick=nb.onclick;
+      nb.onclick=function(e){if(lpDone){lpDone=false;e.preventDefault();return;}origClick.call(this,e);};
+      nb.addEventListener('pointerdown',function(){lpDone=false;clearTimeout(lpT);lpT=setTimeout(function(){lpDone=true;dkMenu(nb);try{navigator.vibrate&&navigator.vibrate(12);}catch(e){}},420);});
+      ['pointerup','pointerleave','pointercancel'].forEach(function(ev){nb.addEventListener(ev,function(){clearTimeout(lpT);});});
+      nb.addEventListener('contextmenu',function(e){e.preventDefault();});
+    }
+    /* il dock si fa da parte quando scorri in giù e torna quando risali */
+    var lastY=window.scrollY,acc=0;
+    window.addEventListener('scroll',function(){
+      var y=window.scrollY,d=y-lastY;lastY=y;
+      if(y<60){document.body.classList.remove('dk-away');acc=0;return;}
+      acc=(acc>0)===(d>0)?acc+d:d;
+      if(acc>28)document.body.classList.add('dk-away');else if(acc<-18)document.body.classList.remove('dk-away');
+    },{passive:true});
     var pwd=qs('pwd');
     var upd=function(){var on=!pwd||getComputedStyle(pwd).display==='none';document.body.classList.toggle('tb-on',on);tbAdmin();tbSync();};
     if(pwd&&window.MutationObserver)new MutationObserver(upd).observe(pwd,{attributes:true,attributeFilter:['style','class']});
     upd();
   }
+  function dkMenu(anchor){
+    var old=document.getElementById('dkMenu');if(old){old.remove();return;}
+    var opts=[['Nuova ricetta','Scrivila a mano o con l’AI',function(){openStudio();}],['Da una foto','Fotografa una pagina o una scheda',function(){openStudio({tab:'photo',pick:true});}],['Da testo o documento','Incolla testo, Word o PDF',function(){openStudio({tab:'text'});}],['Da un backup','Importa da un’altra app',function(){try{BK.open();}catch(e){}}]];
+    var m=document.createElement('div');m.id='dkMenu';m.className='dk-menu';m.setAttribute('role','menu');
+    m.innerHTML='<div class="dk-mbg"></div><div class="dk-ml">'+opts.map(function(o,i){return '<button type="button" role="menuitem" data-i="'+i+'" style="--i:'+i+'"><b>'+o[0]+'</b><small>'+o[1]+'</small></button>';}).join('')+'</div>';
+    document.body.appendChild(m);requestAnimationFrame(function(){m.classList.add('on');});
+    function close(){m.classList.remove('on');setTimeout(function(){m.remove();},220);}
+    m.querySelector('.dk-mbg').onclick=close;
+    [].forEach.call(m.querySelectorAll('[data-i]'),function(b){b.onclick=function(){close();opts[+b.dataset.i][2]();};});
+  }
+  window.dkMenu=dkMenu;
   window.tbAdmin=function(){var b=document.querySelector('#tabbar .tb-new');if(b)b.classList.toggle('locked',!isAdmin);};
   var _ca=checkAdmin;checkAdmin=function(){var r=_ca.apply(this,arguments);try{tbAdmin();}catch(e){}return r;};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build);else build();

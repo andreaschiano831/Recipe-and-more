@@ -92,14 +92,19 @@
       return '<article class="hm-pr' + (x.done ? ' done' : '') + '" style="--i:' + i + '"><div class="hm-pr-top"><span class="hm-ring" style="--p:' + x.pct + '"><b>' + x.pct + '%</b></span><div class="hm-pr-t"><b>' + esc(r.n) + '</b><small>' + esc(bits.join(' · ')) + ' · ' + ago(x.t) + '</small></div></div>' +
         '<div class="hm-pr-a"><button type="button" class="hm-b dark" data-lab="' + i + '">' + (x.done ? 'Apri' : 'Riprendi') + '</button><button type="button" class="hm-b" data-cook="' + i + '">' + IC.cook + 'Cucina</button><button type="button" class="hm-ib" data-clear="' + i + '" title="Togli dalla produzione" aria-label="Togli dalla produzione">' + IC.x + '</button></div></article>';
     }).join('');
+    /* azioni rapide: tessere con icona colorata e un'informazione viva sotto il nome */
+    var PS = window.PR && PR.state ? PR.state.todaySheet : null, PSr = PS && PS.data && PS.data.rows ? PS.data.rows : [];
+    var PSd = PSr.filter(function (r) { return r.st === 'done'; }).length;
+    var nPeople = window.PR && PR.state && PR.state.people ? PR.state.people.length : 0;
+    var nBooks = 0; try { nBooks = (window.LIB && LIB.books ? LIB.books().length : 0) || 0; } catch (e) {}
     var quick = [
-      ed ? ['new', IC.plus, 'Nuova ricetta'] : null,
-      ed ? ['ai', IC.spark, 'Importa con l’AI'] : null,
-      ['prod', IC.cook, 'Produzione'],
-      ['timer', IC.clock, 'Timer rapido'],
-      ['lib', IC.book, 'Biblioteca'],
-      (WL.isAdmin && WL.isAdmin()) ? ['team', IC.team, 'Brigata'] : null
-    ].filter(Boolean).map(function (q) { return '<button type="button" class="hm-q" data-q="' + q[0] + '">' + q[1] + '<span>' + q[2] + '</span></button>'; }).join('');
+      ed ? ['new', IC.plus, 'Nuova ricetta', 'Scrivila a mano'] : null,
+      ed ? ['ai', IC.spark, 'Importa con l’AI', 'Foto, testo o PDF'] : null,
+      ['prod', IC.cook, 'Produzione', PS ? (PSd + ' di ' + PSr.length + ' fatte oggi') : 'Nessun foglio oggi'],
+      ['timer', IC.clock, 'Timer rapido', T.length ? (T.length + (T.length === 1 ? ' attivo' : ' attivi')) : 'Parte in un tocco'],
+      ['lib', IC.book, 'Biblioteca', B ? ('Continua «' + B.b.title + '»') : (nBooks ? nBooks + ' libri' : 'Libri e PDF')],
+      (WL.isAdmin && WL.isAdmin()) ? ['team', IC.team, 'Brigata', nPeople > 1 ? nPeople + ' persone' : 'Invita la squadra'] : null
+    ].filter(Boolean).map(function (q, i) { return '<button type="button" class="hm-q" data-q="' + q[0] + '" style="--i:' + i + '"><span class="hm-qi">' + q[1] + '</span><span class="hm-qt"><b>' + q[2] + '</b><small>' + esc(q[3]) + '</small></span></button>'; }).join('');
     var empty = !R.length;
     box.innerHTML =
       '<div class="hm-head"><div><span class="hm-date">' + DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()] + (role ? ' · ' + esc(role) : '') + '</span><h2>' + greet + (first() ? ', ' + esc(first()) : '') + '</h2></div>' +
