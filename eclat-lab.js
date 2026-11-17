@@ -9,7 +9,7 @@
    · Produzione: sequenza spuntabile e timer ad anello
    · Home: «Riprendi dal laboratorio»; schede: «Apri in Laboratorio»
    · animazioni leggere: dissolvenze all'apertura, numeri, notifiche
-   Visibile solo con il tema Éclat (body.t-eclat): con gli altri temi
+   Disponibile con tutti i temi (i colori vengono dal tema). Prima versione: con gli altri temi
    l'app resta identica. Avvolge le funzioni esistenti senza cambiarle.
    ════════════════════════════════════════════════════════════════════ */
 (function () {
@@ -946,6 +946,6 @@
     window.boot = function () { var r = _boot.apply(this, arguments); try { afterBoot(); } catch (e) { console.error(e); } return r; };
   }
   /* cambio tema: lontano da Éclat le viste nuove si chiudono */
-  if (window.MutationObserver) new MutationObserver(function () { if (!isEclat()) { closeView(); var p = $('xlProd'); if (p) p.remove(); } }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  /* il Laboratorio è disponibile con tutti i temi: cambiare tema non lo chiude */
   hooks(); motionHooks();
 })();

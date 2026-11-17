@@ -34,7 +34,7 @@ html[data-motion=full] :is(.lb-btn,.kc-b,.wl-btn,.xl-seg button,.lb-presets butt
 /* scelta nelle impostazioni */
 .mo-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--ctrl,rgba(0,0,0,.04));margin-top:8px}
 .mo-seg button{height:36px;border:0;border-radius:9px;background:transparent;font:600 12.5px "DM Sans",sans-serif;color:var(--smoke2,#777);cursor:pointer;transition:background var(--mo-base) var(--mo-ease),color var(--mo-base)}
-.mo-seg button.on{background:var(--ink,#1A1A16);color:var(--bg,#fff)}
+.mo-seg button.on{background:var(--btn-bg,#1A1A16);color:var(--bg,#fff)}
 
 /* ridotte: niente scivolamenti né rimbalzi, solo dissolvenze brevi */
 html[data-motion=reduced] *,html[data-motion=reduced] *::before,html[data-motion=reduced] *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
