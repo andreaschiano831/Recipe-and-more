@@ -69,7 +69,8 @@
       WL.rest('ricette_note?select=*' + q + '&order=created_at.desc&limit=100'),
       WL.rest('ricette_storia?select=*' + q + '&order=created_at.desc&limit=60')
     ]).then(function (res) { S.notes = res[0] || []; S.hist = res[1] || []; drawNotes(); drawHist(); }, function (e) {
-      var msg = setupErr(e) ? 'Per attivare storico e note esegui di nuovo <b>supabase/schema.sql</b> nel SQL Editor di Supabase.' : 'Non riesco a caricare: ' + esc(e.message);
+      var msg = setupErr(e) ? (window.sqlSetupCard ? sqlSetupCard('storico e note di brigata') : 'Esegui supabase/schema.sql nel SQL Editor di Supabase.') : 'Non riesco a caricare: ' + esc(e.message);
+      if (setupErr(e) && window.sqlSetupCard) { var n = $('hsNotes'), hh = $('hsHist'); if (n) n.innerHTML = msg; if (hh) hh.innerHTML = ''; return; }
       ['hsNotes', 'hsHist'].forEach(function (k) { var b = $(k); if (b) b.innerHTML = '<p class="lb-empty sm">' + msg + '</p>'; });
     });
   }

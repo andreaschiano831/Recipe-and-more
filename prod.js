@@ -114,7 +114,7 @@
   function close() { var el = $('pr'); if (el) el.classList.remove('on'); document.body.classList.remove('pr-open'); P.open = false; document.removeEventListener('keydown', escK); clearTimeout(saveT); if (P.sheet && P.dirty) saveSheet(P.sheet, true); try { HM.soon(); } catch (e) {} }
   function render() {
     var b = $('prBody'); if (!b) return;
-    if (P.err === 'setup') { b.innerHTML = '<div class="pr-empty"><b>Manca un passaggio su Supabase</b><p>Per usare produzione e comunicazioni esegui di nuovo <b>supabase/schema.sql</b> nel SQL Editor (si può rieseguire senza perdere dati).</p></div>'; return; }
+    if (P.err === 'setup') { b.innerHTML = window.sqlSetupCard ? sqlSetupCard('produzione e comunicazioni') : '<div class="pr-empty"><b>Manca un passaggio su Supabase</b><p>Esegui supabase/schema.sql nel SQL Editor.</p></div>'; return; }
     if (P.err) { b.innerHTML = '<div class="pr-empty"><b>Non riesco a caricare</b><p>' + esc(P.err) + '</p></div>'; return; }
     if (P.tab === 'msg') return renderMsgs(b);
     if (P.tab === 'base') return renderSheet(b, true);
