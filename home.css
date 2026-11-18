@@ -111,3 +111,26 @@ html:not([data-motion=off]) .hm-quick .hm-q{animation:hmQ .42s cubic-bezier(.2,.
 .hm-q::after{right:-20px;top:-20px;width:90px;height:90px}
 @media(min-width:900px){.hm-q{min-height:104px}}
 .hm-q::after{content:none!important}
+
+/* ═══ Azioni rapide v3: piatte, uniformi, moderne (sostituisce rilievo e sfumature) ═══ */
+.hm-quick .hm-qs{grid-auto-rows:1fr;gap:10px!important}
+.hm-q{min-height:112px!important;padding:14px 14px 13px!important;border-radius:18px!important;gap:10px!important;justify-content:space-between!important;
+  background:var(--card,#fff)!important;border:1px solid var(--cb,rgba(26,26,22,.1))!important;
+  box-shadow:0 1px 2px rgba(0,0,0,.04)!important}
+.hm-q:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--q) 40%,var(--cb,rgba(26,26,22,.1)))!important;box-shadow:0 10px 22px -16px color-mix(in srgb,var(--q) 60%,#000)!important}
+.hm-q:active{transform:scale(.97);background:color-mix(in srgb,var(--q) 6%,var(--card,#fff))!important}
+.hm-qi{width:38px!important;height:38px!important;border-radius:12px!important;box-shadow:none!important;
+  background:color-mix(in srgb,var(--q) 13%,transparent)!important;color:var(--q)!important}
+.hm-qi svg{width:19px;height:19px;stroke-width:1.8}
+.hm-qt{gap:3px!important}
+.hm-qt b{font:600 14.5px/1.2 "DM Sans",sans-serif!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
+.hm-qt small{display:block!important;-webkit-line-clamp:unset!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:12px!important}
+/* temi scuri: icone più luminose, superfici coerenti con le card della Home */
+body.t-ebano .hm-qi,body.t-bordeaux .hm-qi,body.t-ottanio .hm-qi{background:color-mix(in srgb,var(--q) 30%,transparent)!important;color:color-mix(in srgb,var(--q) 45%,#fff)!important}
+body.t-ebano .hm-q[data-q="new"] .hm-qi,body.t-bordeaux .hm-q[data-q="new"] .hm-qi,body.t-ottanio .hm-q[data-q="new"] .hm-qi{color:#fff!important}
+/* il «+» bloccato (modifica non sbloccata): pieno, con un piccolo lucchetto */
+body.tb-on .tabbar .tb-new.locked{opacity:1!important;filter:saturate(.55)}
+body.tb-on .tabbar .tb-new.locked::after{content:"";position:absolute;right:2px;bottom:2px;width:20px;height:20px;border-radius:50%;
+  background:var(--ink,#1A1A16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") center/11px no-repeat;
+  box-shadow:0 0 0 2px var(--bg,#F5EFE0)}
+.hm-card{border-radius:20px!important}
