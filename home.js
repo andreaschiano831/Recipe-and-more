@@ -118,6 +118,8 @@
         '<div class="hm-card hm-timers" id="hmTimerCard"' + (T.length ? '' : ' hidden') + '><div class="hm-ch"><span class="hm-k">Timer</span></div><div id="hmTimers" class="hm-tl"></div></div>' +
         (B ? '<button type="button" class="hm-card hm-book" id="hmBook"><span class="hm-k">Continua a leggere</span><b>' + esc(B.b.title) + '</b><small>' + esc(B.b.author || '') + '</small><span class="hm-bar"><i style="width:' + Math.round(B.p.percent * 100) + '%"></i></span><small class="hm-bp">' + Math.round(B.p.percent * 100) + '% · ' + ago(B.t || Date.now()) + '</small></button>' : '') +
       '</div></div>';
+    hero(now, greet, R, P, T, role);
+    sezioni(R);
     /* eventi */
     [].forEach.call(box.querySelectorAll('[data-lab]'), function (b) { b.onclick = function () { XL.open(P[+b.dataset.lab].r, 'lab'); }; });
     [].forEach.call(box.querySelectorAll('[data-cook]'), function (b) { b.onclick = function () { openCucina(P[+b.dataset.cook].r); }; });
@@ -143,6 +145,40 @@
     [].forEach.call(box.querySelectorAll('[data-pr]'), function (b) { b.onclick = function () { PR.open(b.dataset.pr); }; });
     var hb = $('hmBook'); if (hb) hb.onclick = function () { var b = B.b; if (window.openLibrary) openLibrary(); setTimeout(function () { try { libOpenReader(b); } catch (e) {} }, 350); };
     try { if (XL.timers) XL.timers.render(); } catch (e) {}
+  }
+  /* testata: logo e nome a sinistra, saluto e numeri a destra, ricerca dentro la testata */
+  function hero(now, greet, R, P, T, role) {
+    var top = document.querySelector('#landing .land-top'); if (!top) return;
+    top.classList.add('hm-top');
+    var h = $('hmHero');
+    if (!h) { h = document.createElement('div'); h.id = 'hmHero'; h.className = 'hm-hero'; top.appendChild(h); }
+    var nP = P.filter(function (x) { return !x.done; }).length;
+    var PS = window.PR && PR.state ? PR.state.todaySheet : null, rows = PS && PS.data && PS.data.rows ? PS.data.rows : [], fatte = rows.filter(function (r) { return r.st === 'done'; }).length;
+    var st = [[R.length, R.length === 1 ? 'ricetta' : 'ricette']];
+    if (rows.length) st.push([fatte + '/' + rows.length, 'produzione']);
+    if (nP) st.push([nP, 'in lavorazione']);
+    if (T.length) st.push([T.length, T.length === 1 ? 'timer' : 'timer']);
+    h.innerHTML = '<span class="hm-hd">' + cap(DAYS[now.getDay()]) + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()] + (role ? ' · ' + esc(role) : '') + '</span>' +
+      '<b class="hm-hg">' + greet + (first() ? ', ' + esc(first()) : '') + '</b>' +
+      '<span class="hm-hs">' + st.map(function (x) { return '<span><b>' + x[0] + '</b>' + x[1] + '</span>'; }).join('') + '</span>';
+    var sx = $('sxHome'); if (sx && sx.parentNode !== top) top.appendChild(sx);
+  }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  /* titolo sopra i ricettari e numero di ricette su ogni tessera */
+  function sezioni(R) {
+    var panels = $('landPanels'); if (!panels || !panels.parentNode) return;
+    var hd = $('hmSecH');
+    if (!hd) { hd = document.createElement('div'); hd.id = 'hmSecH'; hd.className = 'hm-sech'; panels.parentNode.insertBefore(hd, panels); }
+    var cnt = {}; R.forEach(function (r) { var k = r.section || r.s || ''; cnt[k] = (cnt[k] || 0) + 1; });
+    var nBooks = 0; try { nBooks = (window.LIB && LIB.books ? LIB.books().length : 0) || 0; } catch (e) {}
+    var n = panels.children.length;
+    hd.innerHTML = '<span class="hm-k">I tuoi ricettari</span><small>' + Math.max(0, n - 2) + ' sezioni · ' + R.length + ' ricette</small>';
+    [].forEach.call(panels.querySelectorAll('.panel'), function (p) {
+      var k = p.dataset.sec, v = k === 'tutti' ? R.length : k === 'biblioteca' ? nBooks : (cnt[k] || 0);
+      var body = p.querySelector('.panel-body'); if (!body) return;
+      var c = body.querySelector('.panel-cnt'); if (!c) { c = document.createElement('span'); c.className = 'panel-cnt'; body.appendChild(c); }
+      c.textContent = k === 'biblioteca' ? (v ? v + (v === 1 ? ' libro' : ' libri') : 'apri') : v + (v === 1 ? ' ricetta' : ' ricette');
+    });
   }
   var soonT = null;
   function soon() { clearTimeout(soonT); soonT = setTimeout(function () { var l = $('landing'); if (l && l.style.display !== 'none') render(); }, 120); }
