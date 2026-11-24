@@ -102,7 +102,12 @@
 
     /* corpo: dose + ingredienti (anteprima) */
     var body = h('div', 'rc2-body');
-    if (bar) body.appendChild(bar);
+    if (bar) {
+      body.appendChild(bar); bar.classList.add('rc2-dose');
+      [].forEach.call(bar.querySelectorAll('.cd-chip[data-d]'), function (b) { var t = b.textContent.replace('×', ''); b.textContent = t; b.setAttribute('aria-label', 'Dose ×' + t); });
+      var pz = bar.querySelector('.cd-peso');
+      if (pz) { pz.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 8h11l2.3 11.2a1 1 0 0 1-1 1.2H5.2a1 1 0 0 1-1-1.2z"/><circle cx="12" cy="5" r="2"/></svg>'; pz.setAttribute('aria-label', 'Dose da un peso totale'); pz.title = 'Dose da un peso totale'; }
+    }
     if (tbl) {
       body.appendChild(tbl);
       var rows = tbl.querySelectorAll('tbody tr');
@@ -164,7 +169,19 @@
     '.rc2-facts b{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600;color:var(--ink);font-size:12.5px}' +
     '.rc2-facts .rc2-alg{display:inline-flex;gap:3px;margin:0}' +
     '.rc2-body{padding:4px 16px 8px;flex:1}' +
-    '#app .rc2 .cd-bar{margin:8px 0 6px!important;padding:6px!important;border-radius:12px!important;background:var(--ctrl,#F3F0E8)!important;border:0!important}' +
+    '#app .rc2 .cd-bar.rc2-dose{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:4px!important;margin:12px 0 6px!important;padding:4px!important;border-radius:15px!important;background:var(--ctrl,#F3F0E8)!important;border:0!important;box-shadow:none!important}' +
+    '#app .rc2-dose .cd-lbl,#app .rc2-dose .cd-tot{display:none!important}' +
+    '#app .rc2-dose .cd-step{flex-shrink:0;display:flex;align-items:center;height:38px;border:0!important;border-radius:11px!important;background:var(--card,#fff)!important;box-shadow:0 1px 3px rgba(0,0,0,.1)!important;overflow:hidden}' +
+    '#app .rc2-dose .cd-step button{width:34px!important;height:38px!important;border:0!important;background:none!important;color:var(--ink2)!important;font:400 19px/1 "DM Sans",sans-serif!important;cursor:pointer;padding:0!important}' +
+    '#app .rc2-dose .cd-step button:active{background:var(--ctrl,#F3F0E8)!important}' +
+    '#app .rc2-dose .cd-val{min-width:42px!important;text-align:center;font:700 15px "DM Sans",sans-serif!important;font-variant-numeric:tabular-nums;color:var(--ink)!important}' +
+    '#app .rc2-dose.custom .cd-val{color:var(--gold3,#8B6408)!important}' +
+    '#app .rc2-dose .cd-chips{flex:1;min-width:0;display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px!important;flex-wrap:nowrap!important}' +
+    '#app .rc2-dose .cd-chip{height:38px!important;min-width:0;padding:0!important;display:flex;align-items:center;justify-content:center;border:0!important;border-radius:11px!important;background:transparent!important;color:var(--ink2)!important;font:600 14px "DM Sans",sans-serif!important;box-shadow:none!important;transition:background .15s,color .15s,transform .12s}' +
+    '#app .rc2-dose .cd-chip:active{transform:scale(.92)}' +
+    '#app .rc2-dose .cd-chip.on{background:var(--ink)!important;color:var(--bg)!important}' +
+    '#app .rc2-dose .cd-chip.cd-peso{color:var(--smoke2,#7B796E)!important;border-left:1px solid var(--cb,rgba(0,0,0,.1))!important;border-radius:0 11px 11px 0!important}' +
+    '@media(hover:hover){#app .rc2-dose .cd-chip:not(.on):hover{background:color-mix(in srgb,var(--ink) 7%,transparent)!important}}' +
     '#app .rc2 .tbl{margin:0!important;width:100%}' +
     '#app .rc2 .tbl.rc2-clip tbody tr:nth-child(n+7){display:none}' +
     '.rc2-all{display:block;width:100%;margin:6px 0 0;padding:8px 0;border:0;border-top:1px dashed var(--cb,rgba(0,0,0,.12));background:none;font:600 12px "DM Sans",sans-serif;color:var(--gold3,#8B6408);cursor:pointer;text-align:center}' +

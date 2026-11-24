@@ -360,6 +360,9 @@
     b.classList.toggle('on', EX.length > 0);
     b.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3l7 3v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>' + (EX.length ? 'Senza · ' + EX.length : 'Allergeni');
   }
+  function saveEx() { try { localStorage.setItem('nu_excl', JSON.stringify(EX)); localStorage.setItem('nu_excl_may', EXMAY ? '1' : '0'); } catch (e) {} btnSync(); try { renderGrid(); } catch (e) {} }
+  function getExcl() { return { list: EX.slice(), may: EXMAY }; }
+  function setExcl(list, may) { EX = (list || []).filter(function (k) { return !!ALN[k]; }); if (may != null) EXMAY = !!may; saveEx(); }
   function openFilter() {
     var old = $('nuPick'); if (old) old.remove();
     var m = document.createElement('div'); m.id = 'nuPick'; m.className = 'nu-pick';
@@ -388,7 +391,7 @@
   /* sigle degli allergeni per le card della collezione */
   function badges(r) { var D = detect(r); return D.on.map(function (k) { return '<i style="--a:' + ALN[k][3] + '" title="' + ALN[k][1] + '">' + ALN[k][2] + '</i>'; }); }
 
-  window.NUT = { ai: function () { return NUT_AI; }, analyze: analyze, detect: detect, mount: mount, pass: pass, badges: badges, ALLERGENI: AL, nut: nut, openFilter: openFilter };
+  window.NUT = { ai: function () { return NUT_AI; }, analyze: analyze, detect: detect, mount: mount, pass: pass, badges: badges, getExcl: getExcl, setExcl: setExcl, ALLERGENI: AL, nut: nut, openFilter: openFilter };
 
   var css = document.createElement('style');
   css.textContent =
