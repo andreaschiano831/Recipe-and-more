@@ -221,3 +221,5 @@ body.t-eclat #landing .hm-top .land-logo{justify-self:start!important}
   .hm-qt b{white-space:normal!important;font-size:12.5px!important;line-height:1.15!important}
   .hm-qt small{display:none!important}
 }
+
+.hm-q[data-q="set"]{--q:#5A5A52}

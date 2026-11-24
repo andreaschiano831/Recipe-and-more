@@ -12,6 +12,7 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   var IC = {
+    gear: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
     play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
     cook: '<svg viewBox="0 0 24 24"><path d="M6 14h12v5a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M4 14h16M9 10c0-2 2-2 2-4M13 10c0-2 2-2 2-4"/></svg>',
     plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
@@ -101,7 +102,7 @@
       ed ? ['new', IC.plus, 'Nuova ricetta', 'Scrivila a mano'] : null,
       ed ? ['ai', IC.spark, 'Importa con l’AI', 'Foto, testo o PDF'] : null,
       ['prod', IC.cook, 'Produzione', PS ? (PSd + ' di ' + PSr.length + ' fatte oggi') : 'Nessun foglio oggi'],
-      ['timer', IC.clock, 'Timer rapido', T.length ? (T.length + (T.length === 1 ? ' attivo' : ' attivi')) : 'Parte in un tocco'],
+      ['set', IC.gear, 'Impostazioni', 'Tema, account e AI'],
       ['lib', IC.book, 'Biblioteca', B ? ('Continua «' + B.b.title + '»') : (nBooks ? nBooks + ' libri' : 'Libri e PDF')],
       (WL.isAdmin && WL.isAdmin()) ? ['team', IC.team, 'Brigata', nPeople > 1 ? nPeople + ' persone' : 'Invita la squadra'] : null
     ].filter(Boolean).map(function (q, i) { return '<button type="button" class="hm-q" data-q="' + q[0] + '" style="--i:' + i + '"><span class="hm-qi">' + q[1] + '</span><span class="hm-qt"><b>' + q[2] + '</b><small>' + esc(q[3]) + '</small></span></button>'; }).join('');
@@ -138,6 +139,7 @@
         else if (q === 'ai') { if (window.openStudio) openStudio(); }
         else if (q === 'prod') { if (window.PR) PR.open('day'); }
         else if (q === 'timer') { if (window.SX) SX.open('timer '); }
+        else if (q === 'set') { try { WL.openSettings(); } catch (e) { try { openDrawer(); } catch (x) {} } }
         else if (q === 'lib') { if (window.openLibrary) openLibrary(); }
         else if (q === 'team') { WL.openSettings(); setTimeout(function () { var c = $('wlTeamCard'); if (c) c.scrollIntoView({ block: 'start' }); }, 250); }
       };
