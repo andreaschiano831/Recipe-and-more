@@ -228,12 +228,16 @@ module.exports = async function handler(req, res) {
   if (!sameOrigin(req)) return res.status(403).json({ error: 'Richiesta non autorizzata' });
   const user = await authUser(req);
   if (!user) return res.status(401).json({ error: 'Accedi con il tuo account per usare l\u2019AI' });
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return res.status(503).json({ error: 'GROQ_API_KEY non configurata su Vercel' });
-
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = null; } }
   if (!body || typeof body !== 'object') return res.status(400).json({ error: 'Richiesta non valida' });
+  /* importa da link: legge solo testi pubblici, non serve la chiave AI */
+  if (body.link) {
+    try { return res.status(200).json(await require('./_link.js').readLink(String(body.link).slice(0, 2000))); }
+    catch (e) { return res.status(422).json({ error: e.message || 'Non riesco a leggere il link' }); }
+  }
+  const key = process.env.GROQ_API_KEY;
+  if (!key) return res.status(503).json({ error: 'GROQ_API_KEY non configurata su Vercel' });
   useSections(body.sections);
   if (body.ocr && body.image) {
     if (!/^data:image\/(jpeg|png|webp);base64,/.test(String(body.image))) return res.status(400).json({ error: 'Formato immagine non supportato' });

@@ -1757,7 +1757,7 @@ body.rd-open .tabbar,body.st-open .tabbar{display:none!important}
 .st-h1{margin:0;font:500 2.2rem/1.05 "Cormorant Garamond",serif;letter-spacing:-.01em}
 .st-h1 em{color:var(--gold2)}
 .st-lead{margin:10px 0 0;color:var(--smoke);line-height:1.5;font-size:.95rem;max-width:58ch}
-.st-modes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.st-modes{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}@media(max-width:560px){.st-modes{grid-template-columns:repeat(5,minmax(96px,1fr));overflow-x:auto;scrollbar-width:none;margin-left:-4px;margin-right:-4px;padding:0 4px 2px}.st-modes::-webkit-scrollbar{display:none}}.st-link-row{display:flex;gap:6px}.st-link-in{flex:1 1 auto;min-width:0;height:46px;font-size:16px}.st-link-row .st-btn{flex-shrink:0;height:46px}.st-link-load{display:flex;align-items:center;gap:10px;margin-top:14px;color:var(--smoke);font-size:.9rem}.st-link-load i{width:18px;height:18px;border-radius:50%;border:2px solid var(--cb);border-top-color:var(--gold2);animation:stSpin .8s linear infinite}@keyframes stSpin{to{transform:rotate(360deg)}}.st-link-card{margin-top:14px;display:flex;flex-direction:column;gap:10px}.st-link-hd{display:flex;gap:12px;align-items:center}.st-link-th{width:64px;height:64px;border-radius:14px;object-fit:cover;flex-shrink:0;background:var(--bg)}.st-link-m{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}.st-link-m b{font:600 1.15rem 'Cormorant Garamond',Georgia,serif;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.st-link-m small{color:var(--smoke);font-size:.8rem}.st-tag.link-instagram{background:linear-gradient(120deg,#F58529,#DD2A7B 55%,#8134AF);color:#fff;border:0}.st-tag.link-tiktok{background:#111;color:#fff;border:0}.st-tag.link-youtube{background:#C4302B;color:#fff;border:0}
 .st-mode{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 10px;border-radius:18px;border:1px solid var(--cb);background:var(--card);color:var(--ink);text-align:left;cursor:pointer;font:inherit;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .st-mode b{font-size:.92rem;font-weight:600}
 .st-mode small{font-size:.66rem;color:var(--smoke);line-height:1.25}
@@ -6731,13 +6731,14 @@ parseWithAI=function(rawText,onSuccess,onFallback){
   openImport=function(){_oi.apply(this,arguments);var note=qs('importAiStatus');aiCheckServer().then(function(ok){if(note)note.textContent=ok?'✓ AI pronta (chiave sul server) — analisi automatica':aiHasLocalKey()?'✓ AI pronta — analisi automatica':'⚠ Inserisci la chiave Groq nel menu (≡) → AI, oppure configurala su Vercel. Senza chiave: lettura semplice.';});};
 })();
 
-var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',open:false};
+var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',open:false,link:{url:'',res:null,err:'',busy:false}};
 (function(){
   var I=window.LIB_ICON||{};
   var IC={
     camera:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
     text:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg>',
     file:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 18h4"/></svg>',
+    link:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
     hand:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
     gallery:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
     spark:I.spark||'',x:I.x||'✕',check:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
@@ -6756,12 +6757,14 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     try{tbSetActive('new');}catch(e){}
     if(opts.tab)ST.tab=opts.tab;
     if(opts.text!=null){ST.text=opts.text;ST.tab='text';}
+    if(opts.link){ST.tab='link';ST.link={url:opts.link,res:null,err:'',busy:false};}
     if(opts.images&&opts.images.length){opts.images.forEach(function(u,i){ST.imgs.push({id:key(),url:u,name:'pagina '+(i+1)});});ST.tab='photo';}
     if(!ST.sec&&curSec&&curSec!=='tutti')ST.sec='';
     render();
     aiCheckServer().then(function(){renderStatus();});
     if(opts.pick)setTimeout(function(){var i=document.getElementById('stGallery');if(i)i.click();},0);
     if(opts.auto&&((opts.text&&opts.text.trim())||(opts.images&&opts.images.length)))setTimeout(analyse,60);
+    if(opts.link)setTimeout(function(){readLink(!!opts.auto);},60);
   };
   window.closeStudio=function(){
     if(ST.items.some(function(i){return i.checked;})&&!confirm('Hai ricette non salvate. Chiudere comunque? Le ritrovi riaprendo «Nuova».'))return;
@@ -6784,7 +6787,7 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     wrap.appendChild(hero);
 
     var modes=h('div','st-modes');
-    [['photo',IC.camera,'Foto','Quaderni, libri, schermi'],['text',IC.text,'Testo','Incolla o detta'],['file',IC.file,'File','PDF, Word, TXT'],['manual',IC.hand,'A mano','Scheda vuota']].forEach(function(m){
+    [['photo',IC.camera,'Foto','Quaderni, libri, schermi'],['link',IC.link,'Link','Siti, Instagram, TikTok'],['text',IC.text,'Testo','Incolla o detta'],['file',IC.file,'File','PDF, Word, TXT'],['manual',IC.hand,'A mano','Scheda vuota']].forEach(function(m){
       var b=h('button','st-mode'+(ST.tab===m[0]?' on':''));b.type='button';
       b.innerHTML='<span class="st-mode-ico">'+m[1]+'</span><b>'+m[2]+'</b><small>'+m[3]+'</small>';
       b.onclick=function(){if(m[0]==='manual'){closeStudio();if(!ST.open)openModal();return;}ST.tab=m[0];render();};
@@ -6793,7 +6796,7 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     wrap.appendChild(modes);
 
     var card=h('section','st-card');wrap.appendChild(card);
-    if(ST.tab==='photo')photoPane(card);else if(ST.tab==='text')textPane(card);else filePane(card);
+    if(ST.tab==='photo')photoPane(card);else if(ST.tab==='text')textPane(card);else if(ST.tab==='link')linkPane(card);else filePane(card);
 
     // destinazione
     var dest=h('div','st-dest');dest.appendChild(t('span','st-lbl','Ricettario'));
@@ -6851,6 +6854,43 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     var ta=h('textarea','st-ta');ta.rows=10;ta.value=ST.text;ta.placeholder='Incolla qui una o più ricette…\n\nCREMA PASTICCERA\nLatte 1000 g\nZucchero 350 g\nTuorli 6 n°\n…';
     ta.oninput=function(){ST.text=ta.value;cnt.textContent=ta.value.length?ta.value.length.toLocaleString('it-IT')+' caratteri':'';};
     card.appendChild(ta);var cnt=t('p','st-fine',ST.text.length?ST.text.length.toLocaleString('it-IT')+' caratteri':'');card.appendChild(cnt);
+  }
+  /* ── link: siti di ricette, Instagram, TikTok, YouTube ── */
+  var SITE={instagram:'Instagram',tiktok:'TikTok',youtube:'YouTube',recipe:'Ricetta dal sito',page:'Pagina web'};
+  function readLink(auto){
+    var L=ST.link,u=String(L.url||'').trim();
+    if(!/https?:\/\//i.test(u)){L.err='Incolla un link che inizia con https://';render();return Promise.resolve();}
+    L.busy=true;L.err='';L.res=null;render();
+    return fetch('/api/import',{method:'POST',headers:WL.apiH(),body:JSON.stringify({link:u})}).then(function(r){return r.json().catch(function(){return {};}).then(function(d){if(!r.ok)throw new Error(d.error||('Errore '+r.status));return d;});})
+      .then(function(d){L.res=d;L.text=d.text||'';L.busy=false;render();if(auto&&!d.thin&&L.text.trim())analyse();})
+      .catch(function(e){L.busy=false;L.err=e.message||'Non riesco a leggere il link';render();});
+  }
+  function linkPane(card){
+    var L=ST.link;
+    var row=h('div','st-link-row');
+    var inp=h('input','st-in st-link-in');inp.type='url';inp.inputMode='url';inp.placeholder='https://www.instagram.com/reel/… · tiktok.com/… · sito di ricette';inp.value=L.url||'';
+    inp.oninput=function(){L.url=inp.value;};inp.onkeydown=function(e){if(e.key==='Enter')readLink(false);};
+    var paste=t('button','st-btn','Incolla');paste.type='button';
+    paste.onclick=function(){if(!navigator.clipboard||!navigator.clipboard.readText){inp.focus();libToast('Tieni premuto nel campo e scegli Incolla','');return;}
+      navigator.clipboard.readText().then(function(x){var m=String(x||'').match(/https?:\/\/[^\s<>"'«»]+/i);if(!m){libToast('Negli appunti non c’è un link','err');return;}L.url=m[0];readLink(false);},function(){inp.focus();});};
+    var go=t('button','st-btn st-btn-dark',L.busy?'Leggo…':'Leggi');go.type='button';go.disabled=!!L.busy;go.onclick=function(){L.url=inp.value;readLink(false);};
+    row.appendChild(inp);row.appendChild(paste);row.appendChild(go);card.appendChild(row);
+    if(!L.res&&!L.busy&&!L.err)card.appendChild(h('p','st-fine','Copia il link dall’app (Condividi → Copia link) e incollalo qui. Leggo la ricetta dal sito o la didascalia del video.'));
+    if(L.busy)card.appendChild(h('div','st-link-load','<i></i><span>Leggo il link…</span>'));
+    if(L.err)card.appendChild(t('div','st-warn',L.err));
+    if(L.res){
+      var d=L.res,box=h('div','st-link-card');
+      var hd=h('div','st-link-hd');
+      if(d.thumb){var im=h('img','st-link-th');im.src=d.thumb;im.alt='';im.referrerPolicy='no-referrer';im.onerror=function(){im.remove();};hd.appendChild(im);}
+      var meta=h('div','st-link-m');meta.appendChild(t('span','st-tag link-'+(d.kind||'page'),SITE[d.kind]||d.site||'Link'));
+      meta.appendChild(t('b','',d.title||(d.author?'@'+d.author:d.site||'')));
+      if(d.title&&d.author)meta.appendChild(t('small','','@'+d.author));
+      hd.appendChild(meta);box.appendChild(hd);
+      if(d.thin)box.appendChild(t('div','st-warn',(d.kind==='instagram'||d.kind==='tiktok'||d.kind==='youtube'?'Nella didascalia non ci sono quantità: la ricetta probabilmente è detta o scritta nel video. ':'Questa pagina non sembra contenere una ricetta. ')+'Fai uno screenshot dei passaggi e usa Foto, oppure completa il testo qui sotto.'));
+      var ta=h('textarea','st-ta');ta.rows=8;ta.value=L.text||'';ta.oninput=function(){L.text=ta.value;};
+      box.appendChild(t('span','st-lbl','Testo trovato · puoi correggerlo prima di analizzare'));box.appendChild(ta);
+      card.appendChild(box);
+    }
   }
   /* ── file: PDF, Word, TXT ── */
   function addDocFiles(files){
@@ -6932,6 +6972,11 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     if(ST.tab==='photo'){
       if(!ST.imgs.length){libToast('Aggiungi almeno una foto','err');return;}
       ST.imgs.forEach(function(im,i){jobs.push({image:im.url,label:'foto '+(i+1)});});
+    }else if(ST.tab==='link'){
+      if(!ST.link.res){if(ST.link.url)readLink(true);else libToast('Incolla un link','err');return;}
+      if(!String(ST.link.text||'').trim()){libToast('Il link non contiene testo da analizzare','err');return;}
+      var src=ST.link.res,lbl=(SITE[src.kind]||src.site||'link')+(src.author?' @'+src.author:'');
+      aiChunks(ST.link.text+'\n\nFonte: '+(src.url||ST.link.url)).forEach(function(c){jobs.push({text:c,label:lbl});});
     }else if(ST.tab==='text'){
       if(!ST.text.trim()){libToast('Incolla il testo della ricetta','err');return;}
       aiChunks(ST.text).forEach(function(c){jobs.push({text:c,label:'testo'});});

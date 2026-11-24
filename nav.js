@@ -129,3 +129,26 @@
     '.sq-b.dark{background:var(--btn-bg,#1A1A16);color:var(--btn-ink,#fff);border-color:transparent}.sq-b.ghost{border-style:dashed}.sq-st{margin-top:12px!important;font-size:13px!important;color:var(--e-mid,#55623F)!important;min-height:1em}';
   document.head.appendChild(css);
 })();
+
+/* ════ CONDIVISIONE VERSO L'APP ════
+   · Android (app installata): Condividi → Ricettario apre /?url=…&text=…
+   · iPhone: Comando rapido che apre /?import=<link>
+   Il link viene messo da parte, l'indirizzo ripulito, e appena l'app è pronta
+   si apre «Nuova ricetta → Link» con la lettura già avviata. */
+(function () {
+  'use strict';
+  try {
+    var q = new URLSearchParams(location.search), raw = [q.get('import'), q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ');
+    var m = raw.match(/https?:\/\/[^\s<>"'«»]+/i);
+    if (m) { sessionStorage.setItem('wl_share', m[0]); history.replaceState(history.state, '', location.pathname); }
+  } catch (e) {}
+  var tries = 0;
+  (function wait() {
+    var link = null; try { link = sessionStorage.getItem('wl_share'); } catch (e) {}
+    if (!link) return;
+    var ready = window.WL && WL.signedIn && WL.signedIn() && typeof window.openStudio === 'function' && window.CU;
+    if (!ready) { if (++tries < 240) setTimeout(wait, 500); return; }
+    try { sessionStorage.removeItem('wl_share'); } catch (e) {}
+    setTimeout(function () { try { openStudio({ link: link, auto: true }); } catch (e) {} }, 400);
+  })();
+})();
