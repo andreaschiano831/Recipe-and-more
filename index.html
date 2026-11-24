@@ -3014,6 +3014,7 @@ function buildCard(r,idx){
   if(r._c){var st=el('span');st.textContent=' \u2605';st.style.color='var(--gold2)';nm.appendChild(st);}
   hd.appendChild(nm);
   if(r.piatto){var pb=el('div','card-piatto fsc');pb.textContent='\ud83c\udf7d\ufe0f '+r.piatto;hd.appendChild(pb);}
+  try{if(window.NUT){var ab=NUT.badges(r);if(ab.length){var ae=el('div','card-alg');ae.title='Allergeni';ae.innerHTML=ab.map(function(x){return '<b>'+x+'</b>';}).join('');hd.appendChild(ae);}}}catch(e){}
   var sub=el('div','card-sub');var nIng=(r.i||[]).length;
   sub.innerHTML='<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 11 4-7"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/></svg>'+nIng+' ingredient'+(nIng===1?'e':'i')+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>'+(r.p&&String(r.p).trim()?'procedimento':'nessun procedimento')+'</span>';
   hd.appendChild(sub);
@@ -3142,7 +3143,7 @@ function renderGrid(){
   var out=allRecs().filter(function(r){
     var mQ=r.n.toLowerCase().indexOf(q)!==-1;
     var mC=curCat==='Tutte'||r.c===curCat||(curCat.indexOf('P:')===0&&r.piatto&&r.piatto.trim()===curCat.slice(2));
-    return mQ&&mC;
+    return mQ&&mC&&(!window.NUT||NUT.pass(r));
   });
   out=sortRecs(out);
   var ss=qs('sortSel');if(ss&&ss.value!==_sortMode)ss.value=_sortMode;
@@ -8454,6 +8455,7 @@ function aiTranslate(text,lang,onProg){
 <script src="/eclat-lab.js"></script>
 <script src="/molds.js"></script>
 <script src="/storia.js"></script>
+<script src="/nutri.js"></script>
 <script src="/cook.js"></script>
 <script src="/search.js"></script>
 <script src="/motion.js"></script>

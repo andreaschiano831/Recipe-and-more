@@ -279,6 +279,7 @@
     roll($('xlBig'), from, D.tot * d, function (v) { return fmtG(v) + ' g'; });
     [].forEach.call(document.querySelectorAll('.xl-tabs button'), function (b) { b.classList.toggle('on', +b.dataset.d === d); });
     benchQty();
+    try { if (window.NUT && $('nuCard')) NUT.mount($('nuCard'), XL.rec, d); } catch (e) {}
     if (XL.mode === 'formula') renderFormula(true);
     else if (XL.mode === 'molds' && XL.renderMolds) XL.renderMolds(true);
     if (!silent) XL.toast('Dose ' + fmtX(d) + ' applicata');
@@ -423,7 +424,7 @@
         '<div class="lb-h"><span class="lb-eyebrow">Ingredienti</span><span class="lb-count mono" id="lbMiseN"></span></div>' +
         '<div class="lb-bar"><i id="lbMiseFill"></i></div>' +
         (ings.length ? '<div class="lb-ings">' + mise + '</div><div class="lb-foot"><span class="lb-hint">Spunta mentre pesi</span><button type="button" class="lb-link" id="lbMiseReset">Azzera</button></div>' : '<p class="lb-empty">Questa ricetta non ha ancora ingredienti.</p>') +
-      '</div></section>' +
+      '</div><div id="nuCard"></div></section>' +
       '<section class="lb-col lb-proc" aria-label="Procedimento"><div class="lb-card lb-proc-card">' +
         '<div class="lb-h"><span class="lb-eyebrow">Procedimento</span><span class="lb-count mono" id="lbStepN">' + (n ? doneN + ' / ' + n : '') + '</span></div>' +
         (n ? '<div class="lb-bar"><i id="lbStepFill" style="width:' + pctDone + '%"></i></div><div class="lb-steps" id="lbSteps">' + steps + '</div>' +
@@ -482,6 +483,7 @@
     if (n) $('lbDone').hidden = curStep(r, n) !== -1;
     var sr = $('lbStepsReset'); if (sr) sr.onclick = function () { for (var k in sd) delete sd[k]; saveBench(r); renderLab(); renderHead(); };
     var ap = $('lbAddProc'); if (ap) ap.onclick = function () { closeView(); try { openEdit(r); } catch (e) {} };
+    try { if (window.NUT) NUT.mount($('nuCard'), r, XL.dose); } catch (e) {}
     XLT.render();
     if (!calm) [].forEach.call(host.querySelectorAll('.lb-card'), function (c, i) { c.style.setProperty('--i', i); c.classList.remove('lb-in'); void c.offsetWidth; c.classList.add('lb-in'); });
   }
