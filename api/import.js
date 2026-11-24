@@ -259,6 +259,12 @@ module.exports = async function handler(req, res) {
     if (r.error) return res.status(r._status && r._status >= 400 ? r._status : 502).json({ error: r.error });
     return res.status(200).json({ answer: r.text });
   }
+  if (body.algcheck) {
+    const sys = 'Sei un esperto di sicurezza alimentare (Reg. UE 1169/2011, allegato II). Ricevi una ricetta professionale. Individua quali dei 14 allergeni sono PRESENTI negli ingredienti, anche nascosti in semilavorati o prodotti composti (es. pralinato o gianduia: frutta a guscio; besciamella: latte e glutine; salsa di soia: soia e glutine; pesto: frutta a guscio e latte; salsa worcester: pesce; vino o aceto: solfiti; pan di spagna: uova e glutine). Non includere tracce ipotetiche. Se non sei sicuro, non includerlo. Rispondi SOLO con JSON: {"allergeni":[{"k":"chiave","perche":"ingrediente che lo contiene, massimo 8 parole"}]}. Chiavi ammesse: glutine, latte, uova, frutta_guscio, arachidi, soia, sesamo, pesce, crostacei, molluschi, sedano, senape, solfiti, lupini.';
+    const r = await aiGroqChat(GROQ_URL, key, 'text', sys, String(body.algcheck).slice(0, 8000), null, true);
+    if (r.error) return res.status(r._status && r._status >= 400 ? r._status : 502).json({ error: r.error });
+    return res.status(200).json({ text: r.text });
+  }
   if (body.advice) {
     const sys = 'Sei un pastry chef consulente di alto livello. Ricevi una ricetta con calcoli di composizione stimati. Rispondi in italiano con 3-6 consigli pratici e brevi per migliorarla o bilanciarla (zuccheri, grassi, solidi, struttura, dolcezza; per gelati e sorbetti anche POD/PAC e servizio). Per ogni correzione indica la quantità in grammi. Usa solo i dati forniti, non inventare ingredienti che non servono; se i dati non bastano dillo. Niente premesse, solo elenco puntato.';
     const r = await aiGroqChat(GROQ_URL, key, 'text', sys, String(body.advice).slice(0, 8000), null, false);

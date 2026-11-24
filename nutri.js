@@ -10,6 +10,7 @@
    ════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
+  var NUT_AI = null;
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function f1(v) { return (Math.round(v * 10) / 10).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 1 }); }
@@ -222,6 +223,48 @@
       D.may.map(function (k) { return '<span class="nu-al may" title="Può contenere tracce" data-k="' + k + '"><b>' + ALN[k][2] + '</b>Tracce: ' + esc(ALN[k][1]) + '</span>'; }).join('');
   }
 
+
+  /* ── controllo allergeni con l'AI: trova quelli nascosti e chiede conferma ── */
+  var ALG_SYS = 'Sei un esperto di sicurezza alimentare (Reg. UE 1169/2011, allegato II). Ricevi una ricetta professionale. Individua quali dei 14 allergeni sono PRESENTI negli ingredienti, anche nascosti in semilavorati o prodotti composti (es. pralinato o gianduia: frutta a guscio; besciamella: latte e glutine; salsa di soia: soia e glutine; pesto: frutta a guscio e latte; salsa worcester: pesce; vino o aceto: solfiti; pan di spagna: uova e glutine). Non includere tracce ipotetiche. Se non sei sicuro, non includerlo. Rispondi SOLO con JSON: {"allergeni":[{"k":"chiave","perche":"ingrediente che lo contiene, massimo 8 parole"}]}. Chiavi ammesse: glutine, latte, uova, frutta_guscio, arachidi, soia, sesamo, pesce, crostacei, molluschi, sedano, senape, solfiti, lupini.';
+  function recText(r) {
+    return 'RICETTA: ' + (r.n || '') + (r.c ? ' (' + r.c + ')' : '') + '\nINGREDIENTI:\n' + (r.i || []).map(function (g) { return '- ' + g[0] + (g[1] != null && g[1] !== '' ? ' ' + g[1] + ' ' + (g[2] || '') : ''); }).join('\n') +
+      (r.p ? '\nPROCEDIMENTO:\n' + String(r.p).slice(0, 2500) : '') + (r.nt ? '\nNOTE:\n' + String(r.nt).slice(0, 600) : '');
+  }
+  function hash(s) { var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h >>> 0); }
+  function aiKey(r) { return 'nu_ai_' + (r._id || r.n); }
+  function aiGet(r) { try { return JSON.parse(localStorage.getItem(aiKey(r)) || 'null'); } catch (e) { return null; } }
+  function aiSet(r, v) { try { localStorage.setItem(aiKey(r), JSON.stringify(v)); } catch (e) {} }
+  var inflight = {}, failed = {};
+  function aiAsk(text) {
+    var srv = typeof aiCheckServer === 'function' ? aiCheckServer() : Promise.resolve(false);
+    return srv.then(function (ok) {
+      if (ok) return fetch('/api/import', { method: 'POST', headers: WL.apiH(), body: JSON.stringify({ algcheck: text }) }).then(function (r) { return r.json().catch(function () { return {}; }); });
+      var key = ''; try { key = localStorage.getItem('groq_key') || ''; } catch (e) {}
+      if (!key || typeof aiGroqChat !== 'function') return { error: 'nokey' };
+      return aiGroqChat('https://api.groq.com/openai/v1/chat/completions', key, 'text', ALG_SYS, text, null, true);
+    }).then(function (d) {
+      if (!d || d.error) throw new Error(d && d.error || 'AI non disponibile');
+      var m = String(d.text || '').match(/\{[\s\S]*\}/); var j = m ? JSON.parse(m[0]) : {};
+      return (j.allergeni || []).filter(function (a) { return a && ALN[a.k]; }).map(function (a) { return { k: a.k, why: String(a.perche || '').slice(0, 80) }; });
+    });
+  }
+  /* risultati ancora da confermare: visti dall'AI, non segnati, non tolti a mano, non ignorati */
+  function pending(r, D) {
+    var c = aiGet(r), h = hash(recText(r)); if (!c || c.h !== h) return null;
+    var no = r.algNo || [], dis = c.dis || [];
+    return (c.found || []).filter(function (a) { return D.on.indexOf(a.k) < 0 && no.indexOf(a.k) < 0 && dis.indexOf(a.k) < 0; });
+  }
+  function aiRun(r, force, done) {
+    var text = recText(r), h = hash(text), c = aiGet(r);
+    if (!force && ((c && c.h === h) || failed[h])) return;
+    if (inflight[h]) return; inflight[h] = 1;
+    aiAsk(text).then(function (found) {
+      var keep = c && c.h === h ? (c.dis || []) : [];
+      aiSet(r, { h: h, found: found, dis: keep, t: Date.now() }); delete inflight[h]; if (done) done(null, found);
+    }, function (e) { delete inflight[h]; failed[h] = 1; if (done) done(e); });
+  }
+  NUT_AI = { run: aiRun, pending: pending, text: recText };
+
   /* scheda espandibile nella pagina ricetta */
   function mount(host, r, dose) {
     if (!host || !r) return;
@@ -241,6 +284,9 @@
         '<span class="nu-sum"><b class="mono">' + (A.known ? f0(kcal100) : '—') + '</b><small>kcal/100 g</small></span>' +
       '</summary>' +
       '<div class="nu-als" id="nuAls">' + alChips(r, D, canEdit) + '</div>' +
+      (function () { var pd = canEdit ? pending(r, D) : null; if (!pd || !pd.length) return ''; return '<div class="nu-ai" id="nuAi"><div class="nu-ai-h"><span>✨</span><b>L’AI vede ' + (pd.length === 1 ? 'un allergene non segnato' : pd.length + ' allergeni non segnati') + '</b></div>' +
+        pd.map(function (a) { return '<div class="nu-ai-r" style="--a:' + ALN[a.k][3] + '"><b>' + ALN[a.k][2] + '</b><span><em>' + esc(ALN[a.k][1]) + '</em>' + (a.why ? '<small>' + esc(a.why) + '</small>' : '') + '</span><button type="button" class="nu-ai-no" data-ai-no="' + a.k + '">Ignora</button><button type="button" class="nu-ai-ok" data-ai-ok="' + a.k + '">Aggiungi</button></div>'; }).join('') +
+        (pd.length > 1 ? '<button type="button" class="nu-ai-all" data-ai-all>Aggiungi tutti</button>' : '') + '</div>'; })() +
       (A.known ? '<div class="nu-bar" aria-hidden="true"><i style="flex:' + prot / en + ';background:#7F8F5A"></i><i style="flex:' + carb / en + ';background:#C9A86A"></i><i style="flex:' + fat / en + ';background:#A67B5B"></i></div>' +
         '<div class="nu-leg"><span><i style="background:#7F8F5A"></i>Proteine ' + f0(prot / en * 100) + '%</span><span><i style="background:#C9A86A"></i>Carboidrati ' + f0(carb / en * 100) + '%</span><span><i style="background:#A67B5B"></i>Grassi ' + f0(fat / en * 100) + '%</span></div>' +
         '<div class="nu-tw"><table class="nu-t"><thead><tr><th></th>' + cols.map(function (c) { return '<th>' + esc(c[0]) + '</th>'; }).join('') + '</tr></thead><tbody>' +
@@ -251,9 +297,10 @@
         '<label><span>Peso porzione</span><span class="ms-in"><input id="nuPw" inputmode="decimal" value="' + (pw || '') + '" placeholder="—"><em>g</em></span></label></div>' +
       '<p class="nu-note">' + (por ? f1(nPor) + ' porzioni da ' + f0(por) + ' g · ' : '') + 'Peso ' + (loss ? 'dopo cottura ' + f0(cooked) + ' g (crudo ' + f0(raw) + ' g)' : f0(raw) + ' g') + '. ' +
         'Riconosciuto il ' + f0(A.cov * 100) + '% del peso' + (A.unknown.length ? ' · senza dati: ' + esc(A.unknown.slice(0, 6).join(', ')) + (A.unknown.length > 6 ? '…' : '') : '') + (A.qb ? ' · ' + A.qb + ' q.b. esclusi' : '') + '. Valori indicativi.</p>' +
-      '<div class="nu-acts">' + (canEdit ? '<button type="button" class="lb-link" id="nuAdd">+ Allergene</button>' : '') + '<button type="button" class="lb-link" id="nuCopy">Copia etichetta</button></div>' +
+      '<div class="nu-acts">' + (canEdit ? '<button type="button" class="lb-link" id="nuAdd">+ Allergene</button><button type="button" class="lb-link" id="nuAiGo">✨ Controlla con l’AI</button>' : '') + '<button type="button" class="lb-link" id="nuCopy">Copia etichetta</button></div>' +
       '</details>';
     var det = host.querySelector('details');
+    if (host.querySelector('#nuAi')) det.open = true;
     det.addEventListener('toggle', function () { var p = prefs(r); p.open = det.open; savePrefs(r, p); });
     function num(v) { return parseFloat(String(v).replace(',', '.')); }
     var t = null;
@@ -263,6 +310,21 @@
       x.onclick = function (e) { e.preventDefault(); var k = x.dataset.rm; if (!confirm('Togliere «' + ALN[k][1] + '» dagli allergeni di questa ricetta?')) return; patch(r, function (nd) { nd.alg = (nd.alg || []).filter(function (y) { return y !== k; }); if ((nd.algNo || []).indexOf(k) < 0) nd.algNo = (nd.algNo || []).concat(k); }); };
     });
     var ad = $('nuAdd'); if (ad) ad.onclick = function () { picker(r, D); };
+    /* AI: conferma o ignora i suggerimenti */
+    function addKeys(ks) { patch(r, function (nd) { nd.algNo = (nd.algNo || []).filter(function (y) { return ks.indexOf(y) < 0; }); ks.forEach(function (k) { if ((nd.alg || []).indexOf(k) < 0) nd.alg = (nd.alg || []).concat(k); }); }); toast(ks.length === 1 ? ALN[ks[0]][1] + ' aggiunto agli allergeni' : ks.length + ' allergeni aggiunti'); }
+    [].forEach.call(host.querySelectorAll('[data-ai-ok]'), function (b) { b.onclick = function () { if (confirm('Aggiungere «' + ALN[b.dataset.aiOk][1] + '» agli allergeni di questa ricetta?')) addKeys([b.dataset.aiOk]); }; });
+    [].forEach.call(host.querySelectorAll('[data-ai-no]'), function (b) { b.onclick = function () { var c = aiGet(r); if (c) { c.dis = (c.dis || []).concat(b.dataset.aiNo); aiSet(r, c); } mount(host, r, dose); }; });
+    var aa = host.querySelector('[data-ai-all]'); if (aa) aa.onclick = function () { var pd = pending(r, D) || []; if (confirm('Aggiungere ' + pd.map(function (a) { return ALN[a.k][1]; }).join(', ') + '?')) addKeys(pd.map(function (a) { return a.k; })); };
+    var ag = $('nuAiGo'); if (ag) ag.onclick = function () {
+      ag.textContent = 'Controllo…'; ag.disabled = true;
+      aiRun(r, true, function (err, found) {
+        if (err) { toast(/nokey/.test(err.message) ? 'AI non configurata: aggiungi la chiave Groq o configurala su Vercel' : 'AI non disponibile: ' + err.message); mount(host, r, dose); return; }
+        var p = prefs(r); p.open = true; savePrefs(r, p); mount(host, r, dose);
+        var pd = pending(r, detect(r)) || []; if (!pd.length) toast(found.length ? 'L’AI conferma gli allergeni segnati' : 'L’AI non trova allergeni');
+      });
+    };
+    /* controllo automatico in background quando la ricetta cambia (solo chi può modificarla) */
+    if (canEdit && !host._aiAuto) { host._aiAuto = 1; setTimeout(function () { host._aiAuto = 0; aiRun(r, false, function (err) { if (!err && document.contains(host) && host.querySelector('.nu')) { var pd = pending(r, detect(r)) || []; if (pd.length) mount(host, r, dose); } }); }, 900); }
     $('nuCopy').onclick = function () {
       var L = ['Valori nutrizionali medi — ' + r.n, ''];
       L.push(['', ' '].concat(cols.map(function (c) { return c[0]; })).join('\t'));
@@ -326,7 +388,7 @@
   /* sigle degli allergeni per le card della collezione */
   function badges(r) { var D = detect(r); return D.on.map(function (k) { return '<i style="--a:' + ALN[k][3] + '" title="' + ALN[k][1] + '">' + ALN[k][2] + '</i>'; }); }
 
-  window.NUT = { analyze: analyze, detect: detect, mount: mount, pass: pass, badges: badges, ALLERGENI: AL, nut: nut, openFilter: openFilter };
+  window.NUT = { ai: function () { return NUT_AI; }, analyze: analyze, detect: detect, mount: mount, pass: pass, badges: badges, ALLERGENI: AL, nut: nut, openFilter: openFilter };
 
   var css = document.createElement('style');
   css.textContent =
@@ -348,7 +410,14 @@
     '.nu-in{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.nu-in label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--smoke2,#7B796E)}' +
     '.nu-in .ms-in{display:flex;align-items:center;border:1px solid var(--cb);border-radius:10px;background:var(--ctrl,#F7F5EF);padding:0 10px}.nu-in input{flex:1;min-width:0;height:38px;border:0;background:none;font:500 15px "JetBrains Mono",monospace;color:var(--ink);outline:none}.nu-in em{font-style:normal;color:var(--smoke2)}' +
     '.nu-note{font-size:11.5px;line-height:1.5;color:var(--smoke2,#7B796E);margin:10px 0 0}' +
-    '.nu-acts{display:flex;gap:14px;margin-top:8px}' +
+    '.nu-acts{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px}' +
+    '.nu-ai{margin-top:12px;padding:12px;border-radius:14px;background:color-mix(in srgb,#A8772A 9%,var(--card,#fff));border:1px solid color-mix(in srgb,#A8772A 30%,transparent);animation:nuUp .35s cubic-bezier(.2,.8,.2,1)}' +
+    '.nu-ai-h{display:flex;align-items:center;gap:8px;font:600 13.5px "DM Sans",sans-serif;color:var(--ink);margin-bottom:8px}' +
+    '.nu-ai-r{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,#A8772A 18%,transparent)}' +
+    '.nu-ai-r>b{width:32px;height:32px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;font-size:17px;background:color-mix(in srgb,var(--a) 16%,var(--card,#fff));box-shadow:inset 0 0 0 1.5px var(--a)}' +
+    '.nu-ai-r>span{flex:1;min-width:0;display:flex;flex-direction:column}.nu-ai-r em{font:600 13.5px "DM Sans",sans-serif;font-style:normal;color:var(--ink)}.nu-ai-r small{font-size:11.5px;color:var(--smoke2,#7B796E);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.nu-ai-r button,.nu-ai-all{height:32px;padding:0 11px;border-radius:9px;font:600 12.5px "DM Sans",sans-serif;cursor:pointer;flex-shrink:0}' +
+    '.nu-ai-no{border:1px solid var(--cb);background:var(--card,#fff);color:var(--ink2)}.nu-ai-ok,.nu-ai-all{border:0;background:var(--btn-bg,#1A1A16);color:var(--btn-ink,#fff)}.nu-ai-all{width:100%;margin-top:6px;height:38px}' +
     '.nu-pick{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-end;justify-content:center}.nu-pbg{position:absolute;inset:0;background:rgba(12,11,8,.42)}' +
     '.nu-pbox{position:relative;width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--bg,#F5EFE0);border-radius:22px 22px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom));animation:nuUp .32s cubic-bezier(.2,.8,.2,1);font-family:"DM Sans",sans-serif;color:var(--ink)}' +
     '@media(min-width:700px){.nu-pick{align-items:center}.nu-pbox{border-radius:22px}}@keyframes nuUp{from{transform:translateY(30px);opacity:0}}' +
