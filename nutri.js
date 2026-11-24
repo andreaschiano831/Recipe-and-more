@@ -158,9 +158,9 @@
 
   /* ── allergeni (Reg. UE 1169/2011, allegato II) ── */
   var AL = [
-    ['glutine', 'Glutine', 'G'], ['latte', 'Latte e lattosio', 'L'], ['uova', 'Uova', 'U'], ['frutta_guscio', 'Frutta a guscio', 'FG'],
-    ['arachidi', 'Arachidi', 'A'], ['soia', 'Soia', 'So'], ['sesamo', 'Sesamo', 'Se'], ['pesce', 'Pesce', 'P'], ['crostacei', 'Crostacei', 'C'],
-    ['molluschi', 'Molluschi', 'M'], ['sedano', 'Sedano', 'Sd'], ['senape', 'Senape', 'Sn'], ['solfiti', 'Solfiti', 'Sf'], ['lupini', 'Lupini', 'Lu']
+    ['glutine', 'Glutine', '🌾', '#C98A2B'], ['latte', 'Latte e lattosio', '🥛', '#3E7CB1'], ['uova', 'Uova', '🥚', '#D9A86C'], ['frutta_guscio', 'Frutta a guscio', '🌰', '#8A5A35'],
+    ['arachidi', 'Arachidi', '🥜', '#B5763A'], ['soia', 'Soia', '🫘', '#5E8C3A'], ['sesamo', 'Sesamo', '🥯', '#A8873F'], ['pesce', 'Pesce', '🐟', '#2F6F9F'], ['crostacei', 'Crostacei', '🦐', '#D0553A'],
+    ['molluschi', 'Molluschi', '🦑', '#7A5BA6'], ['sedano', 'Sedano', '🥬', '#3F8F4A'], ['senape', 'Senape', '🫙', '#C9A227'], ['solfiti', 'Solfiti', '🍷', '#8E2B3A'], ['lupini', 'Lupini', '🫛', '#6E9A2E']
   ];
   var ALN = {}; AL.forEach(function (a) { ALN[a[0]] = a; });
   var AR = {
@@ -218,7 +218,7 @@
   var ROWS = [['Energia', -1], ['Grassi', 4], ['di cui saturi', 5, 1], ['Carboidrati', 2], ['di cui zuccheri', 3, 1], ['Fibre', 6], ['Proteine', 1], ['Sale', 7]];
   function alChips(r, D, editable) {
     if (!D.on.length && !D.may.length) return '<span class="nu-none">Nessun allergene riconosciuto</span>';
-    return D.on.map(function (k) { return '<span class="nu-al on" data-k="' + k + '"><b>' + ALN[k][2] + '</b>' + esc(ALN[k][1]) + (editable ? '<i data-rm="' + k + '" aria-label="Togli">×</i>' : '') + '</span>'; }).join('') +
+    return D.on.map(function (k) { return '<span class="nu-al on" data-k="' + k + '" style="--a:' + ALN[k][3] + '"><b>' + ALN[k][2] + '</b>' + esc(ALN[k][1]) + (editable ? '<i data-rm="' + k + '" aria-label="Togli">×</i>' : '') + '</span>'; }).join('') +
       D.may.map(function (k) { return '<span class="nu-al may" title="Può contenere tracce" data-k="' + k + '"><b>' + ALN[k][2] + '</b>Tracce: ' + esc(ALN[k][1]) + '</span>'; }).join('');
   }
 
@@ -279,7 +279,7 @@
     var old = $('nuPick'); if (old) old.remove();
     var m = document.createElement('div'); m.id = 'nuPick'; m.className = 'nu-pick';
     m.innerHTML = '<div class="nu-pbg"></div><div class="nu-pbox" role="dialog" aria-label="Aggiungi allergene"><b>Aggiungi un allergene</b><p>Per quelli che l’app non riconosce dal nome (per esempio un semilavorato).</p><div class="nu-pl">' +
-      AL.map(function (a) { var has = D.on.indexOf(a[0]) >= 0; return '<button type="button" data-k="' + a[0] + '"' + (has ? ' disabled' : '') + '><b>' + a[2] + '</b>' + a[1] + '</button>'; }).join('') + '</div><button type="button" class="lb-btn" data-x>Chiudi</button></div>';
+      AL.map(function (a) { var has = D.on.indexOf(a[0]) >= 0; return '<button type="button" data-k="' + a[0] + '"' + (has ? ' disabled' : '') + ' style="--a:' + a[3] + '"><b>' + a[2] + '</b>' + a[1] + '</button>'; }).join('') + '</div><button type="button" class="lb-btn" data-x>Chiudi</button></div>';
     document.body.appendChild(m);
     m.querySelector('.nu-pbg').onclick = m.querySelector('[data-x]').onclick = function () { m.remove(); };
     [].forEach.call(m.querySelectorAll('[data-k]'), function (b) { b.onclick = function () { var k = b.dataset.k; m.remove(); patch(r, function (nd) { nd.algNo = (nd.algNo || []).filter(function (y) { return y !== k; }); if ((nd.alg || []).indexOf(k) < 0) nd.alg = (nd.alg || []).concat(k); }); }; });
@@ -303,7 +303,7 @@
     var m = document.createElement('div'); m.id = 'nuPick'; m.className = 'nu-pick';
     function draw() {
       m.innerHTML = '<div class="nu-pbg"></div><div class="nu-pbox" role="dialog" aria-label="Filtra per allergeni"><b>Mostra solo ricette senza…</b><p>Allergie e intolleranze: tocca quelli da escludere.</p><div class="nu-pl">' +
-        AL.map(function (a) { return '<button type="button" data-k="' + a[0] + '" class="' + (EX.indexOf(a[0]) >= 0 ? 'on' : '') + '"><b>' + a[2] + '</b>' + a[1] + '</button>'; }).join('') + '</div>' +
+        AL.map(function (a) { return '<button type="button" data-k="' + a[0] + '" class="' + (EX.indexOf(a[0]) >= 0 ? 'on' : '') + '" style="--a:' + a[3] + '"><b>' + a[2] + '</b>' + a[1] + '</button>'; }).join('') + '</div>' +
         '<label class="nu-may"><input type="checkbox" id="nuMay"' + (EXMAY ? ' checked' : '') + '> Escludi anche «può contenere tracce»</label>' +
         '<div class="nu-pa"><button type="button" class="lb-btn" data-clear>Azzera</button><button type="button" class="lb-btn dark" data-x>Mostra ricette</button></div>' +
         '<p class="nu-note">Riconoscimento dal nome degli ingredienti: per allergie gravi controlla sempre le etichette dei prodotti.</p></div>';
@@ -324,7 +324,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addButton); else addButton();
 
   /* sigle degli allergeni per le card della collezione */
-  function badges(r) { var D = detect(r); return D.on.map(function (k) { return ALN[k][2]; }); }
+  function badges(r) { var D = detect(r); return D.on.map(function (k) { return '<i style="--a:' + ALN[k][3] + '" title="' + ALN[k][1] + '">' + ALN[k][2] + '</i>'; }); }
 
   window.NUT = { analyze: analyze, detect: detect, mount: mount, pass: pass, badges: badges, ALLERGENI: AL, nut: nut, openFilter: openFilter };
 
@@ -335,9 +335,9 @@
     '.nu summary::after{content:"";width:8px;height:8px;border:solid var(--smoke2,#7B796E);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);transition:transform .25s;flex-shrink:0;margin-left:4px}.nu[open] summary::after{transform:rotate(-135deg)}' +
     '.nu-sum{margin-left:auto;display:flex;align-items:baseline;gap:5px}.nu-sum b{font-size:17px;color:var(--ink)}.nu-sum small{font-size:11px;color:var(--smoke2,#7B796E)}' +
     '.nu-als{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.nu:not([open]) .nu-als{margin-bottom:0}' +
-    '.nu-al{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 9px 0 4px;border-radius:99px;font:600 12px "DM Sans",sans-serif;background:color-mix(in srgb,#9B2C3C 9%,var(--card,#fff));color:color-mix(in srgb,#9B2C3C 75%,var(--ink));border:1px solid color-mix(in srgb,#9B2C3C 22%,transparent)}' +
-    '.nu-al b{min-width:20px;height:20px;padding:0 4px;border-radius:10px;display:grid;place-items:center;font-size:10px;background:#9B2C3C;color:#fff}' +
-    '.nu-al.may{background:none;border-style:dashed;color:var(--smoke2,#7B796E);font-weight:500}.nu-al.may b{background:var(--smoke3,#A9A699)}' +
+    '.nu-al{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px 0 3px;border-radius:99px;font:600 12.5px "DM Sans",sans-serif;background:color-mix(in srgb,var(--a) 10%,var(--card,#fff));color:color-mix(in srgb,var(--a) 70%,var(--ink));border:1px solid color-mix(in srgb,var(--a) 28%,transparent)}' +
+    '.nu-al b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:15px;line-height:1;background:color-mix(in srgb,var(--a) 20%,var(--card,#fff));box-shadow:inset 0 0 0 1.5px var(--a)}' +
+    '.nu-al.may{background:none;border:1px dashed color-mix(in srgb,var(--a) 35%,transparent);color:var(--smoke2,#7B796E);font-weight:500}.nu-al.may b{filter:grayscale(.5);opacity:.75;box-shadow:inset 0 0 0 1.5px var(--smoke3,#A9A699)}' +
     '.nu-al i{font-style:normal;margin-left:2px;padding:0 3px;cursor:pointer;opacity:.6;font-size:15px}.nu-al i:hover{opacity:1}' +
     '.nu-none{font-size:12.5px;color:var(--smoke2,#7B796E)}' +
     '.nu-bar{display:flex;height:8px;border-radius:5px;overflow:hidden;gap:2px;margin:16px 0 8px}.nu-bar i{display:block}' +
@@ -354,12 +354,12 @@
     '@media(min-width:700px){.nu-pick{align-items:center}.nu-pbox{border-radius:22px}}@keyframes nuUp{from{transform:translateY(30px);opacity:0}}' +
     '.nu-pbox>b{font:600 22px "Cormorant Garamond",Georgia,serif;display:block}.nu-pbox>p{font-size:13px;color:var(--smoke2);margin:4px 0 12px}' +
     '.nu-pl{display:grid;grid-template-columns:1fr 1fr;gap:6px}.nu-pl button{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;border-radius:12px;border:1px solid var(--cb);background:var(--card,#fff);color:var(--ink);font:500 13.5px "DM Sans",sans-serif;text-align:left;cursor:pointer}' +
-    '.nu-pl button b{min-width:26px;height:22px;border-radius:11px;display:grid;place-items:center;font-size:10.5px;background:color-mix(in srgb,#9B2C3C 12%,transparent);color:#9B2C3C}' +
-    '.nu-pl button.on{background:#9B2C3C;border-color:#9B2C3C;color:#fff}.nu-pl button.on b{background:rgba(255,255,255,.22);color:#fff}.nu-pl button:disabled{opacity:.4}' +
+    '.nu-pl button{min-height:52px!important}.nu-pl button b{width:36px;height:36px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;font-size:19px;line-height:1;background:color-mix(in srgb,var(--a) 14%,var(--card,#fff));box-shadow:inset 0 0 0 2px var(--a)}' +
+    '.nu-pl button.on{background:var(--a);border-color:var(--a);color:#fff;font-weight:600}.nu-pl button.on b{background:#fff;box-shadow:none}.nu-pl button.on::after{content:"✕";margin-left:auto;font-size:12px;opacity:.8}.nu-pl button:disabled{opacity:.4}' +
     '.nu-may{display:flex;align-items:center;gap:8px;margin:14px 0 4px;font-size:13.5px}.nu-may input{width:18px;height:18px;accent-color:#9B2C3C}' +
     '.nu-pa{display:flex;gap:8px;margin-top:12px}.nu-pa .lb-btn,.nu-pbox>.lb-btn{flex:1;height:44px;border-radius:12px;border:1px solid var(--cb);background:var(--card,#fff);color:var(--ink);font:600 14px "DM Sans",sans-serif;cursor:pointer;margin-top:12px}.nu-pa .lb-btn{margin-top:0}.nu-pa .lb-btn.dark{background:var(--btn-bg,#1A1A16);color:var(--btn-ink,#fff);border-color:transparent}' +
     '#app .alg-btn{display:inline-flex!important;gap:5px}#app .alg-btn.on{background:#9B2C3C;color:#fff;border-color:#9B2C3C}' +
-    '.card-alg{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}.card-alg b{min-width:20px;height:17px;padding:0 4px;border-radius:9px;display:grid;place-items:center;font:700 9.5px "DM Sans",sans-serif;background:color-mix(in srgb,#9B2C3C 12%,transparent);color:#9B2C3C}' +
+    '.card-alg{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}.card-alg i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12.5px;line-height:1;background:color-mix(in srgb,var(--a) 14%,var(--card,#fff));box-shadow:inset 0 0 0 1.5px var(--a)}' +
     '@media(max-width:520px){.nu-t{font-size:11.5px;letter-spacing:-.02em}.nu-t td,.nu-t th{padding-left:2px;padding-right:2px}.nu-t td small{display:none}.nu-t th{font-size:9px;letter-spacing:.02em}.nu-t td:first-child{white-space:normal}}';
   document.head.appendChild(css);
 })();
