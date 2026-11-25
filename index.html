@@ -6851,7 +6851,7 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     dnd(drop,addImageFiles);card.appendChild(drop);
     if(ST.imgs.length){
       var th=h('div','st-thumbs');
-      ST.imgs.forEach(function(im,i){var d=h('div','st-thumb');var img=h('img');img.src=im.url;img.alt=im.name;d.appendChild(img);d.appendChild(t('span','st-thumb-n',String(i+1)));
+      ST.imgs.forEach(function(im,i){var d=h('div','st-thumb'+(ST.scanUrl&&ST.scanUrl===im.url?' scan':''));var img=h('img');img.src=im.url;img.alt=im.name;d.appendChild(img);d.appendChild(t('span','st-thumb-n',String(i+1)));
         var x=h('button','st-thumb-x','×');x.type='button';x.setAttribute('aria-label','Rimuovi');x.onclick=function(){ST.imgs=ST.imgs.filter(function(y){return y.id!==im.id;});render();};d.appendChild(x);th.appendChild(d);});
       card.appendChild(th);
     }
@@ -6896,7 +6896,7 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
       var social=d.kind==='instagram'||d.kind==='tiktok'||d.kind==='youtube';
       if(d.thin)box.appendChild(t('div','st-warn',social?'Nella didascalia non ci sono quantità: la ricetta probabilmente è detta o scritta nel video. Salva il video nel rullino e caricalo: ascolto il parlato e leggo le scritte.':'Questa pagina non sembra contenere una ricetta. Fai uno screenshot dei passaggi e usa Foto, oppure completa il testo qui sotto.'));
       if(social){var vb=h('button','st-btn st-vgo'+(d.thin?' st-btn-dark':''),IC.video.replace(/22/g,'18')+'<span>'+(d.thin?'Carica il video del reel':'Aggiungi anche il video (parlato e scritte)')+'</span>');vb.type='button';
-        vb.onclick=function(){var V=ST.video;V.caption=String(L.text||'').trim();V.src=d.url||L.url;V.srcLabel=(SITE[d.kind]||'link')+(d.author?' @'+d.author:'');V.text='';ST.tab='video';render();};box.appendChild(vb);}
+        vb.onclick=function(){var V=ST.video;V.thumb=d.thumb||'';V.caption=String(L.text||'').trim();V.src=d.url||L.url;V.srcLabel=(SITE[d.kind]||'link')+(d.author?' @'+d.author:'');V.text='';ST.tab='video';render();};box.appendChild(vb);}
       var ta=h('textarea','st-ta');ta.rows=8;ta.value=L.text||'';ta.oninput=function(){L.text=ta.value;};
       box.appendChild(t('span','st-lbl','Testo trovato · puoi correggerlo prima di analizzare'));box.appendChild(ta);
       card.appendChild(box);
@@ -7050,12 +7050,12 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
       if(!ST.link.res){if(ST.link.url)readLink(true);else libToast('Incolla un link','err');return;}
       if(!String(ST.link.text||'').trim()){libToast('Il link non contiene testo da analizzare','err');return;}
       var src=ST.link.res,lbl=(SITE[src.kind]||src.site||'link')+(src.author?' @'+src.author:'');
-      aiChunks(ST.link.text+'\n\nFonte: '+(src.url||ST.link.url)).forEach(function(c){jobs.push({text:c,label:lbl});});
+      aiChunks(ST.link.text+'\n\nFonte: '+(src.url||ST.link.url)).forEach(function(c){jobs.push({text:c,label:lbl,thumb:src.thumb||''});});
     }else if(ST.tab==='video'){
       var V=ST.video;
       if(V.busy)return;
       if(!String(V.text||'').trim()){if(!V.file){libToast('Scegli un video','err');return;}runVideo(analyse);return;}
-      aiChunks(V.text+(V.src?'\n\nFonte: '+V.src:'')).forEach(function(c){jobs.push({text:c,label:'video'+(V.srcLabel?' · '+V.srcLabel:'')});});
+      aiChunks(V.text+(V.src?'\n\nFonte: '+V.src:'')).forEach(function(c){jobs.push({text:c,label:'video'+(V.srcLabel?' · '+V.srcLabel:''),video:!!V.file,thumb:V.file?'':(V.thumb||'')});});
     }else if(ST.tab==='text'){
       if(!ST.text.trim()){libToast('Incolla il testo della ricetta','err');return;}
       aiChunks(ST.text).forEach(function(c){jobs.push({text:c,label:'testo'});});
@@ -7076,11 +7076,12 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
         if(i>=jobs.length)return;
         var j=jobs[i++],tot=jobs.length;
         setBusy((j.image?'Leggo ':'Analizzo ')+j.label+(tot>1?' · '+i+' di '+tot:'')+'…');
+        ST.scanUrl=j.image||'';[].forEach.call(document.querySelectorAll('.st-thumb img'),function(im){im.parentNode.classList.toggle('scan',!!j.image&&im.src===j.image);});
         var payloadP=j.image?aiResizeImage(j.image).then(function(u){return {image:u};}):Promise.resolve({text:j.text});
         return payloadP.then(aiRun).then(function(d){
           if(d.recipes){
             if(d.source&&/\[\?\]/.test(d.source))unread+=(d.source.match(/\[\?\]/g)||[]).length;
-            d.recipes.forEach(function(r){found++;addItem(r,d.source||'',j.label);});
+            d.recipes.forEach(function(r){found++;addItem(r,d.source||'',j.label,j);});
             if(!d.recipes.length)errors.push(j.label+': nessuna ricetta trovata');
           }else{
             errors.push(j.label+': '+(d.error||'errore'));
@@ -7091,18 +7092,19 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
       }
       return step();
     }).then(function(){
-      setBusy('');render();
+      ST.scanUrl='';setBusy('');render();
       if(found){libToast(found+(found===1?' ricetta trovata':' ricette trovate')+': controlla e salva','ok');var res=document.querySelector('.st-results');if(res)res.scrollIntoView({behavior:'smooth',block:'start'});}
       if(errors.length)setTimeout(function(){alert(errors.slice(0,8).join('\n'));},found?600:0);
       if(unread)libToast('⚠ '+unread+' parti illeggibili segnate con [?]: controlla il testo letto','err');
     });
   }
-  function addItem(r,source,label){
+  function addItem(r,source,label,job){
     var def=ST.sec||((curSec&&curSec!=='tutti')?curSec:WL.defSec());
     var rec={n:String(r.n||'Ricetta'),c:r.c||'Altro',s:ST.sec||r.s||def,i:(r.i||[]).map(function(x){return [x[0],x[1],x[2]||'g'];})};
     if(r.piatto)rec.piatto=r.piatto;if(r.p)rec.p=r.p;
     var empty=!rec.i.some(function(x){return x[1]!=null&&x[1]!==''&&+x[1]>0;})&&!String(rec.p||'').trim();
-    ST.items.push({key:key(),rec:rec,warn:r._warn||[],source:source,label:label,checked:!empty,empty:empty,open:false});
+    var it={key:key(),rec:rec,warn:r._warn||[],source:source,label:label,checked:!empty,empty:empty,open:false};
+    ST.items.push(it);if(window.COV&&!empty)COV.attach(it,job);
   }
 
   ST._add=function(r,src,l){addItem(r,src,l);render();};ST._render=function(){render();};
@@ -7202,7 +7204,8 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
   }
   function isWarn(it,ing){return it.warn.indexOf(ing[0]+' '+ing[1]+' '+ing[2])>-1;}
   function sheet(it){
-    var r=it.rec,s=h('article','st-sheet'+(it.checked?' sel':'')+(it.empty?' empty':''));
+    var r=it.rec,s=h('article','st-sheet'+(it.checked?' sel':'')+(it.empty?' empty':'')+(it.cov&&it.cov.st==='ok'?' has-cov':''));
+    if(window.COV&&!it.empty)s.appendChild(COV.block(it));
     var meta=h('div','st-meta');
     meta.appendChild(pickChip('st-tag',secName(r.s),WL.secPairs(),r.s,function(v){r.s=v;render();}));
     var cats=catList();if(cats.indexOf(r.c)<0)cats.push(r.c||'Altro');
@@ -7276,7 +7279,7 @@ var ST={tab:'photo',imgs:[],text:'',files:[],sec:'',items:[],saved:[],busy:'',op
     (function next(){
       if(i>=list.length){setBusy('');render();libToast(list.length+(list.length===1?' ricetta salvata':' ricette salvate'),'ok');return;}
       var it=list[i++];var rec=JSON.parse(JSON.stringify(it.rec));rec.i=rec.i.filter(function(x){return String(x[0]).trim();});
-      Promise.resolve(saveRec(rec)).catch(function(){}).then(function(){
+      Promise.resolve(saveRec(rec)).catch(function(){}).then(function(){return window.COV?COV.save(rec,it):null;}).then(function(){
         ST.saved.push(rec.n);ST.items=ST.items.filter(function(y){return y.key!==it.key;});next();
       });
     })();
@@ -8547,6 +8550,7 @@ function aiTranslate(text,lang,onProg){
 <script src="/photo.js"></script>
 <script src="/shop.js"></script>
 <script src="/label.js"></script>
+<script src="/cover.js"></script>
 <script src="/cook.js"></script>
 <script src="/search.js"></script>
 <script src="/motion.js"></script>

@@ -263,6 +263,11 @@ module.exports = async function handler(req, res) {
     try { return res.status(200).json(await require('./_link.js').readLink(String(body.link).slice(0, 2000))); }
     catch (e) { return res.status(422).json({ error: e.message || 'Non riesco a leggere il link' }); }
   }
+  /* foto trovata nel link (anteprima della ricetta) */
+  if (body.img) {
+    try { return res.status(200).json({ data: await require('./_link.js').getImage(String(body.img).slice(0, 2000)) }); }
+    catch (e) { return res.status(422).json({ error: e.message || 'Foto non disponibile' }); }
+  }
   const key = process.env.GROQ_API_KEY;
   if (!key) return res.status(503).json({ error: 'GROQ_API_KEY non configurata su Vercel' });
   useSections(body.sections);
@@ -273,6 +278,17 @@ module.exports = async function handler(req, res) {
     const r = await groqStt(key, Buffer.from(b64, 'base64'), String(body.lang || ''));
     if (r.error) return res.status(r._status && r._status >= 400 ? r._status : 502).json({ error: r.error });
     return res.status(200).json({ text: r.text });
+  }
+  /* nella pagina fotografata c'è una foto del piatto? → riquadro da ritagliare */
+  if (body.photobox && body.image) {
+    if (!/^data:image\/(jpeg|png|webp);base64,/.test(String(body.image))) return res.status(400).json({ error: 'Formato immagine non supportato' });
+    const sys = 'Guardi la foto di una pagina di un libro di cucina, di un quaderno o di uno schermo. Cerca una FOTOGRAFIA del piatto o del dolce finito (non disegni decorativi, non loghi, non testo, non foto di passaggi piccole). Se c\'è, restituisci il riquadro che la contiene il più stretto possibile, escluso il testo. Coordinate da 0 a 1000 rispetto a larghezza e altezza dell\'immagine. Rispondi SOLO con JSON: {"foto":true,"box":[x1,y1,x2,y2],"cosa":"massimo 5 parole"} oppure {"foto":false}.';
+    const r = await aiGroqChat(GROQ_URL, key, 'vision', sys, 'C\'è una foto del piatto finito in questa pagina?', String(body.image), true);
+    if (r.error) return res.status(r._status && r._status >= 400 ? r._status : 502).json({ error: r.error });
+    let o = null; try { o = JSON.parse(String(r.text).replace(/^[\s\S]*?(\{[\s\S]*\})[\s\S]*$/, '$1')); } catch (e) {}
+    const b = o && o.foto && Array.isArray(o.box) && o.box.length === 4 ? o.box.map(Number) : null;
+    const ok = b && b.every((x) => isFinite(x) && x >= 0 && x <= 1000) && b[2] - b[0] > 80 && b[3] - b[1] > 80;
+    return res.status(200).json(ok ? { box: b, what: String(o.cosa || '').slice(0, 60) } : { box: null });
   }
   if (body.ocr && body.image) {
     if (!/^data:image\/(jpeg|png|webp);base64,/.test(String(body.image))) return res.status(400).json({ error: 'Formato immagine non supportato' });

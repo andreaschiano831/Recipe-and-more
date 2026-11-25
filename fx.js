@@ -42,6 +42,8 @@
     if (!shell || !row || !meta || !$('srch')) return;
     built = true;
     shell.classList.add('fx2'); meta.classList.add('fx-meta');
+    /* la riga sotto le categorie sta nello stesso riquadro della ricerca (su schermi larghi usciva dai margini) */
+    shell.appendChild(meta);
     var fb = document.createElement('button'); fb.type = 'button'; fb.id = 'fxBtn'; fb.className = 'fx-btn'; fb.setAttribute('aria-label', 'Filtri, ordine e vista'); fb.setAttribute('aria-haspopup', 'dialog');
     fb.innerHTML = IC.sliders + '<span class="fx-btn-l">Filtri</span><i class="fx-badge"></i>';
     fb.onclick = function () { $('fxBg') ? close() : open(); };

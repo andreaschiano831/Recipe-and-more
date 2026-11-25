@@ -147,6 +147,15 @@
     });
   }
 
+  /* foto già pronta (dall'import: libro, link, video) → archivio e copertina */
+  function addBlob(r, blob, meta) {
+    if (!rid(r)) return Promise.reject(new Error('ricetta non ancora salvata online'));
+    var p = { id: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), k: 'res', at: new Date().toISOString() };
+    if (meta && meta.src) p.src = String(meta.src).slice(0, 40);
+    return bitmap(blob).then(function (bm) { return Promise.all([shrink(bm, 2048, 0.86), shrink(bm, 720, 0.8)]); })
+      .then(function (o) { p.w = o[0].w; p.h = o[0].h; return Promise.all([upload(path(r, p, false), o[0].b), upload(path(r, p, true), o[1].b)]).then(function () { put(path(r, p, false), o[0].b); put(path(r, p, true), o[1].b); }); })
+      .then(function () { var ok = patch(r, function (nd) { nd.ph = list(nd).concat([p]); if (!nd.phc) nd.phc = p.id; }); if (ok) refresh(r); return p; });
+  }
   /* ── visore a tutto schermo ── */
   function viewer(r, startId) {
     var L = sorted(r); if (!L.length) return;
@@ -239,7 +248,7 @@
   var addItem = { k: 'photo', icon: I.cam, label: 'Aggiungi foto', t: 'Foto della ricetta', s: 'Risultato e passaggi, copertina sulla scheda', show: function (r) { return canEdit() && !!rid(r); }, run: function (r) { pick(r); } };
   (window.RC2_MENU = window.RC2_MENU || []).push(addItem);
   if (window.XL) (XL.moreActs = XL.moreActs || []).push(addItem);
-  window.PH = { pick: pick, viewer: viewer, cover: cover, list: list, load: load, path: path };
+  window.PH = { addBlob: addBlob, pick: pick, viewer: viewer, cover: cover, list: list, load: load, path: path };
 
   var css = document.createElement('style');
   css.textContent = [
@@ -254,8 +263,8 @@
     'img.ph-wait{opacity:0}img.ph-err{opacity:.15}',
     '.ph-step{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}.ph-sth{width:64px;height:64px;padding:0;border:0;border-radius:11px;overflow:hidden;background:var(--ctrl,#eee);cursor:pointer}.ph-sth img{width:100%;height:100%;object-fit:cover;display:block}',
     '.ph-sth.add{display:grid;place-items:center;border:1.5px dashed var(--cb);background:none;color:var(--smoke)}.ph-sth.add svg{width:18px;height:18px}',
-    '#app .card.rc2.has-cover{overflow:hidden}',
-    '.rc2-cover{position:relative;flex-shrink:0;aspect-ratio:16/10;max-height:240px;width:100%;margin:0;background:var(--ctrl,#eee);cursor:zoom-in;overflow:hidden}',
+    '.rc2-cover{position:relative;flex-shrink:0;aspect-ratio:16/10;max-height:230px;margin:10px 10px 2px;border-radius:14px;background:var(--ctrl,#eee);cursor:zoom-in;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}',
+    '.rc2-cover::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);background:linear-gradient(180deg,transparent 65%,rgba(0,0,0,.14));pointer-events:none}',
     '.rc2-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .35s,transform .5s}.rc2-cover:hover img{transform:scale(1.03)}',
     '.rc2-cover span{position:absolute;right:10px;bottom:10px;padding:3px 9px;border-radius:99px;background:rgba(0,0,0,.5);color:#fff;font:600 11.5px "DM Sans",sans-serif}',
     '#app .grid.list .rc2-cover{display:none}',

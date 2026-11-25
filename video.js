@@ -104,7 +104,7 @@
       v.onseeked = function () {
         try {
           var w = v.videoWidth, h = v.videoHeight;
-          if (w && h) { var s = Math.min(1, 640 / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); out.push(c); }
+          if (w && h) { var s = Math.min(1, (n === 8 ? 1280 : 640) / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); out.push(c); }
         } catch (e) {}
         i++; next();
       };
@@ -154,6 +154,22 @@
       var v = document.createElement('video'), u = URL.createObjectURL(file), t = setTimeout(function () { done(0); }, 8000);
       function done(d) { clearTimeout(t); URL.revokeObjectURL(u); res(isFinite(d) ? d : 0); }
       v.preload = 'metadata'; v.muted = true; v.onloadedmetadata = function () { done(v.duration); }; v.onerror = function () { done(0); }; v.src = u;
+    });
+  }
+  /* fotogramma più adatto come copertina: tra gli ultimi (il piatto finito), il più nitido e luminoso */
+  function coverFrame(file) {
+    return grabFrames(file, 8).then(function (g) {
+      var F = g.frames.slice(-4); if (!F.length) return '';
+      var best = null, bs = -1;
+      F.forEach(function (c) {
+        try {
+          var x = c.getContext('2d'), d = x.getImageData(0, 0, c.width, c.height).data, n = 0, lum = 0, edge = 0, prev = 0;
+          for (var i = 0; i < d.length; i += 16) { var l = d[i] * .3 + d[i + 1] * .59 + d[i + 2] * .11; lum += l; edge += Math.abs(l - prev); prev = l; n++; }
+          lum /= n; edge /= n; var sc = edge * (lum > 40 && lum < 225 ? 1 : 0.4);
+          if (sc > bs) { bs = sc; best = c; }
+        } catch (e) { if (!best) best = c; }
+      });
+      return best ? best.toDataURL('image/jpeg', 0.9) : '';
     });
   }
   function poster(file) {
@@ -275,5 +291,5 @@
   ].join('\n');
   document.head.appendChild(css);
 
-  window.VID = { extract: extract, duration: duration, poster: poster, guide: guide, importUrl: importUrl, _clean: clean };
+  window.VID = { extract: extract, duration: duration, poster: poster, coverFrame: coverFrame, guide: guide, importUrl: importUrl, _clean: clean };
 })();

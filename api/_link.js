@@ -188,4 +188,22 @@ async function readLink(raw) {
   res.thin = res.text.replace(/\s+/g, ' ').length < 25 || !/\d/.test(res.text);
   return res;
 }
-module.exports = { readLink };
+/* foto della ricetta (anteprima del link): scarica solo immagini, massimo 3 MB */
+async function getImage(u) {
+  let url = await safeUrl(u);
+  for (let i = 0; i < 6; i++) {
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 9000);
+    let r;
+    try { r = await fetch(url.href, { redirect: 'manual', signal: ctl.signal, headers: { 'User-Agent': UA, Accept: 'image/avif,image/webp,image/jpeg,image/png,image/*;q=0.8' } }); }
+    catch (e) { clearTimeout(tm); throw new Error('Foto non raggiungibile'); }
+    if (r.status >= 300 && r.status < 400 && r.headers.get('location')) { clearTimeout(tm); url = await safeUrl(new URL(r.headers.get('location'), url).href); continue; }
+    const type = (r.headers.get('content-type') || '').split(';')[0].trim();
+    if (r.status >= 400 || !/^image\/(jpeg|png|webp|gif|avif)$/.test(type)) { clearTimeout(tm); throw new Error('Il link non porta a una foto'); }
+    const chunks = []; let size = 0; const reader = r.body.getReader();
+    for (;;) { const c = await reader.read(); if (c.done) break; size += c.value.length; if (size > 3 * 1024 * 1024) { ctl.abort(); clearTimeout(tm); throw new Error('Foto troppo grande'); } chunks.push(c.value); }
+    clearTimeout(tm);
+    return 'data:' + type + ';base64,' + Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('base64');
+  }
+  throw new Error('Troppi reindirizzamenti');
+}
+module.exports = { readLink, getImage };
