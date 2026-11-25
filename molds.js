@@ -279,14 +279,22 @@
         (inv ? '<p class="ms-inv">' + inv + '</p>' : '') +
         (function () { var cf = comfy(dose, C.A.tot); return cf.length ? '<div class="ms-comfy"><span>Dose comoda</span>' + cf.map(function (x) { return '<button type="button" data-cf="' + x.d + '">×' + it(x.d, 2) + ' <small>avanzano ' + gfmt(x.extra) + '</small></button>'; }).join('') + '</div>' : ''; })() +
         '<div class="ms-acts"><button type="button" class="lb-btn dark" id="msUse"' + (dose > 0 ? '' : ' disabled') + '>Usa ×' + it(dose, 2) + ' nella ricetta<i>→</i></button>' +
-        '<button type="button" class="lb-btn" id="msCook"' + (dose > 0 ? '' : ' disabled') + '>Cucina con questa dose</button></div></div>' +
+        '<button type="button" class="lb-btn" id="msCook"' + (dose > 0 ? '' : ' disabled') + '>Cucina con questa dose</button>' +
+        (s.applied ? '<button type="button" class="lb-btn ms-off" id="msOff">Togli dalla ricetta</button>' : '') + '</div></div>' +
       '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Ingredienti per questi contenitori</span><label class="ms-sw"><input type="checkbox" id="msRound"' + (s.round ? ' checked' : '') + '><span></span>Arrotonda per la bilancia</label></div>' +
         '<div class="ms-ings">' + list + '</div><div class="ms-tot"><span>Totale</span><b class="mono">' + gfmt(sumR) + '</b></div>' +
         '<div class="ms-acts"><button type="button" class="lb-btn" id="msNote">Salva nelle note</button><button type="button" class="lb-btn" id="msCopy">Copia</button></div>' +
       '</div>';
     var nd = $('msNeed'); if (nd && !calm) { nd.classList.remove('xl-bump'); void nd.offsetWidth; nd.classList.add('xl-bump'); }
-    $('msUse').onclick = function () { XL.setDose(dose, true); XL.toast('Dose ×' + it(dose, 2) + ' applicata alla ricetta'); XL.open(r, 'lab'); };
-    [].forEach.call(box.querySelectorAll('[data-cf]'), function (b) { b.onclick = function () { var d = +b.dataset.cf; XL.setDose(d, true); XL.toast('Dose ×' + it(d, 2) + ' applicata alla ricetta'); XL.open(r, 'lab'); }; });
+    /* «Usa nella ricetta»: lo stampo resta in vista nella pagina ricetta finché non lo togli */
+    function use(d) {
+      d = Math.max(0.05, Math.round(d * 1000) / 1000); var prev = s.applied ? s.applied.prev : XL.dose;
+      s.applied = { d: d, prev: prev > 0 ? prev : 1 }; save(r, s);
+      XL.setDose(d, true); XL.toast('Stampo in uso · dose ×' + it(d, 2)); XL.open(r, 'lab');
+    }
+    $('msUse').onclick = function () { use(dose); };
+    [].forEach.call(box.querySelectorAll('[data-cf]'), function (b) { b.onclick = function () { use(+b.dataset.cf); }; });
+    var off = $('msOff'); if (off) off.onclick = function () { if (XL.moldOff) XL.moldOff(r); delete s.applied; paintResult(); };
     $('msCook').onclick = function () { try { openCucina(r, dose); } catch (e) {} };
     $('msRound').onchange = function () { s.round = this.checked; save(r, s); paintResult(); };
     var text = function () {
@@ -303,9 +311,16 @@
   /* riassunto per la pagina ricetta: «Ø20 · 3 cm» oppure null se non ancora impostato */
   function summary(r) {
     var raw = null; try { raw = localStorage.getItem(skey(r)); } catch (e) {}
-    if (!raw) return null; var s = load(r); if (!s.rows.length) return null;
-    var C = compute(r, s), R = C.rows[0];
-    return { label: (R.V.n > 1 ? R.V.n + '× ' : '') + R.V.label + (C.rows.length > 1 ? ' + ' + (C.rows.length - 1) : ''), dose: C.dose, need: C.need };
+    if (!raw) return null; var s = load(r); if (!s.rows.length || !s.applied) return null;
+    var C = compute(r, s), R = C.rows[0], d = +s.applied.d || C.dose;
+    return { label: (R.V.n > 1 ? R.V.n + '× ' : '') + R.V.label + (C.rows.length > 1 ? ' + ' + (C.rows.length - 1) : ''), dose: d, need: C.need, prev: +s.applied.prev || 1, live: Math.abs((XL.dose || 1) - d) < 0.0015 };
   }
-  XL.molds = { compute: compute, rowVolume: rowVolume, roundQ: roundQ, densityOf: densityOf, summary: summary, comfy: comfy };
+  /* toglie lo stampo dalla ricetta (le misure restano nel calcolatore); restituisce la dose di prima */
+  function clear(r) {
+    var s = load(r), p = s.applied ? +s.applied.prev || 1 : null;
+    if (s.applied) { delete s.applied; save(r, s); }
+    if (XL._ms && XL._ms.s && XL._ms.r && (XL._ms.r === r || XL._ms.r.n === r.n)) delete XL._ms.s.applied;
+    return p;
+  }
+  XL.molds = { compute: compute, rowVolume: rowVolume, roundQ: roundQ, densityOf: densityOf, summary: summary, comfy: comfy, clear: clear };
 })();
