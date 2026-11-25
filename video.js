@@ -178,11 +178,12 @@
     var bg = document.createElement('div'); bg.id = 'vgBg'; bg.className = 'vg-bg';
     var u = importUrl();
     var IOS = [
-      ['Copia l’indirizzo', 'Serve al comando per aprire il Ricettario con il link.', '<div class="vg-url"><code>' + u.replace(/^https?:\/\//, '') + '</code><button type="button" class="vg-copy" data-copy>Copia</button></div>'],
-      ['Crea il comando', 'Apri l’app <b>Comandi</b>, tocca <b>+</b> e chiamalo <b>Salva nel Ricettario</b>.'],
-      ['Mostralo in Condividi', 'Tocca <b>ⓘ</b> in basso (o il nome in alto → Dettagli) e attiva <b>Mostra nel foglio di condivisione</b>. Come input lascia solo <b>URL</b> e <b>Testo</b>.'],
-      ['Aggiungi tre azioni', '<ol class="vg-mini"><li><b>Codifica URL</b> · sull’input del comando</li><li><b>URL</b> · incolla l’indirizzo copiato e, subito dopo il simbolo =, inserisci il risultato di «Codifica URL» (tocca la barra delle variabili sopra la tastiera)</li><li><b>Apri URL</b></li></ol>'],
-      ['Usalo', 'Su Instagram, TikTok, Safari o YouTube: <b>Condividi</b> → in fondo all’elenco <b>Salva nel Ricettario</b>. Il Ricettario si apre e legge subito la ricetta.']
+      ['Copia l’indirizzo', 'Ti servirà tra un attimo.', '<div class="vg-url"><code>' + u.replace(/^https?:\/\//, '') + '</code><button type="button" class="vg-copy" data-copy>Copia</button></div>'],
+      ['Crea il comando', 'Apri l’app <b>Comandi</b> → <b>+</b> in alto. Tocca il nome e scrivi <b>Salva nel Ricettario</b>.'],
+      ['Aggiungi l’azione «URL»', 'Cerca <b>URL</b>, aggiungila e incolla l’indirizzo copiato. Subito dopo il simbolo <b>=</b> tocca <b>Input comando</b> nella barra sopra la tastiera.'],
+      ['Aggiungi «Apri URL»', 'Cerca <b>Apri URL</b> e aggiungila sotto. Fine: sono solo due azioni.'],
+      ['Mettilo in Condividi', 'Tocca <b>ⓘ</b> in basso e attiva <b>Mostra nel foglio di condivisione</b>. Tocca <b>Fine</b>.'],
+      ['Usalo', 'Su Instagram, TikTok, Safari o YouTube: <b>Condividi</b> → scorri in fondo → <b>Salva nel Ricettario</b>. La prima volta l’iPhone chiede il permesso: tocca <b>Consenti sempre</b>.']
     ];
     var AND = [
       ['Installa l’app', 'In Chrome apri il Ricettario, menu <b>⋮</b> → <b>Installa app</b> (o Aggiungi a schermata Home).'],

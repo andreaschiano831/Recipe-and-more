@@ -139,6 +139,9 @@
   'use strict';
   try {
     var q = new URLSearchParams(location.search), raw = [q.get('import'), q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ');
+    /* dal comando rapido il link può arrivare non codificato: si prende tutto quello che segue «import=» */
+    var tail = (location.search + location.hash).match(/[?&#]import=(.+)$/);
+    if (tail) { var t = tail[1]; if (/^https?%3A/i.test(t)) { try { t = decodeURIComponent(t); } catch (e) {} } raw = t + ' ' + raw; }
     var m = raw.match(/https?:\/\/[^\s<>"'«»]+/i);
     if (m) { sessionStorage.setItem('wl_share', m[0]); history.replaceState(history.state, '', location.pathname); }
   } catch (e) {}
