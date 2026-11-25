@@ -140,6 +140,15 @@
     more: { t: 'Altro', panes: [['more', '']] }
   };
   var PANE_EL = { dose: 'xlDose', molds: 'xlMolds', formula: 'xlFormula', hist: 'xlHist', ai: 'xlAI', more: 'xlMore' };
+  /* pannelli aggiunti da altri moduli (es. «Prove» nell'Analisi) */
+  XL.panes = XL.panes || {};
+  XL.addPane = function (sheet, key, label, render, after) {
+    if (!SHEETS[sheet] || XL.panes[key]) return;
+    var L = SHEETS[sheet].panes, at = after ? L.map(function (x) { return x[0]; }).indexOf(after) : -1;
+    if (at >= 0) L.splice(at + 1, 0, [key, label]); else L.push([key, label]);
+    PANE_EL[key] = 'xlPx_' + key; XL.panes[key] = { render: render };
+    var host = $('xlShB'); if (host && !$(PANE_EL[key])) { var d = document.createElement('div'); d.className = 'xr-pane'; d.id = PANE_EL[key]; d.hidden = true; host.appendChild(d); }
+  };
   function sheetOf(p) { for (var k in SHEETS) if (SHEETS[k].panes.some(function (x) { return x[0] === p; })) return k; return null; }
 
   function buildView() {
@@ -211,6 +220,7 @@
     else if (p === 'hist') { if (XL.renderHist) XL.renderHist(); }
     else if (p === 'ai') renderAI();
     else if (p === 'more') renderMore();
+    else if (XL.panes && XL.panes[p]) { try { XL.panes[p].render($(PANE_EL[p]), XL.rec); } catch (e) { console.warn(e); } }
     $('xlShB').scrollTop = 0;
   }
   function closeSheet() {
@@ -334,6 +344,7 @@
       ['prod', IC2.prod, 'Produzione del giorno', 'Foglio, preparazioni e messaggi']
     ];
     if (canEdit) acts.push(['edit', IC2.edit, 'Modifica la ricetta', 'Ingredienti, procedimento, note']);
+    (XL.moreActs || []).forEach(function (x) { try { if (!x.show || x.show(r)) acts.push([x.k, x.icon, x.t, x.s]); } catch (e) {} });
     acts.push(['card', IC2.card, 'Scheda classica', 'La vista ricetta tradizionale']);
     host.innerHTML =
       '<div class="lb-card"><div class="lb-h"><span class="lb-eyebrow">Timer</span><span class="lb-count mono" id="lbTimN"></span></div>' +
@@ -353,6 +364,7 @@
         else if (a === 'prod') { closeView(); try { PR.open(); } catch (e) {} }
         else if (a === 'edit') { closeView(); try { openEdit(r); } catch (e) {} }
         else if (a === 'card') { closeView(); try { openRecipePanel(r); } catch (e) {} }
+        else { var ext = (XL.moreActs || []).filter(function (x) { return x.k === a; })[0]; if (ext) { if (ext.keep !== true) closeSheet(); try { ext.run(r, d); } catch (e) { console.warn(e); } } }
       };
     });
     XLT.render();
@@ -438,7 +450,7 @@
         '<div class="lb-h"><span class="lb-eyebrow">Ingredienti</span><span class="lb-count mono" id="lbMiseN"></span></div>' +
         '<div class="lb-bar"><i id="lbMiseFill"></i></div>' +
         (ings.length ? '<div class="lb-ings">' + mise + '</div><div class="lb-foot"><span class="lb-hint">Spunta mentre pesi</span><button type="button" class="lb-link" id="lbMiseReset">Azzera</button></div>' : '<p class="lb-empty">Questa ricetta non ha ancora ingredienti.</p>') +
-      '</div><div class="lb-rc" id="xlRcLab"></div><div id="nuCard"></div></section>' +
+      '</div><div class="lb-ph-host" id="xlPhotos"></div><div class="lb-rc" id="xlRcLab"></div><div id="nuCard"></div></section>' +
       '<section class="lb-col lb-proc" aria-label="Procedimento"><div class="lb-card lb-proc-card">' +
         '<div class="lb-h"><span class="lb-eyebrow">Procedimento</span><span class="lb-count mono" id="lbStepN">' + (n ? doneN + ' / ' + n : '') + '</span></div>' +
         (n ? '<div class="lb-bar"><i id="lbStepFill" style="width:' + pctDone + '%"></i></div><div class="lb-steps" id="lbSteps">' + steps + '</div>' +
@@ -459,6 +471,7 @@
         dose: function () { return XL.dose; }, scale: function (k, round) { if (round) { XL.toast('Le quantità della scheda si arrotondano dalla modifica ricetta'); return; } XL.setDose(k); }
       });
     } catch (e) { console.warn(e); }
+    (XL.labHooks || []).forEach(function (fn) { try { fn(r, host); } catch (e) { console.warn(e); } });
     /* mise en place */
     [].forEach.call(host.querySelectorAll('.lb-ing-row input'), function (c) {
       c.onchange = function () {

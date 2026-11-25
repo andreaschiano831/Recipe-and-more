@@ -171,6 +171,7 @@
       '</div>' +
       '<div class="pr-foot">' +
         (!isBase ? '<button type="button" class="pr-b dark" id="prDoc"' + (rows.length ? '' : ' disabled') + '>' + IC.doc + 'Documento' + (nsel ? ' (' + nsel + ')' : '') + '</button>' : '') +
+        (!isBase && window.SHOP ? '<button type="button" class="pr-b" id="prShop"' + (rows.length ? '' : ' disabled') + '>' + SHOP.icon + 'Lista della spesa' + (nsel ? ' (' + nsel + ')' : '') + '</button>' : '') +
         (!isBase && L ? '<button type="button" class="pr-b" id="prSend">' + IC.send + 'Invia alla brigata</button>' : '') +
         (!isBase && L ? '<button type="button" class="pr-b ghost" id="prToBase">Salva come foglio base</button>' : '') +
         (!isBase && L ? '<button type="button" class="pr-b ghost danger" id="prDelSheet">Elimina il foglio</button>' : '') +
@@ -210,6 +211,7 @@
     };
     var dn = $('prDayNote'); if (dn) dn.oninput = function () { sh.data.note = dn.value; mutate(); };
     var doc = $('prDoc'); if (doc) doc.onclick = function () { docMenu(sh); };
+    var shp = $('prShop'); if (shp) shp.onclick = function () { shopOpen(sh); };
     var sd = $('prSend'); if (sd) sd.onclick = function () { P.tab = 'msg'; P.compose = { attach: { day: sh.giorno, titolo: sh.titolo } }; syncTabs(); render(); };
     var tb = $('prToBase'); if (tb) tb.onclick = function () {
       if (!confirm('Il foglio base diventa uguale a questo (righe, quantità, responsabili e note delle righe; gli stati no). Continuare?')) return;
@@ -243,6 +245,19 @@
       chosen.map(function (r) { return '<tr><td class="ing">' + esc(r.t) + '</td><td class="qty">' + (r.q == null ? '' : (r.u === '×' ? '×' + fq(r.q) : fq(r.q) + ' ' + esc(r.u || 'g'))) + '</td><td>' + esc(personName(r.who) || '') + '</td><td>' + esc(STATI[r.st || 'todo']) + '</td><td>' + esc(r.note || '') + '</td></tr>'; }).join('') +
       '</tbody></table>' + (sh.data.note ? '<div class="proc"><h3>Note del giorno</h3><p>' + esc(sh.data.note).replace(/\n/g, '<br>') + '</p></div>' : '') + '</section>';
     return { doc: { name: name, onePerPage: false, items: items }, table: table, n: chosen.length };
+  }
+  /* lista della spesa: ricette collegate alle righe (spuntate o tutte), alle quantità del foglio */
+  function shopOpen(sh) {
+    if (P.dirty) { try { saveSheet(sh, true); } catch (e) {} }
+    var rows = sh.data.rows || [], chosen = rows.filter(function (r) { return P.sel[r.id]; }); if (!chosen.length) chosen = rows;
+    var items = [], loose = [];
+    chosen.forEach(function (r) {
+      var rec = recById(r.r, r.t); if (!rec) { loose.push(r.t); return; }
+      var tot = totOf(rec), d = r.q == null ? 1 : r.u === '×' ? r.q : r.u === 'g' && tot ? r.q / tot : 1;
+      items.push({ rec: rec, d: Math.round(d * 1000) / 1000, row: r.t });
+    });
+    var dd = fromIso(sh.giorno || iso(new Date()));
+    SHOP.open({ title: sh.titolo, day: sh.giorno || iso(new Date()), when: dayLabel(sh.giorno || iso(new Date())), items: items, loose: loose });
   }
   function docMenu(sh) {
     var B = buildDoc(sh);

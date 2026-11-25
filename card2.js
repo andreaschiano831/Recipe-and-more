@@ -49,6 +49,7 @@
     }
     it.push(['card', I.card, 'Scheda classica', function () { openRecipePanel(r); }]);
     it.push(['lab', I.lab, 'Bilanciamento e analisi', function () { openLab(r, 'formula'); }]);
+    (window.RC2_MENU || []).forEach(function (x) { try { if (!x.show || x.show(r)) it.push([x.k, x.icon, x.label, function () { x.run(r, doseOf(r)); }]); } catch (e) {} });
     if (admin() && r._c && r._id) it.push(['del', I.trash, 'Elimina', function () { openCfm(r); }]);
     var m = h('div', 'rc2-menu'); m.id = 'rc2Menu'; m._a = anchor; m.setAttribute('role', 'menu');
     m.innerHTML = it.map(function (x, i) { return '<button type="button" role="menuitem" data-i="' + i + '" class="' + (x[0] === 'del' ? 'del' : '') + '">' + x[1] + '<span>' + x[2] + '</span></button>'; }).join('');
@@ -70,6 +71,7 @@
   window.buildCard = function (r, idx) {
     var c = _bc.apply(this, arguments);
     try { rebuild(c, r); } catch (e) { console.error(e); }
+    (window.RC2_HOOKS || []).forEach(function (fn) { try { fn(c, r); } catch (e) {} });
     return c;
   };
   try { buildCard = window.buildCard; } catch (e) {}

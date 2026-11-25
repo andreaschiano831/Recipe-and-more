@@ -3253,6 +3253,8 @@ function doSave(){
   if(!ings.length){alert('Aggiungi almeno un ingrediente');return;}
   var nr={n:name,c:catV,s:secV,i:ings};if(piattoV)nr.piatto=piattoV;if(procV)nr.p=procV;
   var ntV=(qs('mNote')&&qs('mNote').value||'').trim();if(ntV)nr.nt=ntV;
+  /* in modifica si tengono i dati che il modulo non mostra (allergeni confermati, foto, prove, resa…) */
+  if(_editRec){Object.keys(_editRec).forEach(function(k){if(!(k in nr)&&['n','c','s','i','piatto','p','nt','_id','_c'].indexOf(k)<0)nr[k]=JSON.parse(JSON.stringify(_editRec[k]));});}
   if(_editRec){
     if(_editRec._c&&_editRec._id){
       // Custom recipe: update in Supabase
@@ -8539,6 +8541,12 @@ function aiTranslate(text,lang,onProg){
 <script src="/card2.js"></script>
 <script src="/fx.js"></script>
 <script src="/video.js"></script>
+<script src="/share.js"></script>
+<script src="/find.js"></script>
+<script src="/prove.js"></script>
+<script src="/photo.js"></script>
+<script src="/shop.js"></script>
+<script src="/label.js"></script>
 <script src="/cook.js"></script>
 <script src="/search.js"></script>
 <script src="/motion.js"></script>
