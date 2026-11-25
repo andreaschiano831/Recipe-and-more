@@ -627,6 +627,7 @@
       '<section class="wl-card"><div class="wl-acc-me"><img class="wl-logo" alt=""><span><b>' + esc(WL.email() || 'Account') + '</b><small>' + (WL.inTeam() ? esc(WL.roleLabel()) + ' · brigata di ' + esc(WL.brand().name || 'un altro account') : 'Accesso con Google · dati separati per questo account') + '</small></span></div>' +
       '<div class="wl-row"><button type="button" class="wl-btn" id="wlSwitch">Cambia account</button><button type="button" class="wl-btn danger" id="wlOut">Esci</button></div></section>' +
       wsCard() +
+      (WL.canEdit() && window.VID && VID.guide ? '<section class="wl-card"><b class="wl-t">Salva da Instagram e TikTok</b><p class="wl-n">Imposta una volta il tasto Condividi: da un reel, un TikTok o una pagina web la ricetta arriva direttamente in «Nuova ricetta».</p><button type="button" class="wl-btn wide" id="wlShareGuide">Come si fa</button></section>' : '') +
       (WL.canEdit() ? '' : '<section class="wl-card"><b class="wl-t">Solo consultazione</b><p class="wl-n">Sei <b>' + esc(WL.roleLabel()) + '</b> in questa brigata: puoi leggere ricette e biblioteca. Le modifiche le fanno admin e pastry chef.</p></section>') +
       (WL.isAdmin() ?       '<section class="wl-card"><b class="wl-t">Logo e nome</b><p class="wl-n">Compaiono nella home, nel menu, nei documenti di stampa e nella pagina d’accesso.</p>' +
       '<div class="wl-logo-ed"><img class="wl-logo" alt=""><div class="wl-col"><label class="wl-btn gold">Carica logo<input type="file" accept="image/*" id="wlLogoFile" hidden></label><button type="button" class="wl-btn" id="wlLogoCrop">Ritaglia</button><button type="button" class="wl-btn" id="wlLogoDel">Rimuovi</button></div></div>' +
@@ -650,6 +651,7 @@
     bg.querySelector('.wl-x').onclick = close;
     bg.onclick = function (e) { if (e.target === bg) close(); };
     $('wlSwitch').onclick = WL.switchAccount;
+    if ($('wlShareGuide')) $('wlShareGuide').onclick = function () { close(); setTimeout(function () { VID.guide(); }, 230); };
     $('wlOut').onclick = function () { if (confirm('Uscire da questo account? I dati restano salvati.')) WL.signOut(); };
     Array.prototype.forEach.call(bg.querySelectorAll('.wl-ws .wl-acc'), function (x) { x.onclick = function () { if (x.dataset.ws !== WS) WL.useWorkspace(x.dataset.ws); }; });
     if ($('wlTeamCard')) {

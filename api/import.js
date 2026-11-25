@@ -4,6 +4,7 @@
 // GET  /api/import            -> { ok, configured }
 // POST /api/import  { image } -> { recipes, source }   (una foto, data URL jpeg/png/webp)
 // POST /api/import  { text }  -> { recipes }
+// POST /api/import  { stt }   -> { text }      (pezzo di audio di un video, WAV base64)
 //
 // Le foto si analizzano in DUE passaggi per evitare dati inventati:
 //   1) il modello visivo TRASCRIVE il testo della foto così com'è (OCR, niente interpretazioni)
@@ -190,6 +191,32 @@ const GROQ_URL = process.env.GROQ_API_URL || 'https://api.groq.com/openai/v1/cha
 if (process.env.GROQ_VISION_MODEL) AI_VISION.unshift(process.env.GROQ_VISION_MODEL);
 if (process.env.GROQ_TEXT_MODEL) AI_TEXT.unshift(process.env.GROQ_TEXT_MODEL);
 
+/* trascrizione con Whisper su Groq, con modelli di riserva */
+const GROQ_STT_URL = process.env.GROQ_STT_URL || 'https://api.groq.com/openai/v1/audio/transcriptions';
+const AI_STT = ['whisper-large-v3-turbo', 'whisper-large-v3'];
+if (process.env.GROQ_STT_MODEL) AI_STT.unshift(process.env.GROQ_STT_MODEL);
+async function groqStt(key, buf, lang) {
+  let last = '';
+  for (const model of AI_STT) {
+    const fd = new FormData();
+    fd.append('file', new Blob([buf], { type: 'audio/wav' }), 'audio.wav');
+    fd.append('model', model); fd.append('response_format', 'json'); fd.append('temperature', '0');
+    fd.append('prompt', 'Ricetta di cucina o pasticceria: ingredienti, grammi, temperature, tempi.');
+    if (/^[a-z]{2}$/.test(lang)) fd.append('language', lang);
+    let r, d;
+    try { r = await fetch(GROQ_STT_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: fd }); d = await r.json().catch(() => null); }
+    catch (e) { return { error: 'Errore di connessione con il servizio di trascrizione', _status: 502 }; }
+    if (r.ok && d && typeof d.text === 'string') return { text: d.text.trim() };
+    const em = (d && d.error && d.error.message) || ('Errore Groq ' + r.status);
+    if (r.status === 401) return { error: 'Chiave Groq non valida', _status: 401 };
+    if (r.status === 429) return { error: 'Troppe richieste all’AI: attendi 30 secondi e riprova.', _status: 429 };
+    last = em;
+    if (aiGone(em) || r.status === 404) continue;
+    return { error: em, _status: r.status || 502 };
+  }
+  return { error: 'Nessun modello di trascrizione disponibile (' + last + ')', _status: 502 };
+}
+
 const SB_URL = String(process.env.SUPABASE_URL || '').trim().replace(/\/(rest|auth|storage)\/v1.*$/i, '').replace(/\/+$/, '');
 const SB_ANON = process.env.SUPABASE_ANON_KEY || '';
 // verifica che la richiesta venga da un account collegato (login Google su Supabase)
@@ -239,6 +266,14 @@ module.exports = async function handler(req, res) {
   const key = process.env.GROQ_API_KEY;
   if (!key) return res.status(503).json({ error: 'GROQ_API_KEY non configurata su Vercel' });
   useSections(body.sections);
+  /* video: un pezzo di audio (WAV mono 16 kHz, base64) → testo parlato */
+  if (body.stt) {
+    const b64 = String(body.stt).replace(/^data:[^,]*,/, '');
+    if (b64.length > 3600000) return res.status(413).json({ error: 'Pezzo di audio troppo grande' });
+    const r = await groqStt(key, Buffer.from(b64, 'base64'), String(body.lang || ''));
+    if (r.error) return res.status(r._status && r._status >= 400 ? r._status : 502).json({ error: r.error });
+    return res.status(200).json({ text: r.text });
+  }
   if (body.ocr && body.image) {
     if (!/^data:image\/(jpeg|png|webp);base64,/.test(String(body.image))) return res.status(400).json({ error: 'Formato immagine non supportato' });
     const chat = (kind, system, user, img, json) => aiGroqChat(GROQ_URL, key, kind, system, user, img, json);
