@@ -208,6 +208,7 @@
   new MutationObserver(function (list) {
     list.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) { if (n.id === 'wlSheet') settingsCard(n); }); });
   }).observe(document.body, { childList: true });
+  if (window.WL) (WL.settingsHooks = WL.settingsHooks || []).push(settingsCard);
 
   /* ══════════ AVVIO ══════════ */
   function start() { hook(); tabPill(); toasts(); }

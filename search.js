@@ -114,8 +114,11 @@
       { t: 'Comunicazioni della brigata', k: 'comunicazioni messaggi briefing brigata avvisi', run: function () { if (window.PR) PR.open('msg'); } },
       { t: 'Importa ricette da un backup', k: 'importa backup ripristina altra app json csv paprika mealie tandoor', run: function () { if (window.BK) BK.open(); } },
       { t: 'Biblioteca', k: 'biblioteca libri ebook pdf epub', run: function () { if (window.openLibrary) openLibrary(); } },
-      { t: 'Account, logo e sezioni', k: 'impostazioni account logo sezioni brigata membri cambia account animazioni', run: function () { WL.openSettings(); } },
-      { t: 'Brigata: invita membri', k: 'brigata membri invita collaboratori commis ruoli', run: function () { WL.openSettings(); setTimeout(function () { var c = $('wlTeamCard'); if (c) c.scrollIntoView({ block: 'start' }); }, 250); } },
+      { t: 'Impostazioni', k: 'impostazioni altro settings menu preferenze account tema ai database backup', run: function () { SET.open('home'); } },
+      { t: 'Account e accesso', k: 'account google esci cambia account resta connesso accesso sessione', run: function () { SET.open('account'); } },
+      { t: 'Logo, nome e sezioni', k: 'logo nome sottotitolo sezioni rinomina', run: function () { SET.open(WL.isAdmin() ? 'brand' : 'sezioni'); } },
+      { t: 'Aspetto: tema e animazioni', k: 'tema colori scuro chiaro animazioni movimento', run: function () { SET.open('aspetto'); } },
+      { t: 'Brigata: invita membri', k: 'brigata membri invita collaboratori commis ruoli', run: function () { SET.open('brigata'); } },
       { t: 'Tema e colori', k: 'tema colori aspetto grafica', run: function () { if (window.openThemeSheet) openThemeSheet(); } },
       { t: 'Menu', k: 'menu impostazioni ai chiave groq backup documenti', run: function () { if (window.openDrawer) openDrawer(); } }
     ];

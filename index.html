@@ -2319,7 +2319,7 @@ body.ck-open .tabbar{display:none!important}
 .wl-x{background:none;border:none;font-size:1.6rem;line-height:1;color:var(--smoke2);cursor:pointer;padding:.2rem .5rem}
 .wl-card{background:var(--ctrl,#f7f7f7);border:1px solid var(--cb,#e5e5e5);border-radius:14px;padding:.9rem;margin-bottom:.75rem}
 .wl-t{display:block;font-size:.95rem;margin-bottom:.2rem}
-.wl-n{font-size:.74rem;color:var(--smoke2,#777);line-height:1.45;margin:.15rem 0 .55rem;word-break:break-all}
+.wl-n{font-size:.74rem;color:var(--smoke2,#777);line-height:1.45;margin:.15rem 0 .55rem;overflow-wrap:anywhere}
 .wl-l{display:block;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke2,#777);margin:.6rem 0 .25rem}
 .wl-in{width:100%;box-sizing:border-box;background:var(--bg,#fff);border:1px solid var(--cb,#ddd);border-radius:9px;padding:.55rem .7rem;font:inherit;font-size:.9rem;color:var(--ink,#222);outline:none}
 .wl-in:focus{border-color:var(--gold2,#b8913f)}.wl-in.sm{font-size:.76rem;padding:.4rem .6rem;margin-top:.3rem}
@@ -3376,7 +3376,7 @@ function doAiAnalyseLocal(){
   var key=(qs('aiKey').value||'').trim();
   if(!key)try{key=localStorage.getItem('groq_key')||'';}catch(ex){}
   if(!key){var dg=document.getElementById('MDL_GROQ');if(dg)key=dg.value.trim();}
-  if(!key){alert('Inserisci la chiave Groq nel menu \u2261 \u2192 AI');return;}
+  if(!key){alert('Inserisci la chiave Groq in Impostazioni \u203a Intelligenza artificiale');return;}
   try{localStorage.setItem('groq_key',key);}catch(e){}
   var btn=qs('aiAnalyseBtn'),spin=qs('aiSpinner');
   if(btn)btn.disabled=true;if(spin)spin.classList.add('on');
@@ -3427,7 +3427,7 @@ function doAiAnalyseLocal(){
     if(data.error){
       var em=data.error.message||JSON.stringify(data.error);
       if(em.indexOf('rate_limit')>-1||em.indexOf('429')>-1)alert('Troppe richieste Groq. Attendi 30 sec.');
-      else if(em.indexOf('401')>-1||em.indexOf('invalid_api_key')>-1)alert('Chiave Groq non valida. Aggiornala nel menu.');
+      else if(em.indexOf('401')>-1||em.indexOf('invalid_api_key')>-1)alert('Chiave Groq non valida. Aggiornala in Impostazioni › Intelligenza artificiale.');
       else if(em.indexOf('model_not_active')>-1||em.indexOf('404')>-1)alert('Modello non disponibile su Groq. Riprova tra poco.');
       else alert('Errore AI: '+em);
       return;
@@ -3554,7 +3554,7 @@ function openImport(){
   var note=qs('importAiStatus');
   if(note){
     if(key){note.textContent='✓ Groq attiva — parsing AI automatico';}
-    else{note.textContent='⚠ Inserisci la chiave Groq nel menu (≡) → AI per il parsing automatico. Senza chiave: parser manuale.';}
+    else{note.textContent='⚠ Inserisci la chiave Groq in Impostazioni › Intelligenza artificiale per la lettura automatica. Senza chiave: parser manuale.';}
   }
   var _ibg=qs('importBg');
   if(_ibg){
@@ -5594,7 +5594,7 @@ var aiDirectLib=async function(payload){
   var key=((qs('aiKey')&&qs('aiKey').value)||'').trim();
   if(!key)try{key=localStorage.getItem('groq_key')||'';}catch(e){}
   if(!key){var dg=document.getElementById('MDL_GROQ');if(dg)key=(dg.value||'').trim();}
-  if(!key)return {error:'Inserisci la chiave Groq nel menu \u2261 \u2192 AI (oppure configurala su Vercel)',_status:0};
+  if(!key)return {error:'Inserisci la chiave Groq in Impostazioni \u203a Intelligenza artificiale (oppure configurala su Vercel)',_status:0};
   try{localStorage.setItem('groq_key',key);}catch(e){}
   try{
     var out=await aiExtract(function(kind,s,u,img,json){return aiGroqChat('https://api.groq.com/openai/v1/chat/completions',key,kind,s,u,img,json);},payload);
@@ -7411,7 +7411,7 @@ function tbSync(){
   function build(){
     if(document.getElementById('tabbar'))return;
     var nav=document.createElement('nav');nav.id='tabbar';nav.className='tabbar';nav.setAttribute('aria-label','Navigazione');
-    [['home','Home',ICO.home,tbGoHome],['rec','Ricette',ICO.rec,tbGoRecipes],['new','Nuova',ICO.add,function(){openStudio();}],['lib','Biblioteca',ICO.lib,function(){try{if(ST.open)closeStudio();}catch(e){}if(typeof ST!=='undefined'&&ST.open)return;openLibrary();}],['menu','Altro',ICO.menu,function(){MDL_OPEN();}]].forEach(function(x){
+    [['home','Home',ICO.home,tbGoHome],['rec','Ricette',ICO.rec,tbGoRecipes],['new','Nuova',ICO.add,function(){openStudio();}],['lib','Biblioteca',ICO.lib,function(){try{if(ST.open)closeStudio();}catch(e){}if(typeof ST!=='undefined'&&ST.open)return;openLibrary();}],['menu','Impostazioni','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/><circle cx="12" cy="12" r="6.6"/></svg>',function(){if(window.SET)SET.open('home');else MDL_OPEN();}]].forEach(function(x){
       var b=document.createElement('button');b.type='button';b.dataset.k=x[0];b.className='tb-'+x[0];b.innerHTML=x[2]+'<span>'+x[1]+'</span>';b.setAttribute('aria-label',x[1]);b.onclick=x[3];nav.appendChild(b);
     });
     document.body.appendChild(nav);
@@ -7725,6 +7725,7 @@ function rpChipsSync(){var c=document.getElementById('rpChips');if(!c)return;[].
     }
   }
   window.openThemeSheet=openSheet;
+  window.THEME_UI={PAL:PAL,ORDER:ORDER,cur:cur,pick:pick};
   var _st=setTheme;setTheme=function(){var r=_st.apply(this,arguments);try{sync();}catch(e){}return r;};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',decorate);else decorate();
 })();
@@ -8045,7 +8046,7 @@ function adminGate(then,reason){
       gi.placeholder='Incolla la chiave gsk_…';
     }
     ai.appendChild(h('p','hub-note','La chiave si salva sul telefono e passa da sola agli altri dispositivi. Gratuita su <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com</a>.'));
-    w.appendChild(ai);
+    w.appendChild(ai);refs.ai=ai;
     // salute del ricettario
     refs.health=h('section','hub-card hub-health');w.appendChild(refs.health);
     // ultime aggiunte
@@ -8057,7 +8058,7 @@ function adminGate(then,reason){
     if(pinW){pinW.classList.add('hub-form');acc.appendChild(pinW);}
     if(pwdW){pwdW.classList.add('hub-form');acc.appendChild(pwdW);}
     refs.accBtn=h('button','hub-btn');refs.accBtn.type='button';acc.appendChild(refs.accBtn);
-    w.appendChild(acc);
+    w.appendChild(acc);refs.acc=acc;
     // database
     var db=h('section','hub-card');db.appendChild(h('div','hub-card-hd',ic('db',18)+'<b>Database</b>'));
     refs.dbState=tx('p','hub-state','');db.appendChild(refs.dbState);
@@ -8065,7 +8066,7 @@ function adminGate(then,reason){
     var dbr=h('div','hub-row');
     var t1=h('button','hub-btn',ic('db',16)+'<span>Testa la connessione</span>');t1.type='button';t1.onclick=function(){try{testDb();}catch(e){}setTimeout(render,1500);};
     var t2=h('button','hub-btn',ic('save',16)+'<span>Scarica backup</span>');t2.type='button';t2.onclick=function(){downloadBackup();};
-    dbr.appendChild(t1);dbr.appendChild(t2);db.appendChild(dbr);w.appendChild(db);
+    dbr.appendChild(t1);dbr.appendChild(t2);db.appendChild(dbr);w.appendChild(db);refs.db=db;
     w.appendChild(h('p','hub-foot',WL.brand().sub+' · '+WL.brand().name));
   }
   function tile(icon,label,sub,fn,needAdmin){
@@ -8095,8 +8096,8 @@ function adminGate(then,reason){
     var noQty=cuR.filter(function(r){return (r.i||[]).some(function(g){return g[1]==null&&!/q\.?b/i.test(g[2]||'');});}).length;
     return {list:cuR,groups:groups,near:near,noProc:noProc,noQty:noQty,dupCount:groups.reduce(function(s,g){return s+g.length-1;},0)};
   }
-  function render(){
-    if(!built)return;var dr=document.getElementById('MDL_DRW');if(!dr||dr.style.display==='none')return;
+  function render(force){
+    if(!built)return;var dr=document.getElementById('MDL_DRW');if(!force&&!document.getElementById('setBg')&&(!dr||dr.style.display==='none'))return;
     var A=adm(),D=dupInfo(),aiOk=(typeof _aiServer!=='undefined'&&_aiServer)||aiHasLocalKey();
     // profilo
     var he=refs.hero;he.innerHTML='';
@@ -8191,6 +8192,7 @@ function adminGate(then,reason){
     return box;
   }
   window.hubRender=render;
+  window.HUB={build:build,render:function(){render(true);},refs:refs,dupInfo:dupInfo};
   var _open=MDL_OPEN;
   MDL_OPEN=function(){
     build();_open.apply(this,arguments);
@@ -8213,7 +8215,7 @@ function aiOcrRun(image){
   return aiCheckServer().then(function(ok){
     if(ok)return fetch('/api/import',{method:'POST',headers:WL.apiH(),body:JSON.stringify({image:image,ocr:true})}).then(function(r){return r.json().catch(function(){return {};}).then(function(d){d._status=r.status;return d;});});
     var key='';try{key=localStorage.getItem('groq_key')||'';}catch(e){}if(!key){var dg=document.getElementById('MDL_GROQ');if(dg)key=(dg.value||'').trim();}
-    if(!key)return {error:'Inserisci la chiave Groq nel menu Altro'};
+    if(!key)return {error:'Inserisci la chiave Groq in Impostazioni › Intelligenza artificiale'};
     return aiOcrOnly(function(kind,s,u,img,json){return aiGroqChat('https://api.groq.com/openai/v1/chat/completions',key,kind,s,u,img,json);},image);
   }).then(function(d){
     if(d&&d.error&&_aiServer&&(d._status===503||d._status===401||d._status===404)&&aiHasLocalKey()){_aiServer=false;return aiOcrRun(image);}
@@ -8227,7 +8229,7 @@ function aiTranslate(text,lang,onProg){
     return aiCheckServer().then(function(ok){
       if(ok)return fetch('/api/import',{method:'POST',headers:WL.apiH(),body:JSON.stringify({translate:t,lang:lang})}).then(function(r){return r.json().catch(function(){return {};}).then(function(d){d._status=r.status;return d;});});
       var key='';try{key=localStorage.getItem('groq_key')||'';}catch(e){}if(!key){var dg=document.getElementById('MDL_GROQ');if(dg)key=(dg.value||'').trim();}
-      if(!key)return {error:'Inserisci la chiave Groq nel menu Altro'};
+      if(!key)return {error:'Inserisci la chiave Groq in Impostazioni › Intelligenza artificiale'};
       var L={it:'italiano',en:'inglese',fr:'francese',es:'spagnolo',de:'tedesco'}[lang]||'italiano';
       return aiGroqChat('https://api.groq.com/openai/v1/chat/completions',key,'text',aiTranslatePrompt(L),t,null,false);
     }).then(function(d){
@@ -8643,6 +8645,7 @@ function aiTranslate(text,lang,onProg){
 <script src="/motion.js"></script>
 <script src="/home.js"></script>
 <script src="/backup.js"></script>
+<script src="/settings.js"></script>
 <script src="/prod.js"></script>
 <script src="/nav.js"></script>
 </body>

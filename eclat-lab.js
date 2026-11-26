@@ -678,7 +678,7 @@
       if (ok) return fetch('/api/import', { method: 'POST', headers: WL.apiH(), body: JSON.stringify({ ask: q, context: ctx }) }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { d._status = r.status; return d; }); });
       var key = ''; try { key = localStorage.getItem('groq_key') || ''; } catch (e) {}
       if (!key) { var dg = $('MDL_GROQ'); if (dg) key = (dg.value || '').trim(); }
-      if (!key) return { error: 'Per usare il sous-chef serve una chiave Groq: inseriscila nel menu → AI.' };
+      if (!key) return { error: 'Per usare il sous-chef serve una chiave Groq: inseriscila in Impostazioni › Intelligenza artificiale.' };
       return aiGroqChat('https://api.groq.com/openai/v1/chat/completions', key, 'text', sys, user, null, false).then(function (x) { return x.error ? x : { answer: x.text }; });
     }).then(function (d) {
       if (d && d.error && _aiServer && (d._status === 503 || d._status === 401 || d._status === 404) && aiHasLocalKey()) { _aiServer = false; return XL.ask(q, ctx); }

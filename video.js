@@ -53,7 +53,7 @@
       if (srv) return b64(blob).then(function (s) {
         return fetch('/api/import', { method: 'POST', headers: WL.apiH(), body: JSON.stringify({ stt: s }) }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { d._status = r.status; return d; }); });
       });
-      var key = localKey(); if (!key) return { error: 'Inserisci la chiave Groq nel menu Altro → AI' };
+      var key = localKey(); if (!key) return { error: 'Inserisci la chiave Groq in Impostazioni › Intelligenza artificiale' };
       var fd = new FormData(); fd.append('file', blob, 'audio.wav'); fd.append('model', 'whisper-large-v3-turbo'); fd.append('response_format', 'json'); fd.append('temperature', '0');
       fd.append('prompt', 'Ricetta di cucina o pasticceria: ingredienti, grammi, temperature, tempi.');
       return fetch(GROQ_STT, { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: fd }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) return { error: (d.error && d.error.message) || ('Errore ' + r.status), _status: r.status }; return { text: d.text || '' }; }); });

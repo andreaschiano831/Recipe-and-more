@@ -468,11 +468,11 @@
       .then(function (r) { if (r && r.error && err) err.textContent = r.error.message; });
   };
   WL.switchAccount = function () {
-    var go = function () { WL.signIn(true); };
+    var go = function () { (typeof keepApi === 'function' ? keepApi('DELETE') : Promise.resolve()).then(function () { WL.signIn(true); }); };
     WL.push().then(go, go);
   };
   WL.signOut = function () {
-    var go = function () { WL.sb.auth.signOut().finally(function () { location.replace(cleanUrl()); }); };
+    var go = function () { (typeof keepApi === 'function' ? keepApi('DELETE') : Promise.resolve()).then(function () { WL.sb.auth.signOut().finally(function () { location.replace(cleanUrl()); }); }); };
     WL.push().then(go, go);
   };
 
@@ -514,6 +514,81 @@
     var e = $('wlLoginErr'); if (e && msg) e.textContent = msg;
   }
 
+
+  /* ══════════════ RESTA CONNESSO ══════════════
+     Dopo l'accesso chiede una volta se restare connessi su questo dispositivo.
+     Sì: la sessione si rinnova da sola e una copia del token di rinnovo sta in un cookie protetto del sito
+     (HttpOnly, solo /api/keep), così l'accesso resta aperto anche se il telefono svuota la memoria del sito
+     (Safari lo fa dopo 7 giorni), sul web e nell'app installata. No: l'accesso si chiude quando chiudi l'app. */
+  var IN_HOST = /^\/ricette\//.test(location.pathname);      // dentro Chef's Organizer l'accesso lo gestisce la cucina
+  function keepKey(uid) { return 'wl_keep:' + (uid || UID); }
+  WL.keep = function () { var v = null; try { v = oGet.call(window.localStorage, keepKey()); } catch (e) {} return v === '1' ? true : v === '0' ? false : null; };
+  function keepApi(method, body) {
+    if (IN_HOST) return Promise.resolve(null);
+    return fetch('/api/keep', { method: method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-WL': '1' }, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.ok ? r.json().catch(function () { return {}; }) : null; }).catch(function () { return null; });
+  }
+  var keepLast = '';
+  WL._keepSave = function (sess) {
+    if (IN_HOST || WL.keep() !== true) return;
+    var rt = sess && sess.refresh_token; if (!rt || rt === keepLast) return;
+    keepLast = rt; keepApi('POST', { rt: rt, uid: sess.user && sess.user.id });
+  };
+  WL.setKeep = function (on) {
+    try { oSet.call(window.localStorage, keepKey(), on ? '1' : '0'); } catch (e) {}
+    if (on) {
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+      keepLast = '';
+      if (WL.sb) WL.sb.auth.getSession().then(function (r) { WL._keepSave(r && r.data && r.data.session); });
+    } else {
+      keepApi('DELETE');
+      try { window.sessionStorage.setItem('wl_alive', '1'); } catch (e) {}
+    }
+    try { if (window.SET && SET.refresh) SET.refresh(); } catch (e) {}
+  };
+  function keepAsk() {
+    if (IN_HOST || WL.keep() !== null || $('wlKeepBg')) return;
+    var bg = document.createElement('div'); bg.id = 'wlKeepBg'; bg.className = 'wl-bg wl-keep';
+    bg.innerHTML = '<div class="wl-sh" role="dialog" aria-modal="true" aria-labelledby="wlKeepT"><div class="wl-keep-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.2"/></svg></div>' +
+      '<b class="fd" id="wlKeepT">Restare connesso?</b><p class="wl-n">Su questo dispositivo l’accesso resta aperto, sul sito e nell’app installata: non dovrai rientrare con Google ogni volta. Puoi cambiarlo quando vuoi in Impostazioni › Account.</p>' +
+      '<p class="wl-keep-me">' + esc(WL.email() || '') + '</p>' +
+      '<button type="button" class="wl-btn gold wide" id="wlKeepYes">Sì, resta connesso</button><button type="button" class="wl-btn wide" id="wlKeepNo">No, chiudi l’accesso quando esco</button></div>';
+    document.body.appendChild(bg);
+    requestAnimationFrame(function () { bg.classList.add('on'); });
+    var done = function (on) { WL.setKeep(on); bg.classList.remove('on'); setTimeout(function () { bg.remove(); }, 220); try { if (window.XL && XL.toast) XL.toast(on ? 'Resterai connesso su questo dispositivo' : 'L’accesso si chiuderà quando esci dall’app'); } catch (e) {} };
+    $('wlKeepYes').onclick = function () { done(true); };
+    $('wlKeepNo').onclick = function () { done(false); };
+  }
+  WL.keepAsk = keepAsk;
+  WL.keepHere = !IN_HOST;
+  /* «no»: a una nuova apertura dell'app (sessione del browser nuova) si esce */
+  (function () {
+    if (!UID || IN_HOST) return;
+    var v = null; try { v = oGet.call(window.localStorage, keepKey()); } catch (e) {}
+    var alive = null; try { alive = window.sessionStorage.getItem('wl_alive'); } catch (e) {}
+    if (v === '0' && !alive) {
+      try { oDel.call(window.localStorage, AUTH_KEY); } catch (e) {}
+      UID = null; TOKEN = ''; USER = null; WL._endedByChoice = true;
+    }
+    try { window.sessionStorage.setItem('wl_alive', '1'); } catch (e) {}
+  })();
+  /* memoria del sito svuotata: si riprende la sessione dal cookie protetto */
+  function keepRestore() {
+    if (IN_HOST || WL._endedByChoice || !navigator.onLine) return Promise.resolve(false);
+    var tried = null; try { tried = window.sessionStorage.getItem('wl_restore'); } catch (e) {}
+    if (tried) return Promise.resolve(false);
+    try { window.sessionStorage.setItem('wl_restore', '1'); } catch (e) {}
+    return keepApi('GET').then(function (d) {
+      if (!d || !d.rt || !WL.sb) return false;
+      return WL.sb.auth.refreshSession({ refresh_token: d.rt }).then(function (r) {
+        var s = r && r.data && r.data.session; if (!s) { keepApi('DELETE'); return false; }
+        try { oSet.call(window.localStorage, 'wl_keep:' + s.user.id, '1'); } catch (e) {}
+        keepApi('POST', { rt: s.refresh_token, uid: s.user.id });
+        location.replace(cleanUrl()); return true;
+      }).catch(function () { return false; });
+    });
+  }
+
   WL.start = function () {
     var gbtn = $('wlGoogle'); if (gbtn) gbtn.onclick = function () { WL.signIn(true); };
     if (!C.supabaseUrl || !C.supabaseAnonKey || /INSERISCI/.test(C.supabaseUrl)) {
@@ -537,13 +612,13 @@
       if (!s) {
         if (UID && !navigator.onLine) return enter();
         if (UID) { try { oDel.call(window.localStorage, AUTH_KEY); } catch (e) {} }
-        if (!qp.get('error_description')) showLogin();
-        return;
+        return keepRestore().then(function (ok) { if (!ok && !qp.get('error_description')) showLogin(); });
       }
       TOKEN = s.access_token; USER = s.user;
+      WL._keepSave(s);
       if (qp.get('code')) history.replaceState(null, '', cleanUrl());
       WL.sb.auth.onAuthStateChange(function (ev, ss) {
-        if (ss && ss.access_token) { TOKEN = ss.access_token; USER = ss.user; }
+        if (ss && ss.access_token) { TOKEN = ss.access_token; USER = ss.user; WL._keepSave(ss); }
         if (ev === 'SIGNED_OUT') location.replace(cleanUrl());
       });
       if (!navigator.onLine) return enter();               // senza rete: subito dentro con i dati del dispositivo
@@ -569,6 +644,7 @@
     WL._rememberAccount();
     window.addEventListener('online', function () { WL.pull(); });
     if (WL._notice) { var nt = WL._notice; WL._notice = null; setTimeout(function () { alert(nt); }, 600); }
+    setTimeout(keepAsk, WL._notice ? 2500 : 1200);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') WL.push(); });
   }
 
@@ -579,7 +655,7 @@
   function wsCard() {
     if (!TEAMS.length) return '';
     var own = { ws: UID, role: 'owner', name: 'Il mio ricettario', sub: WL.email() };
-    return '<section class="wl-card"><b class="wl-t">Ricettario attivo</b><p class="wl-n">Fai parte di altre brigate: scegli quale ricettario aprire.</p><div class="wl-ws">' +
+    return '<section class="wl-card" id="wlWsCard"><b class="wl-t">Ricettario attivo</b><p class="wl-n">Fai parte di altre brigate: scegli quale ricettario aprire.</p><div class="wl-ws">' +
       [own].concat(TEAMS).map(function (t) {
         return '<button type="button" class="wl-acc' + (t.ws === WS ? ' on' : '') + '" data-ws="' + esc(t.ws) + '"><img src="' + esc(t.logo || DEFAULT_LOGO) + '" alt=""><span><b>' + esc(t.name || 'Ricettario') + '</b><small>' + esc(WL.roleLabel(t.role)) + (t.ws === WS ? ' · aperto ora' : '') + '</small></span></button>';
       }).join('') + '</div></section>';
@@ -619,26 +695,28 @@
     var b = WL.brand();
     return 'Ti ho aggiunto alla brigata' + (b.name ? ' di ' + b.name : '') + ' sul ricettario. Apri il link e accedi con Google:\n' + WL.inviteLink();
   }
-  WL.openSettings = function () {
+  WL.settingsHooks = WL.settingsHooks || [];
+  WL.openSettings = function (host) {
+    if (!host && window.SET && SET.open) return SET.open('account');
     var old = $('wlSheet'); if (old) old.remove();
     var b = WL.brand();
-    var bg = document.createElement('div'); bg.id = 'wlSheet'; bg.className = 'wl-bg';
+    var bg = document.createElement('div'); bg.id = 'wlSheet'; bg.className = host ? 'wl-embed' : 'wl-bg';
     bg.innerHTML =
       '<div class="wl-sh" role="dialog" aria-label="Account, logo e sezioni">' +
       '<div class="wl-hd"><b class="fd">Account e personalizzazione</b><button type="button" class="wl-x" aria-label="Chiudi">&times;</button></div>' +
-      '<section class="wl-card"><div class="wl-acc-me"><img class="wl-logo" alt=""><span><b>' + esc(WL.email() || 'Account') + '</b><small>' + (WL.inTeam() ? esc(WL.roleLabel()) + ' · brigata di ' + esc(WL.brand().name || 'un altro account') : 'Accesso con Google · dati separati per questo account') + '</small></span></div>' +
+      '<section class="wl-card" id="wlAccCard"><div class="wl-acc-me"><img class="wl-logo" alt=""><span><b>' + esc(WL.email() || 'Account') + '</b><small>' + (WL.inTeam() ? esc(WL.roleLabel()) + ' · brigata di ' + esc(WL.brand().name || 'un altro account') : 'Accesso con Google · dati separati per questo account') + '</small></span></div>' +
       '<div class="wl-row"><button type="button" class="wl-btn" id="wlSwitch">Cambia account</button><button type="button" class="wl-btn danger" id="wlOut">Esci</button></div></section>' +
       wsCard() +
-      (WL.canEdit() && window.VID && VID.guide ? '<section class="wl-card"><b class="wl-t">Salva da Instagram e TikTok</b><p class="wl-n">Imposta una volta il tasto Condividi: da un reel, un TikTok o una pagina web la ricetta arriva direttamente in «Nuova ricetta».</p><button type="button" class="wl-btn wide" id="wlShareGuide">Come si fa</button></section>' : '') +
-      (WL.canEdit() ? '' : '<section class="wl-card"><b class="wl-t">Solo consultazione</b><p class="wl-n">Sei <b>' + esc(WL.roleLabel()) + '</b> in questa brigata: puoi leggere ricette e biblioteca. Le modifiche le fanno admin e pastry chef.</p></section>') +
-      (WL.isAdmin() ?       '<section class="wl-card"><b class="wl-t">Logo e nome</b><p class="wl-n">Compaiono nella home, nel menu, nei documenti di stampa e nella pagina d’accesso.</p>' +
+      (WL.canEdit() && window.VID && VID.guide ? '<section class="wl-card" id="wlShareCard"><b class="wl-t">Salva da Instagram e TikTok</b><p class="wl-n">Imposta una volta il tasto Condividi: da un reel, un TikTok o una pagina web la ricetta arriva direttamente in «Nuova ricetta».</p><button type="button" class="wl-btn wide" id="wlShareGuide">Come si fa</button></section>' : '') +
+      (WL.canEdit() ? '' : '<section class="wl-card" id="wlRoCard"><b class="wl-t">Solo consultazione</b><p class="wl-n">Sei <b>' + esc(WL.roleLabel()) + '</b> in questa brigata: puoi leggere ricette e biblioteca. Le modifiche le fanno admin e pastry chef.</p></section>') +
+      (WL.isAdmin() ?       '<section class="wl-card" id="wlBrandCard"><b class="wl-t">Logo e nome</b><p class="wl-n">Compaiono nella home, nel menu, nei documenti di stampa e nella pagina d’accesso.</p>' +
       '<div class="wl-logo-ed"><img class="wl-logo" alt=""><div class="wl-col"><label class="wl-btn gold">Carica logo<input type="file" accept="image/*" id="wlLogoFile" hidden></label><button type="button" class="wl-btn" id="wlLogoCrop">Ritaglia</button><button type="button" class="wl-btn" id="wlLogoDel">Rimuovi</button></div></div>' +
       '<label class="wl-l">Nome</label><input class="wl-in" id="wlName" maxlength="60" value="' + esc(lsJSON('mdl_brand', {}).name || '') + '" placeholder="Es. Pasticceria Rossi">' +
       '<label class="wl-l">Sottotitolo</label><input class="wl-in" id="wlSub" maxlength="60" value="' + esc(lsJSON('mdl_brand', {}).sub || '') + '" placeholder="Ricettario Professionale">' +
       (WL.inTeam() ? '' : '<label class="wl-l">Indirizzo personale della pagina d’accesso</label><div class="wl-row"><input class="wl-in" id="wlSlug" maxlength="40" value="' + esc(b.slug) + '" placeholder="es. pasticceria-rossi"><button type="button" class="wl-btn" id="wlCopy">Copia link</button></div>' +
       '<p class="wl-n" id="wlSlugInfo"></p>') +
       '<button type="button" class="wl-btn gold wide" id="wlSaveBrand">Salva logo e nome</button><p class="wl-msg" id="wlBrandMsg"></p></section>' : '') +
-      (WL.canEdit() ?       '<section class="wl-card"><b class="wl-t">Sezioni del ricettario</b><p class="wl-n">Rinomina, riordina, aggiungi o togli le sezioni della home.</p><div id="wlSecs"></div>' +
+      (WL.canEdit() ?       '<section class="wl-card" id="wlSecCard"><b class="wl-t">Sezioni del ricettario</b><p class="wl-n">Rinomina, riordina, aggiungi o togli le sezioni della home.</p><div id="wlSecs"></div>' +
       '<button type="button" class="wl-btn" id="wlSecAdd">+ Nuova sezione</button><button type="button" class="wl-btn gold wide" id="wlSecSave">Salva sezioni</button><p class="wl-msg" id="wlSecMsg"></p></section>' : '') +
       (WL.isAdmin() ? '<section class="wl-card" id="wlTeamCard"><b class="wl-t">Brigata</b><p class="wl-n">Invita i membri con la loro email Google. <b>Admin</b> e <b>Pastry Chef</b> modificano le ricette; lo <b>Chef de Partie</b> compila la produzione e scrive alla brigata; <b>Demi Chef</b>, <b>Commis</b> e <b>Staff</b> consultano e segnano le loro preparazioni.</p>' +
         '<div class="wl-row wl-inv"><input class="wl-in" id="wlInvEmail" type="email" placeholder="email@gmail.com" autocomplete="off"><select class="wl-in sm" id="wlInvRole">' + roleOpts('commis') + '</select></div>' +
@@ -646,10 +724,10 @@
         '<div class="wl-row"><button type="button" class="wl-btn" id="wlInvShare">Invia il link dell’app</button><button type="button" class="wl-btn" id="wlInvCopy">Copia link</button></div>' +
         '<p class="wl-n">Chi apre il link e accede con l’email invitata entra subito con il suo ruolo; le altre richieste arrivano qui da approvare.</p></section>' : '') +
       '</div>';
-    document.body.appendChild(bg);
-    requestAnimationFrame(function () { bg.classList.add('on'); });
+    (host || document.body).appendChild(bg);
+    if (!host) requestAnimationFrame(function () { bg.classList.add('on'); });
     WL.applyBrand();
-    var close = function () { bg.classList.remove('on'); setTimeout(function () { bg.remove(); }, 220); };
+    var close = host ? function () { try { SET.close(); } catch (e) {} } : function () { bg.classList.remove('on'); setTimeout(function () { bg.remove(); }, 220); };
     bg.querySelector('.wl-x').onclick = close;
     bg.onclick = function (e) { if (e.target === bg) close(); };
     $('wlSwitch').onclick = WL.switchAccount;
@@ -754,6 +832,8 @@
       WL.push();
     };
     })();
+    WL.settingsHooks.forEach(function (fn) { try { fn(bg); } catch (e) { console.error(e); } });
+    return bg;
   };
   WL.slugify = function (s) {
     return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);

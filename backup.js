@@ -347,15 +347,17 @@
   window.BK = { open: open };
 
   /* punti d'accesso: impostazioni account, menu, ricerca */
-  new MutationObserver(function (list) {
-    list.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) {
+  function card(n) {
       if (n.id !== 'wlSheet' || (window.WL && WL.canEdit && !WL.canEdit())) return;
       var sh = n.querySelector('.wl-sh'); if (!sh || sh.querySelector('#bkCard')) return;
       var c = document.createElement('section'); c.className = 'wl-card'; c.id = 'bkCard';
       c.innerHTML = '<b class="wl-t">Backup</b><p class="wl-n">Scarica tutte le ricette, oppure importale da un backup di questa app, di PastryRecipe o di altre app.</p><div class="wl-row"><button type="button" class="wl-btn" id="bkDl">Scarica backup</button><button type="button" class="wl-btn gold" id="bkUp">Importa backup</button></div>';
       var first = sh.querySelectorAll('.wl-card')[1]; sh.insertBefore(c, first || null);
       c.querySelector('#bkDl').onclick = function () { try { downloadBackup(); } catch (e) {} };
-      c.querySelector('#bkUp').onclick = function () { n.remove(); open(); };
-    }); });
+      c.querySelector('#bkUp').onclick = function () { if (n.classList.contains('wl-embed')) { try { SET.close(); } catch (e) {} setTimeout(open, 200); } else { n.remove(); open(); } };
+  }
+  new MutationObserver(function (list) {
+    list.forEach(function (m) { [].forEach.call(m.addedNodes, card); });
   }).observe(document.body, { childList: true });
+  if (window.WL) (WL.settingsHooks = WL.settingsHooks || []).push(card);
 })();
