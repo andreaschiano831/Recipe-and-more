@@ -48,6 +48,8 @@
       s: function () { try { return WL.brand().name || 'Il mio Ricettario'; } catch (e) { return ''; } }, cards: ['wlBrandCard'] },
     { k: 'sezioni', g: 'Personalizza', t: 'Sezioni del ricettario', i: 'secs', kw: 'sezioni rinomina riordina home', show: function () { return can('canEdit'); },
       s: function () { try { return WL.sections().map(function (x) { return x.l; }).join(' · '); } catch (e) { return ''; } }, cards: ['wlSecCard'] },
+    { k: 'rapidi', g: 'Personalizza', t: 'Comandi rapidi', i: 'secs', kw: 'comandi rapidi azioni rapide tasti home personalizza aggiungi togli', show: function () { return !!window.RAPIDI; },
+      run: act(function () { try { tbGoHome(); } catch (e) {} setTimeout(function () { if (!RAPIDI.edit('rm-home')) setTimeout(function () { RAPIDI.edit('rm-home'); }, 600); }, 450); }) },
     { k: 'aspetto', g: 'Personalizza', t: 'Aspetto', i: 'look', kw: 'tema colori scuro chiaro animazioni movimento',
       s: function () { try { return THEME_UI.PAL[THEME_UI.cur()].n + ' · animazioni ' + ({ full: 'complete', reduced: 'ridotte', off: 'spente' }[(window.MOTION && MOTION.level && MOTION.level()) || ''] || ''); } catch (e) { return 'Tema e animazioni'; } }, cards: ['theme', 'moCard'] },
     { k: 'ai', g: 'Strumenti', t: 'Intelligenza artificiale', i: 'ai', kw: 'groq chiave ai import foto',

@@ -197,4 +197,26 @@
     setInterval(soon, 60000);
   }
   if (typeof window.boot === 'function') { var _b = window.boot; window.boot = function () { var r = _b.apply(this, arguments); setTimeout(start, 0); return r; }; }
+
+  /* ── comandi rapidi personalizzabili: tasti in più che si possono aggiungere ── */
+  function svg(p) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; }
+  function can() { try { return WL.canEdit(); } catch (e) { return true; } }
+  if (window.RAPIDI) RAPIDI.register({
+    key: 'rm-home', sel: '.hm-qs', item: '.hm-q', attr: 'data-q', title: 'Azioni rapide',
+    extra: function () {
+      return [
+        { id: 'x-cerca', label: 'Cerca', sub: 'ricette, ingredienti, libri', color: '#4A5A52', icon: svg('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'), run: function () { if (window.SX) SX.open(); } },
+        { id: 'x-tutte', label: 'Tutte le ricette', sub: 'la collezione completa', color: '#8A5B1C', icon: svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'), run: function () { if (window.openSection) openSection('tutti'); } },
+        { id: 'x-timer', label: 'Timer', sub: 'avvia un conto alla rovescia', color: '#B3243F', icon: svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>'), run: function () { if (window.SX) SX.open('timer '); } },
+        { id: 'x-gruppi', label: 'Categorie e piatti', sub: 'gruppi del ricettario', color: '#6A4FA5', show: can, icon: svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'), run: function () { (typeof openCatManager === 'function' ? openCatManager : openPiattiManager)(); } },
+        { id: 'x-docs', label: 'Documenti di stampa', sub: 'raccolte da stampare', color: '#2A6FB0', icon: svg('<path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/>'), run: function () { if (window.openDocsManager) openDocsManager(); } },
+        { id: 'x-import', label: 'Importa file', sub: 'Word o TXT', color: '#1E8A8A', show: can, icon: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3"/>'), run: function () { if (window.openImport) openImport(); } },
+        { id: 'x-aspetto', label: 'Tema', sub: 'colori e animazioni', color: '#B07A1E', icon: svg('<circle cx="13.5" cy="6.5" r="1.4"/><circle cx="17.5" cy="10.5" r="1.4"/><circle cx="8.5" cy="7.5" r="1.4"/><circle cx="6.5" cy="12.5" r="1.4"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.9-.5-1.4 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.6C22 5.4 17.5 2 12 2z"/>'), run: function () { if (window.SET) SET.open('aspetto'); } },
+        { id: 'x-ai', label: 'Intelligenza artificiale', sub: 'chiave e stato', color: '#8B6408', icon: svg('<path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/>'), run: function () { if (window.SET) SET.open('ai'); } },
+        { id: 'x-salute', label: 'Salute del ricettario', sub: 'doppioni e nomi simili', color: '#3D7A4A', icon: svg('<path d="M20 6L9 17l-5-5"/>'), run: function () { if (window.SET) SET.open('salute'); } },
+        { id: 'x-backup', label: 'Scarica backup', sub: 'tutte le ricette', color: '#4A5A52', icon: svg('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/>'), run: function () { if (window.downloadBackup) downloadBackup(); } },
+        { id: 'x-account', label: 'Account', sub: 'accesso e brigata', color: '#7E5BB0', icon: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'), run: function () { if (window.SET) SET.open('account'); } }
+      ];
+    }
+  });
 })();
