@@ -322,5 +322,5 @@
     if (XL._ms && XL._ms.s && XL._ms.r && (XL._ms.r === r || XL._ms.r.n === r.n)) delete XL._ms.s.applied;
     return p;
   }
-  XL.molds = { compute: compute, rowVolume: rowVolume, roundQ: roundQ, densityOf: densityOf, summary: summary, comfy: comfy, clear: clear };
+  XL.molds = { compute: compute, rowVolume: rowVolume, roundQ: roundQ, densityOf: densityOf, densGuess: densGuess, DENS: DENS, summary: summary, comfy: comfy, clear: clear };
 })();

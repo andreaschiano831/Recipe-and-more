@@ -530,6 +530,7 @@
     });
     var qp = new URL(location.href).searchParams;
     if (qp.get('error_description')) showLogin(qp.get('error_description'));
+    if (UID && !navigator.onLine) enter();                  // senza rete non si aspetta il server di accesso
     WL.sb.auth.getSession().then(function (r) {
       var s = r && r.data && r.data.session;
       if (s && s.user.id !== UID) { location.replace(cleanUrl()); return; }   // nuovo account: riparte nel suo spazio
@@ -545,6 +546,7 @@
         if (ss && ss.access_token) { TOKEN = ss.access_token; USER = ss.user; }
         if (ev === 'SIGNED_OUT') location.replace(cleanUrl());
       });
+      if (!navigator.onLine) return enter();               // senza rete: subito dentro con i dati del dispositivo
       var t = new Promise(function (res) { setTimeout(res, 6000); });
       Promise.race([WL.teamsSync(qp.get('join')).then(WL.pull), t]).then(enter, enter);
     }).catch(function () { if (UID) enter(); else showLogin('Errore di connessione'); });

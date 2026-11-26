@@ -47,6 +47,7 @@
     try { if (window.NUT) { var D = NUT.detect(r); if (D.on.length) x.al = D.on; if (D.may.length) x.may = D.may; } } catch (e) {}
     try { var b = WL.brand(); if (b && b.name) { x.b = b.name; if (b.sub) x.bs = b.sub; } } catch (e) {}
     x.at = new Date().toISOString().slice(0, 10);
+    if (r._lang === 'en') x.lang = 'en';
     return x;
   }
   function makeLink(r, d, o) { return pack(snap(r, d, o)).then(function (z) { return base() + '#ricetta=' + z; }); }
@@ -61,7 +62,7 @@
     setTimeout(function () { window.print(); }, 80);
   }
   function pdfOf(r, d, o) {
-    if (typeof pdPrint === 'function' && typeof pdSnap === 'function') {
+    if (r._lang !== 'en' && typeof pdPrint === 'function' && typeof pdSnap === 'function') {
       var it = pdSnap(r, d); if (o.proc === false) it.p = '';
       var docName = r.n + (d !== 1 ? ' · ' + fx(d) : '');
       pdPrint({ name: docName, onePerPage: false, items: [it] });
@@ -73,7 +74,7 @@
   /* ── foglio «Condividi» (chi manda) ── */
   var S = { r: null, d: 1, o: { proc: true, notes: false } };
   function open(r, d) {
-    if (!r) return; S.r = r; S.d = d > 0 ? d : 1; S.o = { proc: true, notes: false };
+    if (!r) return; S.r = r; S.d = d > 0 ? d : 1; S.o = { proc: true, notes: false }; S.lang = 'it'; S.en = null; S.busy = false;
     var old = $('rsBg'); if (old) old.remove();
     var bg = document.createElement('div'); bg.id = 'rsBg'; bg.className = 'rs-bg';
     bg.innerHTML = '<div class="rs-sheet" role="dialog" aria-modal="true" aria-labelledby="rsT"><span class="rs-grab"></span><div class="rs-in" id="rsIn"></div></div>';
@@ -91,6 +92,8 @@
       '<div class="rs-prev"><span class="rs-brand">' + esc((WL.brand && WL.brand().name) || 'Ricettario') + '</span><b>' + esc(r.n) + '</b><small>' + nIng + ' ingredienti' + (tot ? ' · ' + fq(tot * d) + ' g' : '') + (hasP ? ' · procedimento' : '') + '</small></div>' +
       '<div class="rs-row"><span class="rs-l">Dose</span><div class="rs-dose"><button type="button" data-dm aria-label="Meno">−</button><output>' + fx(d) + '</output><button type="button" data-dp aria-label="Più">+</button></div></div>' +
       '<div class="rs-pre">' + [0.5, 1, 2, 3, 5].map(function (x) { return '<button type="button" data-d="' + x + '" class="' + (Math.abs(x - d) < 1e-9 ? 'on' : '') + '">' + fx(x) + '</button>'; }).join('') + '</div>' +
+      '<div class="rs-row"><span class="rs-l">Lingua</span><div class="rs-lang" role="radiogroup"><button type="button" data-lang="it" class="' + (S.lang === 'it' ? 'on' : '') + '" aria-pressed="' + (S.lang === 'it') + '">Italiano</button><button type="button" data-lang="en" class="' + (S.lang === 'en' ? 'on' : '') + '" aria-pressed="' + (S.lang === 'en') + '"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Traduco…' : 'English') + '</button></div></div>' +
+      (S.lang === 'en' && S.en ? '<p class="rs-en">Professional kitchen English · <b>' + esc(S.en.name) + '</b></p>' : '') + (S.enErr ? '<p class="rs-en err">' + esc(S.enErr) + '</p>' : '') +
       (hasP ? '<label class="rs-sw"><span>Procedimento</span><input type="checkbox" data-o="proc"' + (S.o.proc ? ' checked' : '') + '><i></i></label>' : '') +
       (hasN ? '<label class="rs-sw"><span>Note della ricetta</span><input type="checkbox" data-o="notes"' + (S.o.notes ? ' checked' : '') + '><i></i></label>' : '') +
       '<div class="rs-acts">' +
@@ -108,16 +111,47 @@
     if (t.hasAttribute('data-dm')) { S.d = Math.max(0.1, Math.round((S.d - (S.d <= 1 ? 0.25 : 0.5)) * 100) / 100); return paint(); }
     if (t.hasAttribute('data-dp')) { S.d = Math.round((S.d + (S.d < 1 ? 0.25 : 0.5)) * 100) / 100; return paint(); }
     if (t.dataset.d) { S.d = +t.dataset.d; return paint(); }
+    if (t.dataset.lang) { if (t.dataset.lang === 'it') { S.lang = 'it'; S.enErr = ''; return paint(); } return toEnglish(); }
     var a = t.dataset.a; if (!a) return;
-    if (a === 'pdf') { close(); return pdfOf(S.r, S.d, S.o); }
-    makeLink(S.r, S.d, S.o).then(function (url) {
-      var title = S.r.n + (S.d !== 1 ? ' (' + fx(S.d) + ')' : ''), who = (WL.brand && WL.brand().name) || '';
+    var R = cur();
+    if (a === 'pdf') { close(); return pdfOf(R, S.d, S.o); }
+    makeLink(R, S.d, S.o).then(function (url) {
+      var title = R.n + (S.d !== 1 ? ' (' + fx(S.d) + ')' : ''), who = (WL.brand && WL.brand().name) || '';
       if (a === 'send' && navigator.share) {
         return navigator.share({ title: title, text: title + (who ? ' · ' + who : ''), url: url }).then(function () { close(); }, function (er) { if (er && er.name !== 'AbortError') copy(url); });
       }
       copy(url);
     }).catch(function (er) { alert('Non riesco a preparare il link: ' + (er && er.message || er)); });
   }
+  /* ── versione inglese: traduzione AI (salvata sul dispositivo finché la ricetta non cambia) ── */
+  function hsh(t) { var h = 5381; for (var i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+  function enKey(r) { return 'tr_en:' + (r._id || r.n) + ':' + hsh(JSON.stringify([r.n, r.i, r.p, r.nt])); }
+  function enText(r) {
+    var steps = String(r.p || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    return 'NAME: ' + r.n + '\nINGREDIENTS:\n' + (r.i || []).map(function (g) { return g[0]; }).join('\n') + '\nSTEPS:\n' + steps.join('\n') + (r.nt ? '\nNOTES:\n' + r.nt : '');
+  }
+  function toEnglish() {
+    var r = S.r, k = enKey(r), c = null; try { c = JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) {}
+    if (c) { S.en = c; S.lang = 'en'; return paint(); }
+    if (typeof aiRunTask !== 'function') { S.enErr = 'AI non disponibile'; return paint(); }
+    S.busy = true; S.enErr = ''; paint();
+    aiRunTask('tr_en', enText(r)).then(function (j) {
+      var n = (r.i || []).length, ing = Array.isArray(j.ingredients) ? j.ingredients.map(String) : [];
+      if (!j.name || ing.length !== n) throw new Error('Traduzione incompleta: riprova');
+      S.en = { name: String(j.name), ingredients: ing, steps: Array.isArray(j.steps) ? j.steps.map(String) : [], notes: String(j.notes || '') };
+      try { localStorage.setItem(k, JSON.stringify(S.en)); } catch (e) {}
+      S.lang = 'en';
+    }).catch(function (e) { S.enErr = e.message || 'Traduzione non riuscita'; }).then(function () { S.busy = false; if ($('rsBg')) paint(); });
+  }
+  function cur() {
+    var r = S.r; if (S.lang !== 'en' || !S.en) return r;
+    var E = S.en, steps = String(r.p || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var x = Object.assign({}, r, { _lang: 'en', n: E.name, i: (r.i || []).map(function (g, k) { return [E.ingredients[k] || g[0], g[1], g[2]]; }) });
+    if (steps.length) x.p = (E.steps.length ? E.steps : steps).map(function (st, k) { return (k + 1) + '. ' + String(st).replace(/^\d+[.)]\s*/, ''); }).join('\n');
+    if (r.nt) x.nt = E.notes || r.nt;
+    return x;
+  }
+  window.RSH_EN = { toEnglish: function (r) { S.r = r; return toEnglish(); }, cur: cur };
   function copy(url) {
     var ok = function () { toast('Link copiato'); var b = document.querySelector('#rsBg [data-a=copy] span'); if (b) b.textContent = 'Copiato ✓'; };
     try { navigator.clipboard.writeText(url).then(ok, function () { prompt('Copia il link', url); }); } catch (e) { prompt('Copia il link', url); }
@@ -125,24 +159,26 @@
 
   /* ── vista di chi riceve ── */
   var V = { x: null, d: 1 };
+  var EN_AL = { glutine: 'Gluten', latte: 'Milk', uova: 'Eggs', frutta_guscio: 'Tree nuts', arachidi: 'Peanuts', soia: 'Soy', sesamo: 'Sesame', pesce: 'Fish', crostacei: 'Crustaceans', molluschi: 'Molluscs', sedano: 'Celery', senape: 'Mustard', solfiti: 'Sulphites', lupini: 'Lupin' };
   function viewHTML(x, d, print) {
+    var en = x.lang === 'en', T = function (it, e) { return en ? e : it; };
     var k = d > 0 ? d : 1, rows = '', tot = 0;
     x.i.forEach(function (g) { var v = g[1] == null ? null : g[1] * k; if (v != null && /^(g|gr|ml)?$/i.test(g[2] || 'g')) tot += v; });
     x.i.forEach(function (g) {
       var v = g[1] == null ? null : g[1] * k, pc = v != null && tot && /^(g|gr|ml)?$/i.test(g[2] || 'g') ? (v / tot * 100) : null;
       rows += '<tr><td>' + esc(g[0]) + '</td><td class="q">' + (v == null ? 'q.b.' : fq(v) + ' <small>' + esc(g[2] || 'g') + '</small>') + '</td><td class="pc">' + (pc == null ? '' : fq(pc) + '%') + '</td></tr>';
     });
-    var AL = (window.NUT && NUT.ALLERGENI) || [], an = function (key) { var a = AL.filter(function (z) { return z[0] === key; })[0]; return a ? (print ? '' : a[2] + ' ') + a[1] : key; };
+    var AL = (window.NUT && NUT.ALLERGENI) || [], an = function (key) { var a = AL.filter(function (z) { return z[0] === key; })[0]; return a ? (print ? '' : a[2] + ' ') + (en && EN_AL[key] ? EN_AL[key] : a[1]) : (en && EN_AL[key]) || key; };
     var steps = x.p ? String(x.p).split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean) : [];
     return '<article class="rv-doc">' +
       '<header class="rv-hd">' + (x.b ? '<span class="rv-brand">' + esc(x.b) + '</span>' : '') + '<h1>' + esc(x.n) + '</h1>' +
         '<p class="rv-meta">' + [x.sec, x.c, x.pi].filter(Boolean).map(esc).join(' · ') + '</p></header>' +
-      '<section class="rv-sum"><div><small>Totale</small><b>' + (tot ? fq(tot) + ' g' : '—') + '</b></div><div><small>Dose</small><b>' + fx(k) + '</b></div><div><small>Ingredienti</small><b>' + x.i.length + '</b></div></section>' +
-      '<table class="rv-tab"><thead><tr><th>Ingrediente</th><th class="q">Quantità</th><th class="pc">%</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      ((x.al && x.al.length) || (x.may && x.may.length) ? '<section class="rv-al"><h2>Allergeni</h2><p>' + (x.al || []).map(function (a) { return '<span>' + esc(an(a)) + '</span>'; }).join('') + (x.may && x.may.length ? '<em>Può contenere tracce di: ' + x.may.map(function (a) { return esc(an(a).replace(/^\S+\s/, '')); }).join(', ') + '</em>' : '') + '</p></section>' : '') +
-      (steps.length ? '<section class="rv-proc"><h2>Procedimento</h2><ol>' + steps.map(function (s) { return '<li>' + esc(s.replace(/^\d+[.)]\s*/, '')) + '</li>'; }).join('') + '</ol></section>' : '') +
-      (x.nt ? '<section class="rv-nt"><h2>Note</h2><p>' + esc(x.nt).replace(/\n/g, '<br>') + '</p></section>' : '') +
-      '<footer class="rv-ft">' + (x.b ? 'Ricetta di ' + esc(x.b) + ' · ' : '') + 'condivisa il ' + esc(new Date(x.at || Date.now()).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) + '</footer>' +
+      '<section class="rv-sum"><div><small>' + T('Totale', 'Total') + '</small><b>' + (tot ? fq(tot) + ' g' : '—') + '</b></div><div><small>' + T('Dose', 'Batch') + '</small><b>' + fx(k) + '</b></div><div><small>' + T('Ingredienti', 'Ingredients') + '</small><b>' + x.i.length + '</b></div></section>' +
+      '<table class="rv-tab"><thead><tr><th>' + T('Ingrediente', 'Ingredient') + '</th><th class="q">' + T('Quantità', 'Quantity') + '</th><th class="pc">%</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      ((x.al && x.al.length) || (x.may && x.may.length) ? '<section class="rv-al"><h2>' + T('Allergeni', 'Allergens') + '</h2><p>' + (x.al || []).map(function (a) { return '<span>' + esc(an(a)) + '</span>'; }).join('') + (x.may && x.may.length ? '<em>' + T('Può contenere tracce di: ', 'May contain traces of: ') + x.may.map(function (a) { return esc(an(a).replace(/^\S+\s/, '')); }).join(', ') + '</em>' : '') + '</p></section>' : '') +
+      (steps.length ? '<section class="rv-proc"><h2>' + T('Procedimento', 'Method') + '</h2><ol>' + steps.map(function (s) { return '<li>' + esc(s.replace(/^\d+[.)]\s*/, '')) + '</li>'; }).join('') + '</ol></section>' : '') +
+      (x.nt ? '<section class="rv-nt"><h2>' + T('Note', 'Notes') + '</h2><p>' + esc(x.nt).replace(/\n/g, '<br>') + '</p></section>' : '') +
+      '<footer class="rv-ft">' + (x.b ? T('Ricetta di ', 'Recipe by ') + esc(x.b) + ' · ' : '') + T('condivisa il ', 'shared on ') + esc(new Date(x.at || Date.now()).toLocaleDateString(en ? 'en-GB' : 'it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) + '</footer>' +
       '</article>';
   }
   function view(z) {
@@ -226,6 +262,8 @@
     '.rs-brand{font:600 9.5px "DM Sans",sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--gold3,#8B6408)}.rs-prev b{font:500 1.25rem "Cormorant Garamond",Georgia,serif;font-style:italic}.rs-prev small{font-size:.8rem;color:var(--smoke)}',
     '.rs-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.rs-l{font:600 .9rem "DM Sans",sans-serif}',
     '.rs-dose{display:flex;align-items:center;height:42px;border-radius:13px;background:var(--ctrl,rgba(0,0,0,.05))}.rs-dose button{width:42px;height:42px;border:0;background:none;font-size:20px;color:var(--ink);cursor:pointer}.rs-dose output{min-width:52px;text-align:center;font:700 15px "DM Sans",sans-serif;font-variant-numeric:tabular-nums}',
+    '.rs-lang{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border-radius:12px;background:var(--bg2,rgba(0,0,0,.05));min-width:200px}.rs-lang button{height:34px;border:0;border-radius:9px;background:none;color:var(--ink2);font:600 .84rem "DM Sans",sans-serif;cursor:pointer}.rs-lang button.on{background:var(--card,#fff);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}.rs-lang button:disabled{opacity:.6}',
+    '.rs-en{margin:-2px 0 8px;font-size:.8rem;color:var(--smoke)}.rs-en b{color:var(--ink);font-weight:600}.rs-en.err{color:#b3261e}',
     '.rs-pre{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px}.rs-pre button{height:38px;border-radius:11px;border:1px solid var(--cb);background:none;color:var(--ink2);font:600 .85rem "DM Sans",sans-serif;cursor:pointer}.rs-pre button.on{background:var(--ink);color:var(--bg);border-color:transparent}',
     '.rs-sw{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--cb);font:500 .92rem "DM Sans",sans-serif;cursor:pointer}.rs-sw input{position:absolute;opacity:0;pointer-events:none}',
     '.rs-sw i{position:relative;width:46px;height:28px;border-radius:99px;background:var(--cb);transition:background .2s}.rs-sw i::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}',

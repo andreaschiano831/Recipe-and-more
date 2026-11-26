@@ -318,11 +318,13 @@
       '<p class="xr-l">Oppure scegli il peso finale</p>' +
       '<div class="lb-inline"><input id="xlTarget" inputmode="decimal" placeholder="Peso in grammi, es. 1500"><button type="button" id="xlTargetGo">Applica</button></div>' +
       '<button type="button" class="lb-molds" id="lbMolds">' + IC2.mold + '<span>Calcola da stampi, teglie, gastronorm o monoporzioni</span><i>→</i></button>' +
+      (window.SCL ? '<button type="button" class="lb-molds" id="lbHave">' + SCL.icon + '<span>Ho solo… ricalcola su quello che hai</span><i>→</i></button>' : '') +
       '<p class="xr-note">La dose vale per ingredienti, procedimento, cucina e documenti.</p>';
     [].forEach.call(host.querySelectorAll('.lb-presets button'), function (b) { b.onclick = function () { XL.setDose(+b.dataset.d); }; });
     $('xlTargetGo').onclick = function () { var v = parseFloat(String($('xlTarget').value).replace(',', '.')); if (!(v > 0) || !D.tot) { $('xlTarget').focus(); return; } XL.setDose(v / D.tot); $('xlTarget').value = ''; };
     $('xlTarget').onkeydown = function (e) { if (e.key === 'Enter') $('xlTargetGo').click(); };
     $('lbMolds').onclick = function () { openSheet('molds'); };
+    if ($('lbHave')) $('lbHave').onclick = function () { closeSheet(); SCL.open(XL.rec, XL.dose, function (d) { XL.setDose(d, true); }); };
   }
   /* pannello Analisi → Sous-chef */
   function renderAI() {

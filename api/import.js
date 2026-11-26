@@ -35,7 +35,7 @@ function aiRecipePrompt() {
     '1. Usa SOLO informazioni presenti nel testo. NON inventare ingredienti, quantità, passaggi, tempi o temperature. Se una quantità non è scritta o è [?], metti "quantity": null.\n' +
     '2. Ogni quantità deve essere IDENTICA al numero scritto nel testo (usa il punto come decimale: "1,5" diventa 1.5). Non convertire unità, non ricalcolare, non arrotondare.\n' +
     '3. Ogni preparazione con un proprio titolo (es. "Massa macaron", "Cremoso pesca", "Glassa") è una ricetta SEPARATA. Se fanno parte dello stesso dolce, metti il nome del dolce in "dish_group". Se il testo non ha un titolo, dai un nome breve e descrittivo basato sugli ingredienti principali.\n' +
-    '4. Unità: g, kg, ml, l, cl, n°, q.b., foglio, bacca, %. "gr" diventa "g"; uova/tuorli contati diventano "n°". Se il numero non ha unità ma il contesto è una ricetta in grammi, usa "g".\n' +
+    '4. Unità: g, kg, ml, l, cl, n°, q.b., foglio, bacca, %. Le misure americane (cup, tbsp, tsp, oz, lb, fl oz, stick) copiale così come sono: le converte l\'app. "gr" diventa "g"; uova/tuorli contati diventano "n°". Se il numero non ha unità ma il contesto è una ricetta in grammi, usa "g".\n' +
     '5. Nomi degli ingredienti in italiano professionale (traduci solo se il testo è in un\'altra lingua; mantieni marchi e nomi propri, es. "Ivoire", "Petra").\n' +
     '6. "steps": un passaggio per azione, nell\'ordine del testo. Riporta minuti in "duration_min" e temperature in "temperature" SOLO se scritti.\n' +
     '7. "section": scegli tra ' + secs + '. "category" deve essere una di: ' + AI_CATEGORIES.join(', ') + '.\n' +
@@ -89,6 +89,54 @@ function aiNumbersIn(text) {
   return set;
 }
 
+/* misure americane → grammi (densità per tazza delle voci più comuni in pasticceria) e °F → °C nel procedimento */
+var AI_CUP = [
+  [/farina di mandorl|almond flour|almond meal/, 96], [/farina|flour/, 125], [/zucchero di canna|brown sugar|muscovad/, 213], [/zucchero a velo|powdered sugar|icing sugar|confectioner/, 120],
+  [/zucchero|sugar/, 200], [/burro|butter/, 227], [/panna|cream(?! cheese)/, 238], [/latte condensato|condensed milk/, 306], [/latte|milk/, 242], [/acqua|water|caff|coffee/, 237],
+  [/olio|oil/, 218], [/miele|honey/, 340], [/sciroppo d.acero|maple/, 322], [/sciroppo di (mais|glucosio)|corn syrup|glucose/, 328], [/cacao|cocoa/, 85], [/avena|oats/, 90],
+  [/gocce di cioccolato|chocolate chips|cioccolato|chocolate/, 170], [/amido|maizena|cornstarch|starch/, 128], [/yogurt/, 245], [/panna acida|sour cream/, 230], [/formaggio cremoso|cream cheese|mascarpone|ricotta/, 232],
+  [/burro di arachidi|peanut butter/, 258], [/cocco|coconut/, 85], [/noci|nocciol|mandorl|pistacch|nuts|walnut|pecan|hazelnut|almond/, 120], [/lampon|mirtill|fragol|frutti|berr/, 150],
+  [/succo|juice/, 245], [/sale|salt/, 288], [/riso|rice/, 185], [/uvett|raisin/, 150], [/pangrattato|breadcrumb/, 110]
+];
+var AI_SPOON = [[/bicarbonato|baking soda/, 4.8], [/lievito (per dolci|chimico|in polvere)|baking powder/, 4], [/lievito|yeast/, 3.1], [/sale|salt/, 6], [/vaniglia|vanilla/, 4.2], [/cannella|cinnamon|spezie|spice|zenzero|ginger|noce moscata|nutmeg/, 2.6], [/gelatina|gelatin/, 3.1], [/cacao|cocoa/, 2.5], [/zucchero|sugar/, 4.2], [/farina|flour|amido|cornstarch/, 2.6], [/burro|butter/, 4.7], [/olio|oil/, 4.5], [/miele|honey/, 7], [/acqua|water|latte|milk|succo|juice|liquore|rum|liqueur/, 4.9]];
+function aiUsUnit(u) {
+  u = String(u || '').toLowerCase().replace(/\.$/, '').trim();
+  if (/^(cups?|c|tazz(a|e) (americana|us))$/.test(u)) return 'cup';
+  if (/^(tbsp|tbs|tbl|tablespoons?)$/.test(u)) return 'tbsp';
+  if (/^(tsp|teaspoons?)$/.test(u)) return 'tsp';
+  if (/^(fl ?oz|fluid ounces?)$/.test(u)) return 'floz';
+  if (/^(oz|ounces?)$/.test(u)) return 'oz';
+  if (/^(lbs?|pounds?)$/.test(u)) return 'lb';
+  if (/^sticks?$/.test(u)) return 'stick';
+  if (/^(pints?|pt)$/.test(u)) return 'pint';
+  if (/^(quarts?|qt)$/.test(u)) return 'quart';
+  return '';
+}
+function aiRoundG(v) { return v >= 100 ? Math.round(v / 5) * 5 : v >= 10 ? Math.round(v) : Math.round(v * 10) / 10; }
+function aiUsConvert(ings) {
+  var notes = [];
+  ings.forEach(function (row) {
+    var k = aiUsUnit(row[2]), q = row[1]; if (!k || q == null) return;
+    var n = String(row[0] || '').toLowerCase(), g = null, u = 'g', i;
+    if (k === 'oz') g = q * 28.35; else if (k === 'lb') g = q * 453.6; else if (k === 'stick') g = q * 113;
+    else if (k === 'floz' || k === 'pint' || k === 'quart') { g = q * { floz: 29.57, pint: 473, quart: 946 }[k]; u = 'ml'; for (i = 0; i < AI_CUP.length; i++) if (AI_CUP[i][0].test(n)) { g = g / 237 * AI_CUP[i][1]; u = 'g'; break; } }
+    else {
+      var cup = null; for (i = 0; i < AI_CUP.length; i++) if (AI_CUP[i][0].test(n)) { cup = AI_CUP[i][1]; break; }
+      var sp = null; for (i = 0; i < AI_SPOON.length; i++) if (AI_SPOON[i][0].test(n)) { sp = AI_SPOON[i][1]; break; }
+      if (k === 'cup') { if (cup) g = q * cup; else { g = q * 240; u = 'ml'; } }
+      else { var tsp = sp || (cup ? cup / 48 : null); if (tsp) g = q * tsp * (k === 'tbsp' ? 3 : 1); else { g = q * (k === 'tbsp' ? 15 : 5); u = 'ml'; } }
+    }
+    if (g == null) return;
+    notes.push(row[0] + ' ' + String(q).replace('.', ',') + ' ' + row[2] + ' → ' + String(aiRoundG(g)).replace('.', ',') + ' ' + u);
+    row[1] = aiRoundG(g); row[2] = u;
+  });
+  return notes;
+}
+function aiFtoC(text, notes) {
+  return String(text || '').replace(/(\d{2,3})\s*(?:°\s*F\b|° ?F\b|degrees? F(?:ahrenheit)?\b|gradi F(?:ahrenheit)?\b|ºF\b|F°)/gi, function (m, f) {
+    var c = Math.round((+f - 32) * 5 / 9 / 5) * 5; if (notes && notes.indexOf(f + ' °F → ' + c + ' °C') < 0) notes.push(f + ' °F → ' + c + ' °C'); return c + ' °C';
+  });
+}
 // dal formato "ricco" dell'AI al formato dell'app; se c'è la trascrizione, controlla le quantità
 function aiToApp(r, source) {
   if (!r || typeof r !== 'object') return null;
@@ -102,6 +150,7 @@ function aiToApp(r, source) {
     if (nums && row[0] && row[1] !== null && !nums[row[1]]) warn.push(row[0] + ' ' + row[1] + ' ' + row[2]);
     return row;
   }).filter(function (x) { return x[0]; });
+  var conv = aiUsConvert(ings);
   var steps = (Array.isArray(r.steps) ? r.steps : []).map(function (s, i) {
     if (typeof s === 'string') return (i + 1) + '. ' + s.trim();
     var extra = [s && s.temperature ? String(s.temperature).trim() : '', s && s.duration_min ? s.duration_min + ' min' : ''].filter(Boolean).join(' · ');
@@ -114,7 +163,8 @@ function aiToApp(r, source) {
   var out = { n: n, c: aiCategory(r.category || r.c), s: aiSectionKey(r.section || r.s), i: ings };
   var piatto = String(r.dish_group || r.piatto || '').trim();
   if (piatto && piatto.toLowerCase() !== n.toLowerCase()) out.piatto = piatto;
-  if (parts.length) out.p = parts.join('\n\n');
+  if (parts.length) out.p = aiFtoC(parts.join('\n\n'), conv);
+  if (conv.length) out.nt = 'Convertito dalle misure americane: ' + conv.join('; ') + '.';
   /* le note della fonte non vanno nel procedimento: diventano un suggerimento del Bilanciamento */
   var notes = String(r.notes || '').trim();
   if (notes) out.ai_nt = notes;
@@ -184,6 +234,22 @@ async function aiGroqChat(url, key, kind, system, user, image, json) {
 function aiTranslatePrompt(lang) {
   return 'Sei un traduttore specializzato in pasticceria e cucina professionale. Traduci in ' + lang + ' il testo che ricevi, in modo fedele e naturale, con la terminologia di laboratorio (es. "blind bake" = "cuocere in bianco", "egg wash" = "doratura", "sweet dough" = "pasta frolla", "half-dome molds" = "stampi a semisfera"). ' +
     'Mantieni ESATTAMENTE numeri, quantità, unità e temperature come scritti (non convertire), e la struttura: titoli, elenchi, a capo. Se una parola è illeggibile ([?]) lasciala così. Non aggiungere commenti, note o spiegazioni: rispondi solo con la traduzione.';
+}
+/* compiti brevi dell'AI su una ricetta già scritta: revisione, varianti, ricerca, traduzione. Rispondono sempre in JSON. */
+var AI_TASKS = {
+  review: 'Sei un executive pastry chef che rivede la ricetta di un collega prima del servizio. Ricevi ingredienti in grammi, procedimento e una stima di composizione. Controlla: rapporti e bilanciamento (zuccheri, grassi, solidi, acqua; per gelati POD/PAC), quantità di gelificanti e addensanti (gelatina, agar, pectina, amido: dose rispetto al peso), temperature e tempi (cottura crema inglese 82-84 °C, pâte à bombe 118-121 °C, cioccolato temperato, pastorizzazione), sicurezza (uova crude, raffreddamento rapido, abbattimento), passaggi mancanti o ambigui, errori evidenti di trascrizione (zeri in più, unità sbagliate). Sii concreto e severo ma giusto: non inventare problemi e non riscrivere la ricetta. Massimo 7 punti, prima i più gravi. Ogni correzione con quantità o temperatura precisa. Rispondi SOLO con JSON: {"voto":1-10,"sintesi":"una frase","punti":[{"livello":"errore|attenzione|ok","titolo":"massimo 6 parole","dettaglio":"una o due frasi","correzione":"cosa fare, con numeri, oppure stringa vuota"}]}. Scrivi in italiano.',
+  subs: 'Sei un pastry chef esperto di sostituzioni tecniche. Ricevi una ricetta (ingredienti in grammi) e un obiettivo (es. senza glutine, senza lattosio, vegana, senza uova, meno zucchero). Riscrivi SOLO gli ingredienti necessari per raggiungere l\'obiettivo mantenendo struttura, resa e gusto il più possibile: usa sostituti professionali reali (es. farina di riso + amido di mais + gomma xantana per il glutine; latte e burro senza lattosio o grassi vegetali con lo stesso tenore di grasso; aquafaba, amidi o proteine vegetali per le uova; agar al posto della gelatina per vegano con dose corretta). Tieni invariati gli ingredienti che vanno già bene. Le quantità devono restare coerenti con il peso totale. Se un ingrediente non ha un sostituto credibile dillo nelle note. Rispondi SOLO con JSON: {"nome":"breve nome della variante","ingredienti":[["nome","quantità numero","unità"]],"cambi":[{"da":"ingrediente originale","a":"sostituto","perche":"massimo 12 parole"}],"note":"accorgimenti di procedimento, massimo 3 frasi"}. Scrivi in italiano.',
+  search: 'Sei il motore di ricerca del ricettario di un laboratorio di pasticceria e cucina. Ricevi una DOMANDA in linguaggio naturale e un CATALOGO, una ricetta per riga nel formato id | nome | categoria | piatto | ingredienti principali | tecniche e note. Trova le ricette che rispondono davvero alla domanda (anche per sinonimi, tecniche, temperature, ingredienti presenti o assenti, stagione, uso). Rispetta le esclusioni ("senza uova" = nessun uovo, tuorlo o albume tra gli ingredienti). Ordina dalla più pertinente, massimo 12. Non inventare id: usa solo quelli del catalogo. Se nessuna risponde restituisci la lista vuota. Rispondi SOLO con JSON: {"risultati":[{"id":"id esatto dal catalogo","perche":"massimo 10 parole in italiano"}]}.',
+  tr_en: 'You are a bilingual executive pastry chef. Translate the recipe below from Italian into professional kitchen English as used in Michelin-starred brigades (e.g. crème anglaise, pâte à bombe, sablé, glaze, insert, temper, bloom the gelatine, cook to 82 °C, chill in blast chiller). Keep every number, unit and temperature EXACTLY as written; keep grams and °C. Keep French technical names when English kitchens use them. Do not add, remove or reorder ingredients or steps. Reply ONLY with JSON: {"name":"","ingredients":["one translated ingredient name per input ingredient, same order"],"steps":["one translated step per input step, same order"],"notes":""}.'
+};
+async function aiTask(chat, task, input) {
+  var sys = AI_TASKS[task];
+  if (!sys) return { error: 'Compito AI sconosciuto', _status: 400 };
+  var r = await chat('text', sys, String(input || '').slice(0, task === 'search' ? 16000 : 9000), null, true);
+  if (r.error) return r;
+  var j = null; try { j = JSON.parse(String(r.text).replace(/^[\s\S]*?(\{[\s\S]*\})[\s\S]*$/, '$1')); } catch (e) {}
+  if (!j || typeof j !== 'object') return { error: 'Risposta AI non leggibile', _status: 502 };
+  return { data: j };
 }
 /* ===== CORE-END ===== */
 
@@ -294,6 +360,12 @@ module.exports = async function handler(req, res) {
     if (!/^data:image\/(jpeg|png|webp);base64,/.test(String(body.image))) return res.status(400).json({ error: 'Formato immagine non supportato' });
     const chat = (kind, system, user, img, json) => aiGroqChat(GROQ_URL, key, kind, system, user, img, json);
     const o = await aiOcrOnly(chat, String(body.image));
+    if (o.error) return res.status(o._status && o._status >= 400 ? o._status : 502).json({ error: o.error });
+    return res.status(200).json(o);
+  }
+  if (body.task) {
+    const chat = (kind, system, user, img, json) => aiGroqChat(GROQ_URL, key, kind, system, user, img, json);
+    const o = await aiTask(chat, String(body.task), body.input);
     if (o.error) return res.status(o._status && o._status >= 400 ? o._status : 502).json({ error: o.error });
     return res.status(200).json(o);
   }

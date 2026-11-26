@@ -102,6 +102,7 @@
       ed ? ['new', IC.plus, 'Nuova ricetta', 'Scrivila a mano'] : null,
       ed ? ['ai', IC.spark, 'Importa con l’AI', 'Foto, testo o PDF'] : null,
       ['prod', IC.cook, 'Produzione', PS ? (PSd + ' di ' + PSr.length + ' fatte oggi') : 'Nessun foglio oggi'],
+      window.MENU ? ['menu', MENU.icon, 'Menù e degustazioni', (function () { var n = MENU.list().length; return n ? n + (n === 1 ? ' menù' : ' menù') : 'Portate e produzione'; })()] : null,
       ['set', IC.gear, 'Impostazioni', 'Tema, account e AI'],
       ['lib', IC.book, 'Biblioteca', B ? ('Continua «' + B.b.title + '»') : (nBooks ? nBooks + ' libri' : 'Libri e PDF')],
       (WL.isAdmin && WL.isAdmin()) ? ['team', IC.team, 'Brigata', nPeople > 1 ? nPeople + ' persone' : 'Invita la squadra'] : null
@@ -138,6 +139,7 @@
         if (q === 'new') { if (window.openModal) openModal(); }
         else if (q === 'ai') { if (window.openStudio) openStudio(); }
         else if (q === 'prod') { if (window.PR) PR.open('day'); }
+        else if (q === 'menu') { if (window.MENU) MENU.open(); }
         else if (q === 'timer') { if (window.SX) SX.open('timer '); }
         else if (q === 'set') { try { WL.openSettings(); } catch (e) { try { openDrawer(); } catch (x) {} } }
         else if (q === 'lib') { if (window.openLibrary) openLibrary(); }

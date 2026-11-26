@@ -18,6 +18,7 @@
   function fq(v) { if (v == null || isNaN(v)) return 'q.b.'; var r = Math.round(v * 100) / 100; if (Math.abs(r) >= 100) r = Math.round(r); return String(r).replace('.', ','); }
   function num(v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; }
   var IC = {
+    spark2: '<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
     search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
     rec: '<svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>',
     ing: '<svg viewBox="0 0 24 24"><path d="M12 3c3 3.8 5.5 6.6 5.5 9.8a5.5 5.5 0 0 1-11 0C6.5 9.6 9 6.8 12 3z"/></svg>',
@@ -108,6 +109,7 @@
       { t: 'Home', k: 'home inizio sezioni', run: function () { if (window.XL && XL.viewOpen) XL.close(); tbGoHome(); } },
       { t: 'Tutte le ricette', k: 'tutte ricette collezione elenco', run: function () { if (window.XL && XL.viewOpen) XL.close(); openSection('tutti'); } },
       { t: 'Produzione di oggi', k: 'produzione foglio oggi preparazioni mise lista lavoro', run: function () { if (window.PR) PR.open('day'); } },
+      { t: 'Menù e degustazioni', k: 'menu menù degustazione portate coperti evento banchetto servizio', run: function () { if (window.MENU) MENU.open(); } },
       { t: 'Foglio base di produzione', k: 'foglio base standard modello produzione', run: function () { if (window.PR) PR.open('base'); } },
       { t: 'Comunicazioni della brigata', k: 'comunicazioni messaggi briefing brigata avvisi', run: function () { if (window.PR) PR.open('msg'); } },
       { t: 'Importa ricette da un backup', k: 'importa backup ripristina altra app json csv paprika mealie tandoor', run: function () { if (window.BK) BK.open(); } },
@@ -261,6 +263,39 @@
     return { html: '<div class="sx-launch" id="sxLaunch">' + html + '</div>', items: items };
   }
 
+  /* ══════════ RICERCA CHE CAPISCE LE FRASI (AI) ══════════ */
+  function aiWorth(q) { var w = norm(q).split(' ').filter(Boolean); return typeof aiRunTask === 'function' && !S.drill && (S.filter === 'all' || S.filter === 'rec') && (w.length >= 3 || (w.length >= 2 && q.trim().length >= 12)) && !parseCommand(q); }
+  function aiMerge(items) {
+    var q = S.q.trim(); if (!aiWorth(q)) return items;
+    var top = [], ids = {};
+    if (S.ai && S.ai.q === q) S.ai.list.forEach(function (x) { ids[x.r.n] = 1; top.push({ type: 'rec', r: x.r, aiWhy: x.why }); });
+    var row = { type: 'ai' };
+    var rest = items.filter(function (it) { return !(it.type === 'rec' && ids[it.r.n]); });
+    return (top.length ? top.concat([row]) : [row]).concat(rest);
+  }
+  function catalog() {
+    var R = recs(), per = Math.max(70, Math.floor(15000 / Math.max(1, R.length))), map = {};
+    var lines = R.map(function (r, i) {
+      var id = 'r' + (i + 1); map[id] = r;
+      var tech = ''; try { var I = FD.info(r); tech = I.tech.join(' ') + (I.max != null ? ' ' + I.max + '°C' : '') + (I.noProc ? ' senza-procedimento' : ''); } catch (e) {}
+      var L = [id, r.n, r.c || '', r.piatto || '', (r.i || []).map(function (g) { return g[0]; }).join(', '), tech, String(r.nt || '').replace(/\s+/g, ' ').slice(0, 80)].join(' | ');
+      return L.length > per ? L.slice(0, per) : L;
+    });
+    return { text: lines.join('\n'), map: map };
+  }
+  function aiAsk() {
+    var q = S.q.trim(); if (!q || S.aiBusy) return;
+    var C = catalog(); if (!Object.keys(C.map).length) return;
+    S.aiBusy = q; S.aiErr = ''; draw();
+    aiRunTask('search', 'DOMANDA: ' + q + '\n\nCATALOGO (' + Object.keys(C.map).length + ' ricette):\n' + C.text).then(function (j) {
+      var seen = {}, list = (Array.isArray(j.risultati) ? j.risultati : []).map(function (x) { var r = C.map[String(x && x.id || '').trim()]; if (!r || seen[r.n]) return null; seen[r.n] = 1; return { r: r, why: String(x.perche || '').slice(0, 90) }; }).filter(Boolean);
+      S.ai = { q: q, list: list };
+    }).catch(function (e) { S.aiErr = e.message || 'AI non disponibile'; S.aiErrQ = q; }).then(function () {
+      S.aiBusy = null; if (!S.open) return;
+      if (S.q.trim() === q) { S.sel = 0; draw(); }
+    });
+  }
+
   /* ══════════ INTERFACCIA ══════════ */
   function ui() {
     var el = $('sx'); if (el) return el;
@@ -290,7 +325,7 @@
     return el;
   }
   function setFilter(f) { S.filter = f; S.sel = 0; [].forEach.call(document.querySelectorAll('#sxF button'), function (b) { b.classList.toggle('on', b.dataset.f === f); b.setAttribute('aria-selected', String(b.dataset.f === f)); }); draw(); }
-  var GROUP = { cmd: 'Comando', timer: 'Timer attivi', rec: 'Ricette', ing: 'Ingredienti', book: 'Libri', act: 'Azioni' };
+  var GROUP = { ai: 'Ricerca con l’AI', cmd: 'Comando', timer: 'Timer attivi', rec: 'Ricette', ing: 'Ingredienti', book: 'Libri', act: 'Azioni' };
   function counts() {
     var f0 = S.filter, c = { rec: 0, ing: 0, book: 0, act: 0 }; S.filter = 'all'; S.noCap = true;
     try { search().forEach(function (x) { if (c[x.type] != null) c[x.type]++; }); } catch (e) {}
@@ -306,9 +341,10 @@
       if (S.sel >= S.items.length) S.sel = 0; mark(true); return;
     }
     S.launch = false;
-    S.items = search();
+    S.items = aiMerge(search());
+    if (S.sel === 0 && S.items[0] && S.items[0].type === 'ai' && S.items[1]) S.sel = 1;
     S.items.forEach(function (it, i) {
-      var g = it.type === 'rec' && it.recent ? 'Aperte di recente' : GROUP[it.type];
+      var g = it.aiWhy ? 'Capite dall’AI' : it.type === 'rec' && it.recent ? 'Aperte di recente' : GROUP[it.type];
       if (g !== lastG) { html += '<div class="sx-g">' + g + '</div>'; lastG = g; }
       html += row(it, i);
     });
@@ -320,10 +356,11 @@
   function tokens() { return norm(S.q).split(' ').filter(Boolean); }
   function row(it, i) {
     var T = tokens(), ic, t, sub = '', side = '';
-    if (it.type === 'rec') { ic = null; t = hl(it.r.n, T); sub = esc(it.sub || ''); side = '<span class="sx-acts"><button type="button" data-do="lab" title="Laboratorio (⇧↵)" aria-label="Laboratorio">' + IC2.lab + '</button><button type="button" data-do="cook" title="Cucina (⌘↵)" aria-label="Cucina">' + IC2.pot + '</button><button type="button" data-do="molds" title="Stampi e teglie" aria-label="Stampi">' + IC2.mold + '</button></span>'; }
+    if (it.type === 'rec') { ic = null; t = it.aiWhy ? esc(it.r.n) : hl(it.r.n, T); sub = it.aiWhy ? '<span class="sx-aiwhy">' + esc(it.aiWhy) + '</span>' : esc(it.sub || ''); side = '<span class="sx-acts"><button type="button" data-do="lab" title="Laboratorio (⇧↵)" aria-label="Laboratorio">' + IC2.lab + '</button><button type="button" data-do="cook" title="Cucina (⌘↵)" aria-label="Cucina">' + IC2.pot + '</button><button type="button" data-do="molds" title="Stampi e teglie" aria-label="Stampi">' + IC2.mold + '</button></span>'; }
     else if (it.type === 'ing') { ic = IC.ing; t = hl(it.o.name, T); sub = 'in ' + it.o.uses.length + (it.o.uses.length === 1 ? ' ricetta' : ' ricette'); side = '<span class="sx-go">›</span>'; }
     else if (it.type === 'book') { ic = IC.book; t = hl(it.b.title, T); sub = esc([it.b.author, String(it.b.kind || '').toUpperCase()].filter(Boolean).join(' · ')); }
     else if (it.type === 'act') { ic = IC2[ACT_IC[it.a.t]] || IC[it.a.icon || 'act']; t = hl(it.a.t, T); }
+    else if (it.type === 'ai') { ic = IC.spark2; t = S.aiBusy === S.q.trim() ? 'Sto cercando nel ricettario…' : 'Chiedi all’AI: «' + esc(S.q.trim()) + '»'; sub = S.aiErr && S.aiErrQ === S.q.trim() ? '⚠ ' + esc(S.aiErr) : S.ai && S.ai.q === S.q.trim() ? (S.ai.list.length ? 'Fatto: ' + S.ai.list.length + (S.ai.list.length === 1 ? ' ricetta capita' : ' ricette capite') : 'Nessuna ricetta risponde alla domanda') : 'Capisce le frasi: «senza uova da preparare il giorno prima»'; side = S.aiBusy ? '<span class="sx-aispin"></span>' : '<kbd class="sx-k">↵</kbd>'; }
     else if (it.type === 'cmd') { ic = IC[it.icon || 'act']; t = esc(it.t); sub = esc(it.sub || ''); side = '<kbd class="sx-k">↵</kbd>'; }
     else if (it.type === 'timer') { ic = IC.clock; var L = XL.timers.left(it.t); t = esc(it.t.label); sub = it.t.rang ? 'Finito' : XL.timers.fmt(L) + (it.t.end ? '' : ' · in pausa'); }
     return '<div class="sx-row sx-' + it.type + '" role="option" data-i="' + i + '" id="sxo' + i + '" style="--d:' + Math.min(i, 12) + '">' + (ic ? '<span class="sx-ic">' + ic + '</span>' : tile(it.r)) + '<span class="sx-t"><b>' + t + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' + side + '</div>';
@@ -367,6 +404,8 @@
         html = '<span class="sx-pv-k">Libro · ' + esc(String(b.kind || '').toUpperCase()) + '</span><h3>' + esc(b.title) + '</h3>' + (b.author ? '<p class="sx-pv-s">' + esc(b.author) + '</p>' : '') +
           (pr ? '<div class="sx-pv-bar"><i style="width:' + Math.round((pr.percent || 0) * 100) + '%"></i></div><p class="sx-pv-tot">Letto al ' + Math.round((pr.percent || 0) * 100) + '%</p>' : '') +
           '<div class="sx-pv-a"><button type="button" class="sx-b dark" data-do="open">Apri il libro</button></div>';
+      } else if (it.type === 'ai') {
+        html = '<span class="sx-pv-k">Ricerca con l’AI</span><h3>Chiedilo con parole tue</h3><p class="sx-pv-s">L’AI legge nomi, ingredienti, tecniche e temperature di tutte le ricette e capisce domande come «qualcosa senza uova da preparare il giorno prima», «basi croccanti per un dolce al cioccolato» o «creme che reggono il congelamento».</p><div class="sx-pv-a"><button type="button" class="sx-b dark" data-do="open">Chiedi all’AI</button></div>';
       } else if (it.type === 'cmd' || it.type === 'act') {
         html = '<span class="sx-pv-k">' + (it.type === 'cmd' ? 'Comando' : 'Azione') + '</span><h3>' + esc(it.t || it.a.t) + '</h3>' + (it.sub ? '<p class="sx-pv-s">' + esc(it.sub) + '</p>' : '') + '<div class="sx-pv-a"><button type="button" class="sx-b dark" data-do="open">Esegui</button></div>';
       } else if (it.type === 'timer') {
@@ -390,6 +429,7 @@
     var it = S.items[S.sel]; if (!it) return;
     if (it.type === 'ing') { drill(it.o); return; }
     if (it.type === 'timer') return;
+    if (it.type === 'ai') { aiAsk(); return; }
     close(true);
     setTimeout(function () {
       if (it.type === 'rec') {
@@ -420,6 +460,7 @@
     S.open = false; el.classList.remove('on'); document.body.classList.remove('sx-open');
     if (!keepFocus && lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
   }
+  (function () { var st = document.createElement('style'); st.textContent = '.sx-ai .sx-ic{color:var(--gold3,#8B6408)}.sx-ai b{font-weight:600}.sx-aiwhy{color:var(--gold3,#8B6408)}.sx-aispin{width:16px;height:16px;border-radius:50%;border:2px solid color-mix(in srgb,var(--gold2,#B8862F) 30%,transparent);border-top-color:var(--gold2,#B8862F);animation:sxSpin .8s linear infinite;flex-shrink:0}@keyframes sxSpin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.sx-aispin{animation:none}}'; document.head.appendChild(st); })();
   window.SX = { open: open, close: close, search: function (q, f) { S.q = q; S.filter = f || 'all'; S.drill = null; build(); return search(); }, parse: parseCommand, norm: norm };
 
   /* scorciatoie */

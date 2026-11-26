@@ -77,6 +77,7 @@ html[data-motion=off] .hm-card,html[data-motion=off] .hm-pr{animation:none}
 .hm-q[data-q="new"]{--q:#3E3A30}
 .hm-q[data-q="ai"]{--q:#8A6A2E}
 .hm-q[data-q="prod"]{--q:#55623F}
+.hm-q[data-q="menu"]{--q:#8A4B5C}
 .hm-q[data-q="timer"]{--q:#9B4A3A}
 .hm-q[data-q="lib"]{--q:#3E5A6E}
 .hm-q[data-q="team"]{--q:#6E4A66}
